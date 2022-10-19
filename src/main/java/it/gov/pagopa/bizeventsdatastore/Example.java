@@ -1,4 +1,4 @@
-package it.gov.pagopa.project;
+package it.gov.pagopa.bizeventsdatastore;
 
 import com.microsoft.azure.functions.*;
 import com.microsoft.azure.functions.annotation.AuthorizationLevel;
