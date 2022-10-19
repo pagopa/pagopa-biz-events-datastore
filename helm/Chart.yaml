@@ -1,6 +1,6 @@
 apiVersion: v2
-name: pagopa-functions-template
-description: Microservice description
+name: pagopa-biz-events-datastore
+description: Microservice to store biz events to CosmosDB
 type: application
 version: 0.0.1
 appVersion: 0.0.1
