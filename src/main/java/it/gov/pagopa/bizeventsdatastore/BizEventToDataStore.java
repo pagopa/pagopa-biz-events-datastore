@@ -42,6 +42,6 @@ public class BizEventToDataStore {
         String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
         logger.log(Level.INFO, () -> message);
         
-        //document.setValue(bizEvtMsg);
+        document.setValue(bizEvtMsg);
     }
 }
