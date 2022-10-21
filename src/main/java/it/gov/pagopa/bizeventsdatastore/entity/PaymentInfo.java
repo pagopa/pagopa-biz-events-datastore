@@ -1,7 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
-import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -18,7 +16,6 @@ public class PaymentInfo {
 	private String applicationDate;
 	private String transferDate;
 	private String dueDate;
-	@PartitionKey
 	private String paymentToken;
 	private String amount;
 	private String fee;

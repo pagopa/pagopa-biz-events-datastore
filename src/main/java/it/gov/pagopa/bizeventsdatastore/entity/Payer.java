@@ -1,7 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
-import com.azure.spring.data.cosmos.core.mapping.PartitionKey;
-
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -16,6 +14,5 @@ import lombok.Setter;
 public class Payer {
 	private String fullName;
 	private String entityUniqueIdentifierType;
-	@PartitionKey
 	private String entityUniqueIdentifierValue;
 }
