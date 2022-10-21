@@ -24,8 +24,8 @@ public class BizEventToDataStore {
     @FunctionName("EventHubBizEventProcessor")
     public void processBizEvent (
     		@EventHubTrigger(
-                    name = "event",
-                    eventHubName = "pagopa-d-evh-ns01",
+                    name = "BizEvent",
+                    eventHubName = "nodo-dei-pagamenti-biz-evt",
                     connection = "Endpoint=sb://pagopa-d-evh-ns01.servicebus.windows.net/;SharedAccessKeyName=pagopa-biz-evt-rx;SharedAccessKey=hiV2B9lwUh66113dBE9lOhSoDa7eN6oJRTSRJp6mrc0=;EntityPath=nodo-dei-pagamenti-biz-evt",
                     cardinality = Cardinality.ONE) 
     		BizEvent bizEvtMsg,
@@ -33,7 +33,7 @@ public class BizEventToDataStore {
     	            name = "BizEventDatastore",
     	            databaseName = "db",
     	            collectionName = "BizEvents",
-    	            connectionStringSetting = "AccountEndpoint=https://localhost:8081/;AccountKey=C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==")
+    	            connectionStringSetting = "AccountEndpoint=https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/;AccountKey=9cFCgavL9CIA5YA2ouC6fUEOrnhSkxX617MNwWFfSC1Q958rQAw36zEt6HDZV4v2oi1eJfzPNksjSA7JTa6XIA==;")
     	            OutputBinding<BizEvent> document,
             final ExecutionContext context) {
 
@@ -42,6 +42,6 @@ public class BizEventToDataStore {
         String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
         logger.log(Level.INFO, () -> message);
         
-        //document.setValue(bizEvtMsg);
+        document.setValue(bizEvtMsg);
     }
 }

@@ -2,23 +2,12 @@
   "version": "2.0",
   "extensionBundle": {
     "id": "Microsoft.Azure.Functions.ExtensionBundle",
-    "version": "[3.3.0, 4.0.0)"
+    "version": "[2.*, 3.0.0)"
   },
   "extensions": {
     "http": {
       "routePrefix": ""
-    },
-    "eventHubs": {
-            "batchCheckpointFrequency": 5,
-            "eventProcessorOptions": {
-                "maxBatchSize": 256,
-                "prefetchCount": 512
-            },
-            "initialOffsetOptions": {
-                "type": "fromStart",
-                "enqueuedTimeUtc": ""
-            }
-        }
+    }
   },
   "logging": {
     "fileLoggingMode": "always",
