@@ -4,10 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 import java.util.Optional;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -30,12 +28,10 @@ class InfoTest {
     Info infoFunction;
 
     @Test
-    void runOK() throws IllegalArgumentException {
+    void runOK() {
         // test precondition
-        Logger logger = Logger.getLogger("info-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         final HttpResponseMessage.Builder builder = mock(HttpResponseMessage.Builder.class);
+        @SuppressWarnings("unchecked")
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
         doReturn(builder).when(request).createResponseBuilder(any(HttpStatus.class));

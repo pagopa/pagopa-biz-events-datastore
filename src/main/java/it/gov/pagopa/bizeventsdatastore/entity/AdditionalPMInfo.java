@@ -13,5 +13,6 @@ import lombok.Setter;
 @Builder
 public class AdditionalPMInfo {
 	private String origin;
-	// TODO: add missing properties
+	private User user;
+	private WalletItem walletItem;
 }

@@ -1,13 +1,9 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-import java.util.Optional;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
@@ -17,9 +13,6 @@ import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
@@ -44,7 +37,7 @@ class BizEventToDataStoreTest {
         OutputBinding<BizEvent> document = (OutputBinding<BizEvent>)mock(OutputBinding.class);
 
         // test execution
-        //function.processBizEvent(bizEvtMsg, document, context);
+        function.processBizEvent(bizEvtMsg, document, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);

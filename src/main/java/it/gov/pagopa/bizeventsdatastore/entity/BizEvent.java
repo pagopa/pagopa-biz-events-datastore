@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
@@ -15,7 +14,6 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class BizEvent {
-	
 	private String id;
 	private String version;
 	private String idPaymentManager;
@@ -29,7 +27,4 @@ public class BizEvent {
 	private PaymentInfo paymentInfo;
 	private List<Transfer> transferList;
 	private AdditionalPMInfo additionalPMInfo;
-
-    private LocalDateTime insertedDate;
-    private LocalDateTime lastUpdatedDate;
 }
