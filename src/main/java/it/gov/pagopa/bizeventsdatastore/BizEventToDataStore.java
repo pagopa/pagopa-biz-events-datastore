@@ -26,15 +26,15 @@ public class BizEventToDataStore {
     		@EventHubTrigger(
                     name = "BizEvent",
                     eventHubName = "", // blank because the value is included in the connection string
-                    connection = "EventHubConnectionString",
+                    connection = "EVENTHUB_CONN_STRING",
                     cardinality = Cardinality.ONE) 
     		BizEvent bizEvtMsg,
     		@CosmosDBOutput(
     	            name = "BizEventDatastore",
-    	            databaseName = "%COSMOS_DB_NAME%",
-    	            collectionName = "%COSMOS_DB_CONTAINER_NAME%",
+    	            databaseName = "db",
+    	            collectionName = "biz-events",
     	            createIfNotExists = false,
-    	            connectionStringSetting = "CosmosDBConnectionString")
+                    connectionStringSetting = "COSMOS_CONN_STRING")
     	            OutputBinding<BizEvent> document,
             final ExecutionContext context) {
 
