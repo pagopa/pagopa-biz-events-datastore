@@ -1,6 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -23,26 +24,24 @@ public class BizEventToDataStore {
      */
     @FunctionName("EventHubBizEventProcessor")
     public void processBizEvent (
-    		@EventHubTrigger(
+            @EventHubTrigger(
                     name = "BizEvent",
                     eventHubName = "", // blank because the value is included in the connection string
                     connection = "EVENTHUB_CONN_STRING",
-                    cardinality = Cardinality.ONE) 
-    		BizEvent bizEvtMsg,
-    		@CosmosDBOutput(
+                    cardinality = Cardinality.MANY)
+    		List<BizEvent> bizEvtMsg,
+            @CosmosDBOutput(
     	            name = "BizEventDatastore",
     	            databaseName = "db",
     	            collectionName = "biz-events",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
-    	            OutputBinding<BizEvent> document,
+    	            OutputBinding<List<BizEvent>> document,
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
 
         String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
-        logger.log(Level.INFO, () -> message);
-        
         // persist the item
         document.setValue(bizEvtMsg);
     }
