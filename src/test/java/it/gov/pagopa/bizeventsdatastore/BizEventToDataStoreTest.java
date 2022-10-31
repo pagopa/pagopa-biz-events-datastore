@@ -4,6 +4,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
@@ -32,12 +34,13 @@ class BizEventToDataStoreTest {
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
         
-        BizEvent bizEvtMsg = new BizEvent();
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (new BizEvent());
         @SuppressWarnings("unchecked")
-        OutputBinding<BizEvent> document = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-//        function.processBizEvent(bizEvtMsg, document, context);
+        function.processBizEvent(bizEvtMsg, document, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
