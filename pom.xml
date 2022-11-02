@@ -17,21 +17,32 @@
         <azure.functions.java.library.version>1.4.2</azure.functions.java.library.version>
         <functionAppName>com.microsoft.azure-20220215182005862</functionAppName>
         <resteasy.version>3.15.3.Final</resteasy.version>
+        <cosmos-data-version>3.29.0</cosmos-data-version>
+        <lombok.version>1.18.24</lombok.version>
     </properties>
 
     <dependencies>
-        <!-- Start Azure -->
-        <dependency>
+    
+    	<dependency>
             <groupId>org.modelmapper</groupId>
             <artifactId>modelmapper</artifactId>
             <version>3.0.0</version>
         </dependency>
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<version>${lombok.version}</version>
+			<scope>provided</scope>
+		</dependency>
+    
+        <!-- Start Azure -->
+        
         <dependency>
             <groupId>com.microsoft.azure.functions</groupId>
             <artifactId>azure-functions-java-library</artifactId>
             <version>${azure.functions.java.library.version}</version>
         </dependency>
-
+        
         <!-- End Azure -->
 
         <!-- Test -->
@@ -168,7 +179,7 @@
                     <appSettings>
                         <property>
                             <name>FUNCTIONS_EXTENSION_VERSION</name>
-                            <value>~3</value>
+                            <value>~2</value>
                         </property>
                     </appSettings>
                     <resourceGroup>java-functions-group</resourceGroup>

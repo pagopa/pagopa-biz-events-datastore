@@ -5,8 +5,16 @@
     "version": "[2.*, 3.0.0)"
   },
   "extensions": {
-    "http": {
-      "routePrefix": ""
+    "eventHubs": {
+      "batchCheckpointFrequency": 5,
+      "eventProcessorOptions": {
+        "maxBatchSize": 256,
+        "prefetchCount": 512
+      },
+      "initialOffsetOptions": {
+        "type": "fromStart",
+        "enqueuedTimeUtc": ""
+      }
     }
   },
   "logging": {
@@ -21,6 +29,6 @@
       "samplingSettings": {
         "isEnabled": false
     }
-  } 
+  }
 }
 }
