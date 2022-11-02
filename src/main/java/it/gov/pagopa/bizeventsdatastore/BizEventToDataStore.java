@@ -33,7 +33,7 @@ public class BizEventToDataStore {
             @CosmosDBOutput(
     	            name = "BizEventDatastore",
     	            databaseName = "db",
-    	            collectionName = "biz-events",
+    	            collectionName = "biz-events-test",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
     	            OutputBinding<List<BizEvent>> document,
