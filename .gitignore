@@ -40,3 +40,5 @@ obj/
 
 .env
 /helm/charts/
+node_modules/
+yarn.lock

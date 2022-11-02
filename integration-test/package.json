@@ -1,0 +1,14 @@
+{
+  "name": "pagopa-biz-event-datastore",
+  "license": "MIT",
+  "version": "0.0.1",
+  "scripts": {
+    "test": "npx cucumber-js --publish -r step_definitions"
+  },
+  "dependencies": {
+    "@cucumber/cucumber": "^8.4.0",
+    "axios": "^0.27.2",
+    "dotenv": "^16.0.3",
+    "npx": "^10.2.2"
+  }
+}
