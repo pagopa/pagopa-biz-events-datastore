@@ -38,7 +38,9 @@ npx cucumber-js -r step_definitions features/biz-event-processor.feature
 
 ### Note
 
-Remember to start the function EventHubBizEventProcessor before start the tests.
+Remember to start the function `EventHubBizEventProcessor` before start the tests.
 
-You can configure the host in `.env` file.
+You can configure the test variables in `./config/.env.<environment>` file, where `environment` can be `local, dev or uat`
+
+_If some variables are security sensitive (eg. PRIMARY KEY) they must be manually inserted in the `.env.*` file before launching the test_
 
