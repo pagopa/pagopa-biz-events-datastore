@@ -1,31 +1,42 @@
 const assert = require('assert');
-const {randomEvent, sleep} = require("./common");
+const {createEvent, sleep} = require("./common");
 const {publishEvent} = require("./event_hub_client");
-const {queryEventById} = require("./datastore_client");
-const {Given, When, Then} = require('@cucumber/cucumber');
+const {getDocumentById, deleteDocument} = require("./datastore_client");
+const {After, Given, When, Then} = require('@cucumber/cucumber');
 
-let event
-let responseToCheck;
+let eventId;
+
+
+// After each Scenario
+
+After(function () {
+    // remove event
+    deleteDocument(eventId)
+});
 
 // Given
 
-Given('a random Event published on EventHub', async function () {
-    event = randomEvent();
-    console.log("Random event with id: " + event.id + " published");
-    responseToCheck =  await publishEvent(event);
+Given('a random biz event with id {string} published on eventhub', async function (id) {
+    // prior cancellation to avoid dirty cases
+    await deleteDocument(id);
+
+    eventId = id;
+    const event = createEvent(eventId);
+    let responseToCheck =  await publishEvent(event);
+
     assert.strictEqual(responseToCheck.status, 201);
 });
 
 // When
 
-When('the random Event is reached in the datastore', async function () {
-    sleep(500) // boundary time spent by azure function to process event
-    
-    responseToCheck = await queryEventById(event.id);
+When('biz event has been stored properly into datastore after {int} ms', async function (time) {
+    // boundary time spent by azure function to process event
+    await sleep(time);
 });
 
 // Then
 
-Then('the datastore returns the {int} event instance', function (count) {
-    assert.strictEqual(responseToCheck.data._count, count);
+Then('the datastore returns the event with id {string}', async function (targetId) {
+    responseToCheck = await getDocumentById(targetId);
+    assert.strictEqual(responseToCheck.data.Documents[0].id, targetId);
 });

@@ -1,9 +1,8 @@
 const axios = require("axios");
-const crypto = require("crypto");
 
 
-function post(url, headers, data) {
-    return axios.post(url, data, {headers})
+function get(url, headers) {
+    return axios.get(url, {headers})
         .then(res => {
             return res;
         })
@@ -11,60 +10,44 @@ function post(url, headers, data) {
             return error.response;
         });
 }
-  
-function getAuthorizationTokenUsingMasterKey(verb, resourceType, resourceId, date, masterKey) {
-    var key = new Buffer(masterKey, "base64");
 
-    var text = (verb || "").toLowerCase() + "\n" +   
-               (resourceType || "").toLowerCase() + "\n" +   
-               (resourceId || "") + "\n" +   
-               date.toLowerCase() + "\n" +   
-               "" + "\n";  
-  
-    var body = new Buffer(text, "utf8");  
-    var signature = crypto.createHmac("sha256", key).update(body).digest("base64");  
-  
-    var MasterToken = "master";  
-  
-    var TokenVersion = "1.0";  
-  
-    return encodeURIComponent("type=" + MasterToken + "&ver=" + TokenVersion + "&sig=" + signature);  
+function post(url, body, headers) {
+    return axios.post(url, body, {headers})
+        .then(res => {
+            return res;
+        })
+        .catch(error => {
+            return error.response;
+        });
 }
 
-function createSharedAccessToken(uri, saName, saKey) { 
-    if (!uri || !saName || !saKey) { 
-            throw "Missing required parameter"; 
-        } 
-    var encoded = encodeURIComponent(uri); 
-    var now = new Date(); 
-    var day = 60*60*24;
-    var ttl = Math.round(now.getTime() / 1000) + day;
-    var signature = encoded + '\n' + ttl; 
-    var hash = crypto.createHmac('sha256', saKey).update(signature, 'utf8').digest('base64'); 
-    return 'SharedAccessSignature sr=' + encoded + '&sig=' + encodeURIComponent(hash) + '&se=' + ttl + '&skn=' + saName; 
+function put(url, body, headers) {
+    return axios.put(url, body, {headers})
+        .then(res => {
+            return res;
+        })
+        .catch(error => {
+            return error.response;
+        });
 }
 
-function randomId(length) {
-    var result = '';
-    var alphaNumeric = 'abcdefghijklmnopqrstuvwxyz0123456789';
-    var alphaNumericLength = alphaNumeric.length;
-    for (var i = 0; i < length; i++) {
-        result += alphaNumeric.charAt(Math.floor(Math.random() * alphaNumericLength));
-    }
-    return result;
+function del(url, headers) {
+    return axios.delete(url, {headers})
+        .then(res => {
+            return res;
+        })
+        .catch(error => {
+            return error.response;
+        });
 }
 
-function sleep(milliseconds) {
-    const date = Date.now();
-    let currentDate = null;
-    do {
-      currentDate = Date.now();
-    } while (currentDate - date < milliseconds);
+function sleep(ms) {
+    return new Promise(resolve => setTimeout(resolve, ms));
 }
 
-function randomEvent() {
+function createEvent(id) {
     json_event = {
-        "id": "3ac27b99-a8b5-4235-8a65-" + randomId(12),
+        "id": id,
         "version": "1",
         "idPaymentManager": "11999923",
         "complete": "false",
@@ -134,4 +117,6 @@ function randomEvent() {
 }
 
 
-module.exports = {randomEvent, sleep, post, getAuthorizationTokenUsingMasterKey, createSharedAccessToken}
+module.exports = {
+    get, post, put, del, createEvent, sleep
+}

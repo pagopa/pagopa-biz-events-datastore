@@ -1,8 +1,6 @@
-Feature: Test AzureFunction linked with EventHub Trigger (input) and Cosmos DB (output)
+Feature: All about payment events consumed by Azure Function biz-event-processor
 
-  Background:
-
-  Scenario: The biz event incoming from EventHub is processed by function to DB 
-    Given a random Event published on EventHub
-    When the random Event is reached in the datastore
-    Then the datastore returns the 1 event instance
+  Scenario: a biz event published on eventhub is stored into datastore
+    Given a random biz event with id "test-id-1" published on eventhub
+    When biz event has been properly stored into datastore after 500 ms
+    Then the datastore returns the event with id "test-id-1"
