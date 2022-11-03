@@ -18,7 +18,6 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
  * Azure Functions with Azure Queue trigger.
  */
 public class BizEventToDataStore {
-
     /**
      * This function will be invoked when an Event Hub trigger occurs
      */
@@ -32,16 +31,18 @@ public class BizEventToDataStore {
     		List<BizEvent> bizEvtMsg,
             @CosmosDBOutput(
     	            name = "BizEventDatastore",
-    	            databaseName = "db",
-    	            collectionName = "biz-events-test",
+    	            databaseName = "%COSMOS_DB_NAME%",
+    	            collectionName = "%COSMOS_DB_CONTAINER_NAME%",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
     	            OutputBinding<List<BizEvent>> document,
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
-
         String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
+
+        logger.info(message);
+
         // persist the item
         document.setValue(bizEvtMsg);
     }
