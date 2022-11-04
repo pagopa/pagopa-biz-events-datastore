@@ -28,8 +28,7 @@ Given('a random biz event with id {string} published on eventhub', async functio
 });
 
 // When
-
-When('biz event has been stored properly into datastore after {int} ms', async function (time) {
+When('biz event has been properly stored into datastore after {int} ms', async function (time) {
     // boundary time spent by azure function to process event
     await sleep(time);
 });
