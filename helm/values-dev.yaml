@@ -67,6 +67,7 @@ microservice-chart:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
     COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
+    AzureWebJobsStorage: 'AzureWebJobsStorage'
   keyvault:
     name: "pagopa-d-bizevents-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
