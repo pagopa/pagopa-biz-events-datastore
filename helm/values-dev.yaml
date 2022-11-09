@@ -44,10 +44,10 @@ microservice-chart:
   resources:
     requests:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
     limits:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
   autoscaling:
     enable: true
     minReplica: 3
@@ -65,6 +65,8 @@ microservice-chart:
     FUNCTIONS_WORKER_RUNTIME: "java"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
+    EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
+    COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
   keyvault:
     name: "pagopa-d-bizevents-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
