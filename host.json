@@ -10,11 +10,10 @@
       "eventProcessorOptions": {
         "maxBatchSize": 256,
         "prefetchCount": 512
-      },
-      "initialOffsetOptions": {
-        "type": "fromStart",
-        "enqueuedTimeUtc": ""
       }
+    },
+    "http": {
+      "routePrefix": ""
     }
   },
   "logging": {
