@@ -15,6 +15,9 @@
         "type": "fromStart",
         "enqueuedTimeUtc": ""
       }
+    },
+    "http": {
+      "routePrefix": ""
     }
   },
   "logging": {
