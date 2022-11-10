@@ -44,13 +44,13 @@ microservice-chart:
   resources:
     requests:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
     limits:
       memory: "512Mi"
-      cpu: "0.25"
+      cpu: "0.5"
   autoscaling:
     enable: true
-    minReplica: 3
+    minReplica: 1
     maxReplica: 10
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
@@ -65,6 +65,9 @@ microservice-chart:
     FUNCTIONS_WORKER_RUNTIME: "java"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
+    EVENTHUB_CONN_STRING: 'ehub-u-biz-connection-string'
+    COSMOS_CONN_STRING: 'cosmos-u-biz-connection-string'
+    AzureWebJobsStorage: 'bizevent-u-azurewebjobsstorage'
   keyvault:
     name: "pagopa-u-bizevents-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
