@@ -63,10 +63,18 @@ microservice-chart:
   envConfig:
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
+    COSMOS_DB_NAME: "db"
+    COSMOS_DB_CONTAINER_NAME: "biz-events"
+    COSMOS_DB_URI: "https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/"
+    EVENT_HUB_NAMESPACE: "pagopa-d-evh-ns01"
+    EVENT_HUB_NAME: "nodo-dei-pagamenti-biz-evt"
+    EVENT_HUB_SENDER: "pagopa-biz-evt-tx"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
     COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
+    EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-d-biz-key'
+    COSMOS_DB_PRIMARY_KEY: 'cosmos_biz_key'
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
   keyvault:
     name: "pagopa-d-bizevents-kv"

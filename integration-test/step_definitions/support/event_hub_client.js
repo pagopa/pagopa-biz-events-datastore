@@ -4,7 +4,7 @@ const crypto = require("crypto");
 const namespace       = process.env.EVENT_HUB_NAMESPACE;
 const eventHub        = process.env.EVENT_HUB_NAME;
 const eventHubSender  = process.env.EVENT_HUB_SENDER;
-const eventHubKey     = process.env.EVENT_HUB_KEY;
+const eventHubKey     = process.env.EVENT_HUB_TX_PRIMARY_KEY;
 
 function publishEvent(event) {
     const path = `${namespace}.servicebus.windows.net`; // service bus path
