@@ -74,7 +74,7 @@ microservice-chart:
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
     COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
     EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-d-biz-key'
-    COSMOS_DB_PRIMARY_KEY: 'cosmos_biz_key'
+    COSMOS_DB_PRIMARY_KEY: 'cosmos-d-biz-key'
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
   keyvault:
     name: "pagopa-d-bizevents-kv"
