@@ -42,7 +42,15 @@ local.settings.json
 bin/
 obj/
 
-.env
-/helm/charts/
-node_modules/
-yarn.lock
+# Project files
+/target/
+
+# Helm
+**/helm/charts/
+
+# Environment
+*.env
+*.env.dev
+*.env.uat
+*.env.prod
+
