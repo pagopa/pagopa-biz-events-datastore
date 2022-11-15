@@ -213,11 +213,22 @@ stages:
               git checkout $(sourceBranch)
             displayName: Checkout and update branch
 
+          - task: AzureKeyVault@2
+            inputs:
+              azureSubscription: 'DEV-pagoPA'
+              KeyVaultName: 'pagopa-d-bizevents-kv'
+              SecretsFilter: '*'
+              RunAsPreJob: false
+
           - task: Bash@3
             displayName: 'Run Integration Tests'
             inputs:
               targetType: 'inline'
               script: |
                 cd ./integration-test/src
+                COSMOS_DB_PRIMARY_KEY=$(cosmos-d-biz-key)
+                EVENT_HUB_TX_PRIMARY_KEY=$(ehub-tx-d-biz-key)
+                echo COSMOS_DB_PRIMARY_KEY=$COSMOS_DB_PRIMARY_KEY >> .env.dev
+                echo EVENT_HUB_TX_PRIMARY_KEY=$EVENT_HUB_TX_PRIMARY_KEY >> .env.dev
                 yarn install
                 yarn test:${{ parameters.ENV }}
