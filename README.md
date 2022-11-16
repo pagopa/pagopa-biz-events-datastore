@@ -27,7 +27,9 @@ On terminal and  typing :
 
 `cp local.settings.json.example local.settings.json`
 
-then replace `EVENTHUB_CONN_STRING` and `COSMOS_CONN_STRING` with real one connection string
+then replace
+- `EVENTHUB_CONN_STRING` and `COSMOS_CONN_STRING` with real one connection string
+- `COSMOS_DB_CONTAINER_NAME` and `COSMOS_DB_NAME` with correct value
 > to doc details about AZ fn config see [here](https://stackoverflow.com/questions/62669672/azure-functions-what-is-the-purpose-of-having-host-json-and-local-settings-jso)
 
 `mvn clean package`
