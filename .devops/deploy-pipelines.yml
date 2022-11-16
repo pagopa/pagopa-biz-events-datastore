@@ -223,4 +223,4 @@ stages:
                 yarn test:${{ parameters.ENV }}
             env:
               EVENT_HUB_TX_PRIMARY_KEY: $(EHUB_TX_KEY)
-              COSMOS_DB_PRIMARY_KEY: $(COSMOS_KEY)
+              COSMOS_DB_PRIMARY_KEY: $(COSMOS_KEY) # should be used this env variable in script

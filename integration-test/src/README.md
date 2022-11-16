@@ -42,16 +42,13 @@ Remember to start the function `EventHubBizEventProcessor` before start the test
 
 You can configure the test variable in `./config/.env.<environment>` file, where `environment` can be `local, dev or uat`
 
-Hence, you can copy local env and modify them in this way:
-
-`cp ./config/.env.local ./config/.env.<environment>`
-
-and replace in `.env` with correct values.
-
 Therefore, you have, based on the environment you want to test on, the following alternative commands:
 - ```yarn test```
 - ```yarn test:dev```
 - ```yarn test:uat```
+
+In the case of remote environments the COSMOS_DB_PRIMARY_KEY and EVENT_HUB_TX_PRIMARY_KEY **must not** be placed in `./config/.env.<environment>` files.
+It will be passed through the pipeline as described in the stage integration test of `deploy-pipelines.yml`
 
 _If some variables are security sensitive (eg. PRIMARY KEY) they must be manually inserted in the `.env.*` file before launching the test_
 
