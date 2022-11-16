@@ -50,6 +50,3 @@ obj/
 
 # Environment
 *.env
-*.env.uat
-*.env.prod
-
