@@ -219,8 +219,6 @@ stages:
               targetType: 'inline'
               script: |
                 cd ./integration-test/src
-                echo COSMOS_DB_PRIMARY_KEY=$COSMOS_DB_PRIMARY_KEY >> .env.${{ parameters.ENV }}
-                echo EVENT_HUB_TX_PRIMARY_KEY=$EVENT_HUB_TX_PRIMARY_KEY >> .env.${{ parameters.ENV }}
                 yarn install
                 yarn test:${{ parameters.ENV }}
             env:
