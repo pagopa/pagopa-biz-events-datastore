@@ -1,4 +1,6 @@
-package it.gov.pagopa.bizeventsdatastore.entity;
+package it.gov.pagopa.bizeventsdatastore.model;
+
+import com.google.api.client.util.Key;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -11,8 +13,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AdditionalPMInfo {
-	private String origin;
-	private User user;
-	private WalletItem walletItem;
+public class Transaction {
+	@Key
+	private int idTransaction;
 }
