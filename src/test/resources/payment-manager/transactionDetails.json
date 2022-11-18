@@ -1,0 +1,33 @@
+{
+  "transactionDetails": {
+    "user": {
+      "idUser": 0,
+      "userStatus": 0,
+      "userStatusDescription": "string"
+    },
+    "paymentAuthorizationRequest": {
+      "authOutcome": "OK",
+      "requestId": "string",
+      "correlationId": "string",
+      "authCode": "string",
+      "paymentMethodType": "CP or PPAY or PPAL, so paymentTypeCode of Nodo",
+      "details": {
+        "blurredNumber": "************1234",
+        "holder": "M**** *****I",
+        "circuit": "VISA"
+      }
+    },
+    "wallet": {
+      "idWallet": 0,
+      "walletType": "string",
+      "enableableFunctions": [
+        "string"
+      ],
+      "pagoPa": true,
+      "onboardingChannel": "string",
+      "favourite": true,
+      "createDate": "2022-11-29T08:15:53.406Z",
+      "info": {}
+    }
+  }
+}

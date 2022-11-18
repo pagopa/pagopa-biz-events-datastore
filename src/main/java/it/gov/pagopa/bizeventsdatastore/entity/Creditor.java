@@ -16,4 +16,5 @@ public class Creditor {
 	private String idBrokerPA;
 	private String idStation;
 	private String companyName;
+	private String officeName;
 }
