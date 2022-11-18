@@ -2,6 +2,7 @@ package it.gov.pagopa.bizeventsdatastore.entity;
 
 import java.util.List;
 
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -27,4 +28,8 @@ public class BizEvent {
 	private PaymentInfo paymentInfo;
 	private List<Transfer> transferList;
 	private AdditionalPMInfo additionalPMInfo;
+	
+	// internal status field
+	@Builder.Default
+	private StatusType eventStatus = StatusType.NA;
 }
