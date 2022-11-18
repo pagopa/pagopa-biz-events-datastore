@@ -127,7 +127,7 @@
           <artifactId>google-api-client-gson</artifactId>
           <version>${google-api-client.version}</version>
         </dependency>
-        
+
         <dependency>
           <groupId>com.fasterxml.jackson.datatype</groupId>
           <artifactId>jackson-datatype-jsr310</artifactId>
@@ -143,7 +143,7 @@
             <version>1.18.20</version>
             <scope>provided</scope>
         </dependency>
-        
+
         <!-- HTTP Client -->
 
 	    <dependency>
