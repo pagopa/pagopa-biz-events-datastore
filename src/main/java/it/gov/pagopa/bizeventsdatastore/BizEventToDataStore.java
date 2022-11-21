@@ -31,8 +31,8 @@ public class BizEventToDataStore {
     		List<BizEvent> bizEvtMsg,
             @CosmosDBOutput(
     	            name = "BizEventDatastore",
-    	            databaseName = "db",
-    	            collectionName = "biz-events",
+    	            databaseName = "%COSMOS_DB_NAME%",
+    	            collectionName = "%COSMOS_DB_CONTAINER_NAME%",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
     	            OutputBinding<List<BizEvent>> document,
