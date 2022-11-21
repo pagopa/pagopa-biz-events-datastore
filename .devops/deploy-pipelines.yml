@@ -199,25 +199,28 @@ stages:
 
 
   # Run Tests
-#  - stage: Integration_Test
-#    dependsOn:
-#      - Deploy
-#    condition: and(succeeded(), eq('${{ parameters.TEST }}', 'true'))
-#    jobs:
-#      - job: integration_tests
-#        steps:
-#          - checkout: self
-#            persistCredentials: true
-#
-#          - script: |
-#              git checkout $(sourceBranch)
-#            displayName: Checkout and update branch
-#
-#          - task: Bash@3
-#            displayName: 'Run Integration Tests'
-#            inputs:
-#              targetType: 'inline'
-#              script: |
-#                cd ./integration-test/src
-#                yarn install
-#                yarn test:${{ parameters.ENV }}
+  - stage: Integration_Test
+    dependsOn:
+      - Deploy
+    condition: and(succeeded(), eq('${{ parameters.TEST }}', 'true'))
+    jobs:
+      - job: integration_tests
+        steps:
+          - checkout: self
+            persistCredentials: true
+
+          - script: |
+              git checkout $(sourceBranch)
+            displayName: Checkout and update branch
+
+          - task: Bash@3
+            displayName: 'Run Integration Tests'
+            inputs:
+              targetType: 'inline'
+              script: |
+                cd ./integration-test/src
+                yarn install
+                yarn test:${{ parameters.ENV }}
+            env:
+              EVENT_HUB_TX_PRIMARY_KEY: $(EHUB_TX_KEY)
+              COSMOS_DB_PRIMARY_KEY: $(COSMOS_KEY) # should be used this env variable in script

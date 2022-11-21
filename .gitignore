@@ -42,5 +42,11 @@ local.settings.json
 bin/
 obj/
 
-# Local settings
-.env
+# Project files
+/target/
+
+# Helm
+**/helm/charts/
+
+# Environment
+*.env
