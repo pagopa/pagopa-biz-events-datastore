@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.bizeventsdatastore</groupId>
     <artifactId>biz-events-datastore-function</artifactId>
-    <version>0.0.1-3</version>
+    <version>0.0.1-4</version>
     <packaging>jar</packaging>
 
     <name>Biz Events Datastore Fn</name>
