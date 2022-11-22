@@ -209,6 +209,9 @@ stages:
     condition: and(succeeded(), eq('${{ parameters.TEST }}', 'true'))
     jobs:
       - job: integration_tests
+        pool:
+          name: $(poolImage)
+
         steps:
           - checkout: self
             persistCredentials: true
