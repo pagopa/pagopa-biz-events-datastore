@@ -225,9 +225,15 @@ stages:
             inputs:
               targetType: 'inline'
               script: |
-                cd ./integration-test/src
-                yarn install
-                yarn test:${{ parameters.ENV }}
+                docker run -dit --name node_container node
+                docker cp $(pwd)/src node_container:/integration-test
+                docker exec -i node_container /bin/bash -c " \
+                cd integration-test && \
+                export EVENT_HUB_TX_PRIMARY_KEY=$EVENT_HUB_TX_PRIMARY_KEY && \
+                export COSMOS_DB_PRIMARY_KEY=$COSMOS_DB_PRIMARY_KEY && \
+                yarn install && \
+                yarn test:$DEPLOYMENT_ENVIRONMENT"
             env:
               EVENT_HUB_TX_PRIMARY_KEY: ${{ variables.eventHubTxPrimaryKey }} # should be used this env variable in script
               COSMOS_DB_PRIMARY_KEY: ${{ variables.cosmosDBPrimaryKey }}
+              DEPLOYMENT_ENVIRONMENT: ${{ parameters.ENV }}
