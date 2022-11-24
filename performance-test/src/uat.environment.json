@@ -2,12 +2,13 @@
   "environment": [
     {
       "env": "uat",
-      "cosmosDBURI": "<>",
+      "cosmosDBURI": "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
       "databaseID":"db",
       "containerID":"biz-events",
-      "eventHubNamespace":"<>",
-      "eventHubName":"<>",
-      "eventHubSender":"<>"
+      "eventHubNamespace":"pagopa-u-evh-ns01",
+      "eventHubName":"nodo-dei-pagamenti-biz-evt",
+      "eventHubSender":"pagopa-biz-evt-tx",
+      "processTime":"3"
     }
   ]
 }

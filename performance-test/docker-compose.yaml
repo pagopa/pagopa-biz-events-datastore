@@ -6,8 +6,9 @@ services:
     volumes:
       - '${PWD}/src:/scripts'
     environment:
-      - API_SUBSCRIPTION_KEY=${sub_key}
-      - VARS=/scripts/${env}.environment.json
+      - COSMOS_DB_SUBSCRIPTION_KEY=${cosmos_key}
+      - EVENT_HUB_SUBSCRIPTION_KEY=${eventhub_key}
+      - VARS=${env}.environment.json
       - TEST_TYPE=/scripts/test-types/${type}.json
       - K6_OUT=influxdb=http://nginx:8086/${db_name}
     command: run /scripts/${script}.js
