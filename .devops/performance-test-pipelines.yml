@@ -32,10 +32,10 @@ parameters:
       - bizevents_datastorek6
 
 variables:
-  ${{ if eq(parameters['ENV'], 'dev') }}:
+  ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     cosmosDBPrimaryKey: "$(DEV_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(DEV_EHUB_TX_PRIMARY_KEY)"
-  ${{ if eq(parameters['ENV'], 'uat') }}:
+  ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     cosmosDBPrimaryKey: "$(UAT_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(UAT_EHUB_TX_PRIMARY_KEY)"
 
