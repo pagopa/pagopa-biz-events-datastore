@@ -1,9 +1,6 @@
 # azure-pipelines.yml
 trigger: none
 
-pool:
-  name: pagopa-dev-loadtest-linux
-
 parameters:
   - name: "ENVIRONMENT"
     displayName: "Environment"
@@ -35,9 +32,14 @@ variables:
   ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     cosmosDBPrimaryKey: "$(DEV_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(DEV_EHUB_TX_PRIMARY_KEY)"
+    poolImage: 'pagopa-dev-linux'
   ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     cosmosDBPrimaryKey: "$(UAT_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(UAT_EHUB_TX_PRIMARY_KEY)"
+    poolImage: 'pagopa-uat-linux'
+
+pool:
+  name: $(poolImage)
 
 steps:
   - script: |
