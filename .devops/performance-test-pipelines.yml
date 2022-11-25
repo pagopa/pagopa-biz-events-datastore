@@ -32,11 +32,11 @@ variables:
   ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
     cosmosDBPrimaryKey: "$(DEV_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(DEV_EHUB_TX_PRIMARY_KEY)"
-    poolImage: 'pagopa-dev-linux'
+    poolImage: 'pagopa-dev-loadtest-linux'
   ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
     cosmosDBPrimaryKey: "$(UAT_COSMOS_DB_PRIMARY_KEY)"
     eventHubTxPrimaryKey: "$(UAT_EHUB_TX_PRIMARY_KEY)"
-    poolImage: 'pagopa-uat-linux'
+    poolImage: 'pagopa-uat-loadtest-linux'
 
 pool:
   name: $(poolImage)
