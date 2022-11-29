@@ -71,7 +71,8 @@ public class BizEventEnrichment {
 		}
 	}
 
-	private void enrichBizEvent(BizEvent be, Logger logger) {
+	// the return of the status has the purpose of testing the correct execution of the method
+	public StatusType enrichBizEvent(BizEvent be, Logger logger) {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
@@ -87,5 +88,7 @@ public class BizEventEnrichment {
 			logger.severe("blocking unexpected exception occurred: " + e.getMessage());
 			be.setEventStatus(StatusType.FAILED);
 		}
+		
+		return be.getEventStatus();
 	}
 }

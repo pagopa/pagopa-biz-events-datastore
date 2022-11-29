@@ -9,6 +9,7 @@ import com.google.api.client.http.HttpHeaders;
 import com.google.api.client.http.HttpRequest;
 import com.google.api.client.http.HttpRequestFactory;
 import com.google.api.client.http.HttpResponse;
+import com.google.api.client.http.HttpResponseException;
 import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
@@ -106,21 +107,21 @@ public class PaymentManagerClient {
 	 	
     	WrapperTransactionDetails wrapperTD = null;
     	
-    	HttpResponse res = request.execute();
-    	
-    	if (res.getStatusCode() / 100 == 4) {
-    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), request.getUrl());
-    		throw new PM4XXException(message);
-    		
-    	} else if (res.getStatusCode() / 100 == 5) {
-    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), request.getUrl());
-    		throw new PM5XXException(message); 
-    		
-    	} else {
+    	try {
+    		HttpResponse res = request.execute();
     		wrapperTD = (WrapperTransactionDetails) res.parseAs(type);
+    	} catch (HttpResponseException e) {
+    		if (e.getStatusCode() / 100 == 4) {
+        		String message = String.format("Error %s calling the service URL %s", e.getStatusCode(), request.getUrl());
+        		throw new PM4XXException(message);
+        		
+        	} else if (e.getStatusCode() / 100 == 5) {
+        		String message = String.format("Error %s calling the service URL %s", e.getStatusCode(), request.getUrl());
+        		throw new PM5XXException(message); 
+        		
+        	}
     	}
     	
     	return wrapperTD;
-		
 	}
 }

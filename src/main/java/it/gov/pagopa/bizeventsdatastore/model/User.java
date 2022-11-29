@@ -27,8 +27,7 @@ public class User {
 	@Key
 	private String notificationEmail;
 	@Key
-	@Builder.Default
-	private UserType type = UserType.F;
+	private UserType type;
 	@Key
 	private String fullName;
 	@Key
