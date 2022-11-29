@@ -66,6 +66,12 @@
             <version>4.3.1</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+    		<groupId>com.github.tomakehurst</groupId>
+    		<artifactId>wiremock</artifactId>
+    		<version>2.27.2</version>
+    		<scope>test</scope>
+		</dependency>
 
         <!-- jaxb -->
         <dependency>
@@ -127,6 +133,12 @@
           <artifactId>google-api-client-gson</artifactId>
           <version>${google-api-client.version}</version>
         </dependency>
+        
+        <dependency>
+    <groupId>com.google.http-client</groupId>
+    <artifactId>google-http-client-jackson2</artifactId>
+    <version>1.42.3</version>
+</dependency>
         
         <dependency>
           <groupId>com.fasterxml.jackson.datatype</groupId>

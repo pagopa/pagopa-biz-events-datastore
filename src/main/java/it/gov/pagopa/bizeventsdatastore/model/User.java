@@ -1,6 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore.model;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.api.client.util.Key;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.UserType;
 import lombok.AllArgsConstructor;
@@ -15,12 +16,21 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class User {
-	@JsonProperty(value="idUser")
+	
+	@Key(value="idUser")
+	@JsonProperty("idUser")
 	private String userId;
+	@Key
 	private String userStatus;
+	@Key
 	private String userStatusDescription;
+	@Key
 	private String notificationEmail;
-	private UserType type;
+	@Key
+	@Builder.Default
+	private UserType type = UserType.F;
+	@Key
 	private String fullName;
+	@Key
 	private String fiscalCode;
 }

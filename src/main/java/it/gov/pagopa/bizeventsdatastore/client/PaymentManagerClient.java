@@ -28,25 +28,25 @@ import lombok.NoArgsConstructor;
 public class PaymentManagerClient {
 
 	private static PaymentManagerClient instance = null;
+	private static final String GET_PAYMENT_EVENT_DETAILS = "/payment-events/%s";
 	
-	private static final HttpTransport HTTP_TRANSPORT = new NetHttpTransport();
-	private static final JsonFactory JSON_FACTORY = new GsonFactory();
-    private static final String GET_PAYMENT_EVENT_DETAILS = "/payment-events/%s";
-    private static final String PAYMENT_MANAGER_HOST = "https://api.uat.platform.pagopa.it/payment-manager/events/v1"; //System.getenv("PM_HOST"); // https://api.uat.platform.pagopa.it/payment-manager/pp-restapi-server/v4
-    private static final String API_KEY = System.getenv("API_KEY");
+	private final HttpTransport httpTransport = new NetHttpTransport();
+	private final JsonFactory jsonFactory = new GsonFactory();
+    private final String paymentManagerHost = System.getenv("PM_HOST"); // https://api.uat.platform.pagopa.it/payment-manager/pp-restapi-server/v4
+    private final String apiKey = System.getenv("API_KEY");
     
     // Retry ExponentialBackOff config 
-    private static final boolean ENABLE_RETRY = 
+    private final boolean enableRetry = 
     		System.getenv("ENABLE_RETRY") != null ? Boolean.parseBoolean(System.getenv("ENABLE_RETRY")) : Boolean.FALSE;
-    private static final int INITIAL_INTERVAL_MILLIS = 
+    private final int initialIntervalMillis = 
     		System.getenv("INITIAL_INTERVAL_MILLIS") != null ? Integer.parseInt(System.getenv("INITIAL_INTERVAL_MILLIS")) : 500;
-    private static final int MAX_ELAPSED_TIME_MILLIS = 
+    private final int maxElapsedTimeMillis = 
     		System.getenv("MAX_ELAPSED_TIME_MILLIS") != null ? Integer.parseInt(System.getenv("MAX_ELAPSED_TIME_MILLIS")) : 1000;
-    private static final int MAX_INTERVAL_MILLIS  = 
+    private final int maxIntervalMillis  = 
     		System.getenv("MAX_INTERVAL_MILLIS") != null ? Integer.parseInt(System.getenv("MAX_INTERVAL_MILLIS")) : 1000;
-    private static final double MULTIPLIER  = 
+    private final double multiplier  = 
     		System.getenv("MULTIPLIER") != null ? Double.parseDouble(System.getenv("MULTIPLIER")) : 1.5;
-    private static final double RANDOMIZATION_FACTOR  = 
+    private final double randomizationFactor  = 
     		System.getenv("RANDOMIZATION_FACTOR") != null ? Double.parseDouble(System.getenv("RANDOMIZATION_FACTOR")) : 0.5;
 
     public static PaymentManagerClient getInstance() {
@@ -58,53 +58,62 @@ public class PaymentManagerClient {
     
 	public WrapperTransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
-    	//final String authorizationHeader = "Bearer " + API_KEY;
+    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(GET_PAYMENT_EVENT_DETAILS, idPayment));
     	
-    	HttpRequestFactory requestFactory = HTTP_TRANSPORT.createRequestFactory(
-          (HttpRequest request) -> 
-            request.setParser(new JsonObjectParser(JSON_FACTORY))
-          );
+    	HttpRequest request = this.buildGetRequestToPM(url);
     	
-    	GenericUrl url = new GenericUrl(PAYMENT_MANAGER_HOST + String.format(GET_PAYMENT_EVENT_DETAILS, idPayment));
-    	
-    	HttpRequest request = requestFactory.buildGetRequest(url);
-    	HttpHeaders headers = request.getHeaders();
-    	//headers.set("Authorization", authorizationHeader);
-    	headers.set("Ocp-Apim-Subscription-Key", API_KEY);
-    	
-/** 
- * Retry section config
- */
-    	if (ENABLE_RETRY) {
-    		ExponentialBackOff backoff = new ExponentialBackOff.Builder()
-    				.setInitialIntervalMillis(INITIAL_INTERVAL_MILLIS)
-    				.setMaxElapsedTimeMillis(MAX_ELAPSED_TIME_MILLIS)
-    				.setMaxIntervalMillis(MAX_INTERVAL_MILLIS)
-    				.setMultiplier(MULTIPLIER)
-    				.setRandomizationFactor(RANDOMIZATION_FACTOR)
-    				.build();
-
-    		// Exponential Backoff is turned off by default in HttpRequest -> it's necessary include an instance of HttpUnsuccessfulResponseHandler to the HttpRequest to activate it
-    		// The default back-off on anabnormal HTTP response is BackOffRequired.ON_SERVER_ERROR (5xx) 
-    		request.setUnsuccessfulResponseHandler(
-    				new HttpBackOffUnsuccessfulResponseHandler(backoff));
+    	if (enableRetry) {
+    		this.setRequestRetry(request);
     	}
-/** 
- * END Retry section config
- */
-    	
-    	Type type = new TypeToken<WrapperTransactionDetails>() {}.getType();
-    	 	
+
+    	return this.executeCallToPM(request);
+    }
+	
+	public HttpRequest buildGetRequestToPM(GenericUrl url) throws IOException {
+
+		HttpRequestFactory requestFactory = httpTransport.createRequestFactory(
+				(HttpRequest request) -> 
+				request.setParser(new JsonObjectParser(jsonFactory))
+				);
+
+		HttpRequest request = requestFactory.buildGetRequest(url);
+		HttpHeaders headers = request.getHeaders();
+		headers.set("Ocp-Apim-Subscription-Key", apiKey);
+		return request;
+	}
+	
+	public void setRequestRetry(HttpRequest request) {
+		/** 
+		 * Retry section config
+		 */
+		ExponentialBackOff backoff = new ExponentialBackOff.Builder()
+				.setInitialIntervalMillis(initialIntervalMillis)
+				.setMaxElapsedTimeMillis(maxElapsedTimeMillis)
+				.setMaxIntervalMillis(maxIntervalMillis)
+				.setMultiplier(multiplier)
+				.setRandomizationFactor(randomizationFactor)
+				.build();
+
+		// Exponential Backoff is turned off by default in HttpRequest -> it's necessary include an instance of HttpUnsuccessfulResponseHandler to the HttpRequest to activate it
+		// The default back-off on anabnormal HTTP response is BackOffRequired.ON_SERVER_ERROR (5xx) 
+		request.setUnsuccessfulResponseHandler(
+				new HttpBackOffUnsuccessfulResponseHandler(backoff));
+	}
+	
+	public WrapperTransactionDetails executeCallToPM(HttpRequest request) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+		
+		Type type = new TypeToken<WrapperTransactionDetails>() {}.getType();
+	 	
     	WrapperTransactionDetails wrapperTD = null;
     	
     	HttpResponse res = request.execute();
     	
     	if (res.getStatusCode() / 100 == 4) {
-    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), url);
+    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), request.getUrl());
     		throw new PM4XXException(message);
     		
     	} else if (res.getStatusCode() / 100 == 5) {
-    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), url);
+    		String message = String.format("Error %s calling the service URL %s", res.getStatusCode(), request.getUrl());
     		throw new PM5XXException(message); 
     		
     	} else {
@@ -112,5 +121,6 @@ public class PaymentManagerClient {
     	}
     	
     	return wrapperTD;
-    }
+		
+	}
 }
