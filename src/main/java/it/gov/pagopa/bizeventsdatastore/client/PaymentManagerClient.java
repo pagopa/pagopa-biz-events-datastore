@@ -61,9 +61,9 @@ public class PaymentManagerClient {
     	//final String authorizationHeader = "Bearer " + API_KEY;
     	
     	HttpRequestFactory requestFactory = HTTP_TRANSPORT.createRequestFactory(
-          (HttpRequest request) -> {
-            request.setParser(new JsonObjectParser(JSON_FACTORY));
-          });
+          (HttpRequest request) -> 
+            request.setParser(new JsonObjectParser(JSON_FACTORY))
+          );
     	
     	GenericUrl url = new GenericUrl(PAYMENT_MANAGER_HOST + String.format(GET_PAYMENT_EVENT_DETAILS, idPayment));
     	
@@ -113,68 +113,4 @@ public class PaymentManagerClient {
     	
     	return wrapperTD;
     }
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-/*
-    public int createDebtPosition(Logger logger, String idPa, PaymentPositionModel body, String requestId) {
-        try {
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - createDebtPosition][requestId=" + requestId + "]  Calling GPD service: " + idPa);
-            Client client = ClientBuilder.newClient();
-            Response response = client
-                    .register(JacksonJaxbJsonProvider.class)
-                    .target(gpdHost + String.format(POST_DEBT_POSITIONS, idPa))
-                    .request()
-                    .header("X-Request-Id", requestId)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .post(Entity.json(body));
-            client.close();
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - createDebtPosition][requestId=" + requestId + "] HTTP status: " + response.getStatus());
-            return response.getStatus();
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR - createDebtPosition][requestId=" + requestId + "] error during the GPD call " + e.getMessage() + " "
-                    + e.getCause());
-            return -1;
-        }
-    }
-
-    public int publishDebtPosition(Logger logger, String idPa, String iupd, String requestId) {
-        try {
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition][requestId=" + requestId + "] Calling GPD service: " + idPa + "; " + iupd);
-            Client client = ClientBuilder.newClient();
-            Response response = client
-                    .register(JacksonJaxbJsonProvider.class)
-                    .target(gpdHost + String.format(PUBLISH_DEBT_POSITIONS, idPa, iupd))
-                    .request()
-                    .header("X-Request-Id", requestId)
-                    .accept(MediaType.APPLICATION_JSON)
-                    .post(Entity.json(null));
-            client.close();
-            logger.log(Level.INFO, () -> "[CuCreateDebtPositionFunction GPD - publishDebtPosition][requestId=" + requestId + "] HTTP status: " + response.getStatus());
-            return response.getStatus();
-        } catch (Exception e) {
-            logger.log(Level.SEVERE, () -> "[CuCreateDebtPositionFunction ERROR - publishDebtPosition][requestId=" + requestId + "] error during the GPD call " + e.getMessage() + " "
-                    + e.getCause());
-            return -1;
-        }
-    }
-    */
 }
