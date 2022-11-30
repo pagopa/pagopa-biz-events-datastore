@@ -29,16 +29,16 @@ import lombok.NoArgsConstructor;
 public class PaymentManagerClient {
 
 	private static PaymentManagerClient instance = null;
-	private static final String GET_PAYMENT_EVENT_DETAILS = "/payment-events/%s";
+	private static final String GET_PAYMENT_EVENT_DETAILS = "/payment-manager/events/v1/payment-events/%s";
 	
 	private final HttpTransport httpTransport = new NetHttpTransport();
 	private final JsonFactory jsonFactory = new GsonFactory();
-    private final String paymentManagerHost = System.getenv("PM_HOST"); // https://api.uat.platform.pagopa.it/payment-manager/pp-restapi-server/v4
-    private final String apiKey = System.getenv("API_KEY");
+    private final String paymentManagerHost = System.getenv("PM_CLIENT_HOST"); // https://api.uat.platform.pagopa.it/payment-manager/pp-restapi-server/v4
+    private final String apiKey = System.getenv("PM_API_KEY");
     
     // Retry ExponentialBackOff config 
     private final boolean enableRetry = 
-    		System.getenv("ENABLE_RETRY") != null ? Boolean.parseBoolean(System.getenv("ENABLE_RETRY")) : Boolean.FALSE;
+    		System.getenv("ENABLE_CLIENT_RETRY") != null ? Boolean.parseBoolean(System.getenv("ENABLE_CLIENT_RETRY")) : Boolean.FALSE;
     private final int initialIntervalMillis = 
     		System.getenv("INITIAL_INTERVAL_MILLIS") != null ? Integer.parseInt(System.getenv("INITIAL_INTERVAL_MILLIS")) : 500;
     private final int maxElapsedTimeMillis = 

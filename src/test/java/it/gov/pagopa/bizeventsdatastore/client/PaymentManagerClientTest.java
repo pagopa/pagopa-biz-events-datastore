@@ -47,7 +47,7 @@ class PaymentManagerClientTest {
         wireMockServer.start();
         
         configureFor(wireMockServer.port());
-        stubFor(get(urlEqualTo("/payment-events/123"))
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/123"))
                 .willReturn(aResponse()
                         .withStatus(200)
                         .withHeader("Content-Type", "application/json")
@@ -79,7 +79,7 @@ class PaymentManagerClientTest {
         wireMockServer.start();
         
         configureFor(wireMockServer.port());
-        stubFor(get(urlEqualTo("/payment-events/123"))
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/123"))
                 .willReturn(aResponse()
                         .withStatus(404)
                         .withHeader("Content-Type", "application/json")));
@@ -114,7 +114,7 @@ class PaymentManagerClientTest {
         wireMockServer.start();
         
         configureFor(wireMockServer.port());
-        stubFor(get(urlEqualTo("/payment-events/123"))
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/123"))
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withHeader("Content-Type", "application/json")));

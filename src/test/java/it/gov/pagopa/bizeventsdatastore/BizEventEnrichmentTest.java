@@ -97,7 +97,7 @@ class BizEventEnrichmentTest {
         wireMockServer.start();
         
         configureFor(wireMockServer.port());
-        stubFor(get(urlEqualTo("/payment-events/"+bizEventMsg.getIdPaymentManager()))
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/"+bizEventMsg.getIdPaymentManager()))
                 .willReturn(aResponse()
                         .withStatus(404)
                         .withHeader("Content-Type", "application/json")));
@@ -131,7 +131,7 @@ class BizEventEnrichmentTest {
         wireMockServer.start();
         
         configureFor(wireMockServer.port());
-        stubFor(get(urlEqualTo("/payment-events/"+bizEventMsg.getIdPaymentManager()))
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/"+bizEventMsg.getIdPaymentManager()))
                 .willReturn(aResponse()
                         .withStatus(500)
                         .withHeader("Content-Type", "application/json")));

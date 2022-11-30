@@ -69,12 +69,21 @@ microservice-chart:
     EVENT_HUB_NAMESPACE: "pagopa-d-evh-ns01"
     EVENT_HUB_NAME: "nodo-dei-pagamenti-biz-evt"
     EVENT_HUB_SENDER: "pagopa-biz-evt-tx"
+    PM_CLIENT_HOST: "https://api.dev.platform.pagopa.it"
+    ENABLE_CLIENT_RETRY: "false" # enable/disable the exponential retry feature on the client
+    INITIAL_INTERVAL_MILLIS: "500"
+    MAX_ELAPSED_TIME_MILLIS: "1000"
+    MAX_INTERVAL_MILLIS: "1000"
+    MULTIPLIER: "1.5"
+    RANDOMIZATION_FACTOR: "0.5"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
+    PDND_EVENTHUB_CONN_STRING: 'ehub-d-biz-pdnd-connection-string'
     COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
     EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-d-biz-key'
     COSMOS_DB_PRIMARY_KEY: 'cosmos-d-biz-key'
+    PM_API_KEY: '' # Ocp-Apim-Subscription-Key
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
   keyvault:
     name: "pagopa-d-bizevents-kv"
