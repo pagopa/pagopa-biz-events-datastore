@@ -61,9 +61,12 @@ public class BizEventEnrichment {
 				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
 					this.enrichBizEvent(be, logger);
 				}
-
-				// call the Event Hub
-				bizEvtMsg.setValue(be);
+				
+				// if status is DONE put the event on the Event Hub
+				if (be.getEventStatus()==StatusType.DONE) {
+					// call the Event Hub
+					bizEvtMsg.setValue(be);
+				}
 				
 				// call the Cosmos DB and update the event
 				document.setValue(be);
