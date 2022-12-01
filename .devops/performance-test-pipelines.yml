@@ -1,0 +1,55 @@
+# azure-pipelines.yml
+trigger: none
+
+parameters:
+  - name: "ENVIRONMENT"
+    displayName: "Environment"
+    type: string
+    values:
+      - "dev"
+      - "uat"
+    default: "uat"
+  - name: "TEST_TYPE"
+    displayName: "Test type"
+    type: string
+    values:
+      - "load"
+      - "spike"
+      - "stress"
+    default: "constant"
+  - name: "SCRIPT"
+    displayName: "Script name"
+    type: string
+    values:
+      - bizevent_processor
+  - name: "DB_NAME"
+    displayName: "DB name"
+    type: string
+    values:
+      - bizevents_datastorek6
+
+variables:
+  ${{ if eq(parameters['ENVIRONMENT'], 'dev') }}:
+    cosmosDBPrimaryKey: "$(DEV_COSMOS_DB_PRIMARY_KEY)"
+    eventHubTxPrimaryKey: "$(DEV_EHUB_TX_PRIMARY_KEY)"
+    poolImage: 'pagopa-dev-loadtest-linux'
+  ${{ if eq(parameters['ENVIRONMENT'], 'uat') }}:
+    cosmosDBPrimaryKey: "$(UAT_COSMOS_DB_PRIMARY_KEY)"
+    eventHubTxPrimaryKey: "$(UAT_EHUB_TX_PRIMARY_KEY)"
+    poolImage: 'pagopa-uat-loadtest-linux'
+
+pool:
+  name: $(poolImage)
+
+steps:
+  - script: |
+      cd ./performance-test/src
+      docker pull grafana/k6
+    displayName: Pull k6 image
+  - script: |
+      cd ./performance-test
+      sh ./run_performance_test.sh ${{ parameters.ENVIRONMENT }} ${{ parameters.TEST_TYPE }} ${{ parameters.SCRIPT }} ${{ parameters.DB_NAME }} $COSMOS_DB_PRIMARY_KEY $EVENT_HUB_TX_PRIMARY_KEY
+    displayName: Run k6 ${{ parameters.SCRIPT }} on ${{ parameters.ENVIRONMENT }}
+    env:
+      COSMOS_DB_PRIMARY_KEY: ${{ variables.cosmosDBPrimaryKey }}
+      EVENT_HUB_TX_PRIMARY_KEY: ${{ variables.eventHubTxPrimaryKey }} # should be used this env variable in script
