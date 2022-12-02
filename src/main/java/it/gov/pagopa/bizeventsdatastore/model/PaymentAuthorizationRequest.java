@@ -1,6 +1,6 @@
-package it.gov.pagopa.bizeventsdatastore.entity;
+package it.gov.pagopa.bizeventsdatastore.model;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.api.client.util.Key;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -13,11 +13,17 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class AuthRequest {
+public class PaymentAuthorizationRequest {
+	@Key
 	private String authOutcome;
-	private String guid;
+	@Key
+	private String requestId;
+	@Key
 	private String correlationId;
-	private String error;
-	@JsonProperty(value="auth_code")
+	@Key
 	private String authCode;
+	@Key
+	private String paymentMethodType;
+	@Key
+	private Details details;
 }
