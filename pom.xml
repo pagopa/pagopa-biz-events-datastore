@@ -5,7 +5,7 @@
 
     <groupId>it.gov.pagopa.bizeventsdatastore</groupId>
     <artifactId>biz-events-datastore-function</artifactId>
-    <version>0.0.1-2</version>
+    <version>0.0.1-5</version>
     <packaging>jar</packaging>
 
     <name>Biz Events Datastore Fn</name>
@@ -135,10 +135,10 @@
         </dependency>
         
         <dependency>
-    <groupId>com.google.http-client</groupId>
-    <artifactId>google-http-client-jackson2</artifactId>
-    <version>1.42.3</version>
-</dependency>
+          <groupId>com.google.http-client</groupId>
+          <artifactId>google-http-client-jackson2</artifactId>
+          <version>1.42.3</version>
+        </dependency>
         
         <dependency>
           <groupId>com.fasterxml.jackson.datatype</groupId>
@@ -156,6 +156,14 @@
             <scope>provided</scope>
         </dependency>
         
+        <!-- HTTP Client -->
+
+	    <dependency>
+		  <groupId>com.google.http-client</groupId>
+		  <artifactId>google-http-client</artifactId>
+		  <version>1.42.3</version>
+	    </dependency>
+
         <!-- HTTP Client -->
 
 	    <dependency>
