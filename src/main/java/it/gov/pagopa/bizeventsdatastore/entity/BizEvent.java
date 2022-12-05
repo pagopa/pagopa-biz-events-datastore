@@ -30,7 +30,9 @@ public class BizEvent {
 	private List<Transfer> transferList;
 	private TransactionDetails transactionDetails;
 	
-	// internal status field
+	// internal management field
 	@Builder.Default
 	private StatusType eventStatus = StatusType.NA;
+	@Builder.Default
+	private Integer eventRetryEnrichmentCount = 0;
 }

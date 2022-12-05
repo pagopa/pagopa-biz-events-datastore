@@ -110,9 +110,8 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
      
-        // test assertion -> this line means the call was successful
         assertEquals(StatusType.FAILED, result);
         
         wireMockServer.stop();
@@ -144,10 +143,10 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        BizEvent result = function.enrichBizEvent(bizEventMsg, logger);
      
-        // test assertion -> this line means the call was successful
-        assertEquals(StatusType.RETRY, result);
+        assertEquals(StatusType.RETRY, result.getEventStatus());
+        assertTrue (result.getEventRetryEnrichmentCount()>0);
         
         wireMockServer.stop();
     }
