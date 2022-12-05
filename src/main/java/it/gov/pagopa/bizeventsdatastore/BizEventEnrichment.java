@@ -22,6 +22,9 @@ import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
 
 public class BizEventEnrichment {
+	
+	private final int maxRetryAttempts = 
+			System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
 	@FunctionName("BizEventEnrichmentProcessor")
 	public void processBizEventEnrichment(
@@ -47,15 +50,17 @@ public class BizEventEnrichment {
 			OutputBinding<BizEvent> document,
 			final ExecutionContext context
 			) {
-
+		
 		for (BizEvent be: items) {
-			if (be.getEventStatus().equals(StatusType.NA) || be.getEventStatus().equals(StatusType.RETRY)) {
+			Logger logger = context.getLogger();
+	        String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s and numEnrichmentRetry %s", 
+	        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
+	        logger.info(message);
+	        
+	        if (be.getEventStatus().equals(StatusType.NA) || 
+	        		(be.getEventStatus().equals(StatusType.RETRY) && be.getEventRetryEnrichmentCount() <= maxRetryAttempts)) {
 				
-				Logger logger = context.getLogger();
-		        String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s", LocalDateTime.now(), be.getId(), be.getEventStatus());
-		        logger.info(message);
-				
-				be.setEventStatus(StatusType.DONE);
+	        	be.setEventStatus(StatusType.DONE);
 				
 				// check if the event is to enrich -> field 'idPaymentManager' valued but section 'transactionDetails' not present
 				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
@@ -68,23 +73,30 @@ public class BizEventEnrichment {
 					bizEvtMsg.setValue(be);
 				}
 				
-				// call the Cosmos DB and update the event
-				document.setValue(be);
+				/** 
+				 * call the Cosmos DB and update the event.
+				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
+				 */
+				if (be.getEventRetryEnrichmentCount() <= maxRetryAttempts) {
+					document.setValue(be);
+				}
 			}	
 		}
 	}
 
-	// the return of the status has the purpose of testing the correct execution of the method
-	public StatusType enrichBizEvent(BizEvent be, Logger logger) {
+	// the return of the BizEvent has the purpose of testing the correct execution of the method
+	public BizEvent enrichBizEvent(BizEvent be, Logger logger) {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
 			WrapperTransactionDetails wrapperTD = pmClient.getPMEventDetails(be.getIdPaymentManager());
 			be.setTransactionDetails(ObjectMapperUtils.map(wrapperTD.getTransactionDetails(), it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
-		} catch (PM5XXException | IOException | IllegalArgumentException e) {
+		} catch (PM5XXException | IOException e) {
 			logger.warning("non-blocking exception occurred: " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);
-		} catch (PM4XXException e) {
+			// retry count increment
+			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
+		} catch (PM4XXException | IllegalArgumentException e) {
 			logger.severe("blocking exception occurred: " + e.getMessage());
 			be.setEventStatus(StatusType.FAILED);
 		} catch (Exception e) {
@@ -92,6 +104,6 @@ public class BizEventEnrichment {
 			be.setEventStatus(StatusType.FAILED);
 		}
 		
-		return be.getEventStatus();
+		return be;
 	}
 }

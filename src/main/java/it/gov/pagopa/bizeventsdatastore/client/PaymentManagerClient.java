@@ -29,12 +29,15 @@ import lombok.NoArgsConstructor;
 public class PaymentManagerClient {
 
 	private static PaymentManagerClient instance = null;
-	private static final String GET_PAYMENT_EVENT_DETAILS = "/payment-manager/events/v1/payment-events/%s";
+	
 	
 	private final HttpTransport httpTransport = new NetHttpTransport();
 	private final JsonFactory jsonFactory = new GsonFactory();
-    private final String paymentManagerHost = System.getenv("PM_CLIENT_HOST"); // https://api.uat.platform.pagopa.it/payment-manager/pp-restapi-server/v4
+    private final String paymentManagerHost = System.getenv("PM_CLIENT_HOST"); // es: https://api.xxx.platform.pagopa.it
+    private final String getPaymentEventDetails = 
+    		System.getenv("PM_GET_PAYMENT_DETAILS") != null ? System.getenv("PM_GET_PAYMENT_DETAILS") : "/payment-manager/events/v1/payment-events/%s";
     private final String apiKey = System.getenv("PM_API_KEY");
+    
     
     // Retry ExponentialBackOff config 
     private final boolean enableRetry = 
@@ -59,7 +62,7 @@ public class PaymentManagerClient {
     
 	public WrapperTransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
-    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(GET_PAYMENT_EVENT_DETAILS, idPayment));
+    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment));
     	
     	HttpRequest request = this.buildGetRequestToPM(url);
     	

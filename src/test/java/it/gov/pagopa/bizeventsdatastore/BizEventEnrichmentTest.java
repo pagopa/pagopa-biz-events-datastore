@@ -85,6 +85,39 @@ class BizEventEnrichmentTest {
     }
 	
 	@Test
+    void runMaxRetry() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+		
+		PaymentManagerClient pmClient = mock(PaymentManagerClient.class);
+		
+		// set mock instance in the singleton
+		BizEventEnrichmentTest.setMock(pmClient);
+		
+		// precondition
+		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
+		when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
+		
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        // status Retry but with max attemps passed -> No action
+        bizEventMsg.setEventStatus(StatusType.RETRY);
+        bizEventMsg.setEventRetryEnrichmentCount(4);
+        bizEvtMsgList.add (bizEventMsg);
+        @SuppressWarnings("unchecked")
+        OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<BizEvent> BizEventToCosmos = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+
+        // test execution
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+	
+	@Test
     void run404() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 	
@@ -110,9 +143,8 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
      
-        // test assertion -> this line means the call was successful
         assertEquals(StatusType.FAILED, result);
         
         wireMockServer.stop();
@@ -144,10 +176,10 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        BizEvent result = function.enrichBizEvent(bizEventMsg, logger);
      
-        // test assertion -> this line means the call was successful
-        assertEquals(StatusType.RETRY, result);
+        assertEquals(StatusType.RETRY, result.getEventStatus());
+        assertTrue (result.getEventRetryEnrichmentCount()>0);
         
         wireMockServer.stop();
     }
