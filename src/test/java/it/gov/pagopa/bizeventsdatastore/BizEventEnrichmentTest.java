@@ -92,10 +92,6 @@ class BizEventEnrichmentTest {
 		// set mock instance in the singleton
 		BizEventEnrichmentTest.setMock(pmClient);
 		
-		// precondition
-		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
-		when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
-		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
         

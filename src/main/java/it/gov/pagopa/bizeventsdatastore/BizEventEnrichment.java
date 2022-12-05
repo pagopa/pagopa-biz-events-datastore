@@ -92,15 +92,15 @@ public class BizEventEnrichment {
 			WrapperTransactionDetails wrapperTD = pmClient.getPMEventDetails(be.getIdPaymentManager());
 			be.setTransactionDetails(ObjectMapperUtils.map(wrapperTD.getTransactionDetails(), it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
-			logger.warning("non-blocking exception occurred: " + e.getMessage());
+			logger.warning("non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);
 			// retry count increment
 			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
 		} catch (PM4XXException | IllegalArgumentException e) {
-			logger.severe("blocking exception occurred: " + e.getMessage());
+			logger.severe("blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.FAILED);
 		} catch (Exception e) {
-			logger.severe("blocking unexpected exception occurred: " + e.getMessage());
+			logger.severe("blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.FAILED);
 		}
 		
