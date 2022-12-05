@@ -18,7 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -46,8 +46,11 @@ class BizEventEnrichmentTest {
 	@Mock
     ExecutionContext context; 
 	
-	@AfterAll
-	public static void teardown() throws Exception {
+	WrapperTransactionDetails wrapperTD;
+	
+	
+	@AfterEach
+	public void teardown() throws Exception {
 	   // reset singleton
 	   Field instance = PaymentManagerClient.class.getDeclaredField("instance");
 	   instance.setAccessible(true);
