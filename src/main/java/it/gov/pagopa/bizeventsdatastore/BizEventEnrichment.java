@@ -78,6 +78,9 @@ public class BizEventEnrichment {
 				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
 				 */
 				if (be.getEventRetryEnrichmentCount() <= maxRetryAttempts) {
+					message = String.format("BizEventEnrichment COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s", 
+			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
+			        logger.info(message);
 					document.setValue(be);
 				}
 			}	

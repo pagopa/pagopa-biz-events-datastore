@@ -117,6 +117,39 @@ class BizEventEnrichmentTest {
     }
 	
 	@Test
+    void run401() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
+	
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        
+        WireMockServer wireMockServer = new WireMockServer(8881);
+        wireMockServer.start();
+        
+        configureFor(wireMockServer.port());
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/"+bizEventMsg.getIdPaymentManager()))
+                .willReturn(aResponse()
+                        .withStatus(401)
+                        .withHeader("Content-Type", "application/json")));
+        
+        Field host = PaymentManagerClient.class.getDeclaredField("paymentManagerHost");
+        host.setAccessible(true); // Suppress Java language access checking
+        host.set(pmClient, "http://localhost:8881");
+        
+        Field retry = PaymentManagerClient.class.getDeclaredField("enableRetry");
+        retry.setAccessible(true); // Suppress Java language access checking
+        retry.set(pmClient, true);
+
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+     
+        assertEquals(StatusType.FAILED, result);
+        
+        wireMockServer.stop();
+    }
+	
+	@Test
     void run404() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 	
