@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -67,7 +68,7 @@ class BizEventEnrichmentTest {
 		
 		// precondition
 		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
-		when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
+		lenient().when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
