@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -18,7 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.junit.jupiter.api.AfterAll;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -46,8 +47,11 @@ class BizEventEnrichmentTest {
 	@Mock
     ExecutionContext context; 
 	
-	@AfterAll
-	public static void teardown() throws Exception {
+	WrapperTransactionDetails wrapperTD;
+	
+	
+	@AfterEach
+	public void teardown() throws Exception {
 	   // reset singleton
 	   Field instance = PaymentManagerClient.class.getDeclaredField("instance");
 	   instance.setAccessible(true);
@@ -64,7 +68,7 @@ class BizEventEnrichmentTest {
 		
 		// precondition
 		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
-		when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
+		lenient().when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -82,6 +86,68 @@ class BizEventEnrichmentTest {
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
+    }
+	
+	@Test
+    void runMaxRetry() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+		
+		PaymentManagerClient pmClient = mock(PaymentManagerClient.class);
+		
+		// set mock instance in the singleton
+		BizEventEnrichmentTest.setMock(pmClient);
+		
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        // status Retry but with max attemps passed -> No action
+        bizEventMsg.setEventStatus(StatusType.RETRY);
+        bizEventMsg.setEventRetryEnrichmentCount(4);
+        bizEvtMsgList.add (bizEventMsg);
+        @SuppressWarnings("unchecked")
+        OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<BizEvent> BizEventToCosmos = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+
+        // test execution
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+	
+	@Test
+    void run401() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
+	
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        
+        WireMockServer wireMockServer = new WireMockServer(8881);
+        wireMockServer.start();
+        
+        configureFor(wireMockServer.port());
+        stubFor(get(urlEqualTo("/payment-manager/events/v1/payment-events/"+bizEventMsg.getIdPaymentManager()))
+                .willReturn(aResponse()
+                        .withStatus(401)
+                        .withHeader("Content-Type", "application/json")));
+        
+        Field host = PaymentManagerClient.class.getDeclaredField("paymentManagerHost");
+        host.setAccessible(true); // Suppress Java language access checking
+        host.set(pmClient, "http://localhost:8881");
+        
+        Field retry = PaymentManagerClient.class.getDeclaredField("enableRetry");
+        retry.setAccessible(true); // Suppress Java language access checking
+        retry.set(pmClient, true);
+
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+     
+        assertEquals(StatusType.FAILED, result);
+        
+        wireMockServer.stop();
     }
 	
 	@Test
@@ -110,9 +176,8 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
      
-        // test assertion -> this line means the call was successful
         assertEquals(StatusType.FAILED, result);
         
         wireMockServer.stop();
@@ -144,10 +209,10 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger);
+        BizEvent result = function.enrichBizEvent(bizEventMsg, logger);
      
-        // test assertion -> this line means the call was successful
-        assertEquals(StatusType.RETRY, result);
+        assertEquals(StatusType.RETRY, result.getEventStatus());
+        assertTrue (result.getEventRetryEnrichmentCount()>0);
         
         wireMockServer.stop();
     }
