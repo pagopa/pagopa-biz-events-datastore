@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.logging.Logger;
@@ -12,13 +11,7 @@ import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.EventHubTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
 
-import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
-import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
-import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
-import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
 /**
  * Azure Functions with Azure Queue trigger.
