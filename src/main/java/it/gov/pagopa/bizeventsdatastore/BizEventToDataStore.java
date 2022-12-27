@@ -12,6 +12,7 @@ import com.microsoft.azure.functions.annotation.EventHubTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import lombok.NonNull;
 
 /**
  * Azure Functions with Azure Queue trigger.
@@ -34,7 +35,7 @@ public class BizEventToDataStore {
     	            collectionName = "biz-events",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
-    	            OutputBinding<List<BizEvent>> document,
+                    @NonNull OutputBinding<List<BizEvent>> document,
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
@@ -47,8 +48,10 @@ public class BizEventToDataStore {
             if (document != null) {
                 document.setValue(bizEvtMsg);
             }
+        } catch (NullPointerException e) {
+            logger.severe("NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         } catch (Exception e) {
-            logger.severe("Exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
+            logger.severe("Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         }
 
     }
