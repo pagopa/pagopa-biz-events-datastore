@@ -50,7 +50,6 @@ public class BizEventToDataStore {
 //        logger.info(message);
 
         // persist the item
-        PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
         try {
             document.setValue(bizEvtMsg);
         } catch (Exception e) {
