@@ -44,7 +44,9 @@ public class BizEventToDataStore {
 
         // persist the item
         try {
-            document.setValue(bizEvtMsg);
+            if (document != null) {
+                document.setValue(bizEvtMsg);
+            }
         } catch (Exception e) {
             logger.severe("Exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         }
