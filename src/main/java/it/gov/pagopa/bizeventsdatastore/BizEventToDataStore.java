@@ -35,7 +35,7 @@ public class BizEventToDataStore {
     	            collectionName = "biz-events",
     	            createIfNotExists = false,
                     connectionStringSetting = "COSMOS_CONN_STRING")
-                    @NonNull OutputBinding<List<BizEvent>> document,
+                    @NonNull OutputBinding<List<BizEvent>> documentdb,
             final ExecutionContext context) {
 
         Logger logger = context.getLogger();
@@ -45,9 +45,7 @@ public class BizEventToDataStore {
 
         // persist the item
         try {
-            if (document != null) {
-                document.setValue(bizEvtMsg);
-            }
+            documentdb.setValue(bizEvtMsg);
         } catch (NullPointerException e) {
             logger.severe("NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         } catch (Exception e) {

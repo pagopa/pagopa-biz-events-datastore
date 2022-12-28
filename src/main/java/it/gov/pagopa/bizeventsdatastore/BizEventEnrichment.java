@@ -47,7 +47,7 @@ public class BizEventEnrichment {
 					collectionName = "biz-events",
 					createIfNotExists = false,
 					connectionStringSetting = "COSMOS_CONN_STRING")
-			OutputBinding<BizEvent> document,
+			OutputBinding<BizEvent> documentdb,
 			final ExecutionContext context
 			) {
 		
@@ -81,7 +81,7 @@ public class BizEventEnrichment {
 					message = String.format("BizEventEnrichment COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s", 
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
 			        logger.info(message);
-					document.setValue(be);
+					documentdb.setValue(be);
 				}
 			}	
 		}
