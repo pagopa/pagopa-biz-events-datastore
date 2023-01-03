@@ -3,6 +3,7 @@ package it.gov.pagopa.bizeventsdatastore;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -100,10 +101,12 @@ public class BizEventEnrichment {
 			// retry count increment
 			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
 		} catch (PM4XXException | IllegalArgumentException e) {
-			logger.severe("blocking exception occurred for event with id "+be.getId()+" : " + e.getStackTrace());
+			String errorMsg = "blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 		} catch (Exception e) {
-			logger.severe("blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getStackTrace());
+			String errorMsg = "blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 		}
 		
