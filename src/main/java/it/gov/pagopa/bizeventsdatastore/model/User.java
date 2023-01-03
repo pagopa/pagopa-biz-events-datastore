@@ -19,7 +19,7 @@ public class User {
 	
 	@Key(value="idUser")
 	@JsonProperty("idUser")
-	private String userId;
+	private long userId;
 	@Key
 	private String userStatus;
 	@Key

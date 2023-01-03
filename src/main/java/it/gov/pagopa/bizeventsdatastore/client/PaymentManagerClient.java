@@ -20,7 +20,7 @@ import com.google.gson.reflect.TypeToken;
 
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -60,7 +60,7 @@ public class PaymentManagerClient {
         return instance;
     }
     
-	public WrapperTransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+	public TransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
     	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment));
     	
@@ -104,15 +104,15 @@ public class PaymentManagerClient {
 				new HttpBackOffUnsuccessfulResponseHandler(backoff));
 	}
 	
-	public WrapperTransactionDetails executeCallToPM(HttpRequest request) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+	public TransactionDetails executeCallToPM(HttpRequest request) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
 		
-		Type type = new TypeToken<WrapperTransactionDetails>() {}.getType();
+		Type type = new TypeToken<TransactionDetails>() {}.getType();
 	 	
-    	WrapperTransactionDetails wrapperTD = null;
+		TransactionDetails wrapperTD = null;
     	
     	try {
     		HttpResponse res = request.execute();
-    		wrapperTD = (WrapperTransactionDetails) res.parseAs(type);
+    		wrapperTD = (TransactionDetails) res.parseAs(type);
     	} catch (HttpResponseException e) {
     		if (e.getStatusCode() / 100 == 4) {
         		String message = String.format("Error %s calling the service URL %s", e.getStatusCode(), request.getUrl());
