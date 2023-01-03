@@ -13,7 +13,11 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaymentEvent {
+public class Psp {
 	@Key
-	private Transaction transaction;
+	private String idChannel;
+	@Key
+	private String businessName;
+	@Key
+	private String serviceName;
 }

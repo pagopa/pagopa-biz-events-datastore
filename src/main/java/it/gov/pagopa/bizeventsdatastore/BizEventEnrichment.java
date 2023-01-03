@@ -17,7 +17,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
 
@@ -92,8 +92,8 @@ public class BizEventEnrichment {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
-			WrapperTransactionDetails wrapperTD = pmClient.getPMEventDetails(be.getIdPaymentManager());
-			be.setTransactionDetails(ObjectMapperUtils.map(wrapperTD.getTransactionDetails(), it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
+			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager());
+			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
 			logger.warning("non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);
