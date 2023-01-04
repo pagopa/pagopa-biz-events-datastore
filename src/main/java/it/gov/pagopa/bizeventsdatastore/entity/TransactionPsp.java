@@ -11,11 +11,8 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class PaymentAuthorizationRequest {
-	private String authOutcome;
-	private String requestId;
-	private String correlationId;
-	private String authCode;
-	private String paymentMethodType;
-	private Details details;
+public class TransactionPsp {
+	private String idChannel;
+	private String businessName;
+	private String serviceName;
 }
