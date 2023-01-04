@@ -17,7 +17,7 @@ import lombok.Setter;
 @Builder
 public class WalletItem {
 	@Key
-	private String idWallet;
+	private long idWallet;
 	@Key
 	private String walletType;
 	@Key

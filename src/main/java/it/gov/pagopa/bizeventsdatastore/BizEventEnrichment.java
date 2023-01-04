@@ -3,6 +3,7 @@ package it.gov.pagopa.bizeventsdatastore;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -17,7 +18,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
 
@@ -92,18 +93,20 @@ public class BizEventEnrichment {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
-			WrapperTransactionDetails wrapperTD = pmClient.getPMEventDetails(be.getIdPaymentManager());
-			be.setTransactionDetails(ObjectMapperUtils.map(wrapperTD.getTransactionDetails(), it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
+			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager());
+			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
 			logger.warning("non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);
 			// retry count increment
 			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
 		} catch (PM4XXException | IllegalArgumentException e) {
-			logger.severe("blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
+			String errorMsg = "blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 		} catch (Exception e) {
-			logger.severe("blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage());
+			String errorMsg = "blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 		}
 		

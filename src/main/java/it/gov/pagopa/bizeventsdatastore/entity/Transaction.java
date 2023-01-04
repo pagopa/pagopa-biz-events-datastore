@@ -1,6 +1,4 @@
-package it.gov.pagopa.bizeventsdatastore.model;
-
-import com.google.api.client.util.Key;
+package it.gov.pagopa.bizeventsdatastore.entity;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -14,29 +12,16 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Transaction {
-	@Key
 	private long idTransaction;
-	@Key
 	private long grandTotal;
-	@Key
 	private long amount;
-	@Key
 	private long fee;
-	@Key
 	private String transactionStatus;
-	@Key
 	private String accountingStatus;
-	@Key
 	private String rrn;
-	@Key
 	private String authorizationCode;
-	@Key
 	private String creationDate;
-	@Key
 	private String numAut;
-	@Key
 	private String accountCode;
-	@Key
-	private Psp psp;
-	
+	private TransactionPsp psp;
 }

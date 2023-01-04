@@ -12,7 +12,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class TransactionDetails {
+	private String origin;
 	private User user;
-	private PaymentAuthorizationRequest paymentAuthorizationRequest;
+	private Transaction transaction;
 	private WalletItem wallet;
 }

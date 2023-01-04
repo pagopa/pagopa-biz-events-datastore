@@ -35,7 +35,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,7 +47,7 @@ class BizEventEnrichmentTest {
 	@Mock
     ExecutionContext context; 
 	
-	WrapperTransactionDetails wrapperTD;
+	TransactionDetails wrapperTD;
 	
 	
 	@AfterEach
@@ -67,7 +67,7 @@ class BizEventEnrichmentTest {
 		BizEventEnrichmentTest.setMock(pmClient);
 		
 		// precondition
-		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
+		TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
 		lenient().when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
@@ -86,6 +86,28 @@ class BizEventEnrichmentTest {
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
+    }
+	
+	@Test
+    void runException() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+		
+		PaymentManagerClient pmClient = mock(PaymentManagerClient.class);
+		
+		// set mock instance in the singleton
+		BizEventEnrichmentTest.setMock(pmClient);
+		
+		// precondition
+		when(pmClient.getPMEventDetails(anyString())).thenThrow(new RuntimeException("test exception"));
+		
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        bizEvtMsgList.add (bizEventMsg);
+        
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+        
+        assertEquals(StatusType.FAILED, result);
     }
 	
 	@Test
@@ -216,6 +238,7 @@ class BizEventEnrichmentTest {
         
         wireMockServer.stop();
     }
+	
 	
 	private static void setMock(PaymentManagerClient mock) {
 	    try {

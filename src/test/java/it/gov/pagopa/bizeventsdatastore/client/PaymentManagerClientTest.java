@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.WrapperTransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,7 +41,7 @@ class PaymentManagerClientTest {
 	@Test
 	void getPMEventDetails() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException, IOException, PM5XXException, PM4XXException {
 		
-		WrapperTransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", WrapperTransactionDetails.class);
+		TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
 		
 		WireMockServer wireMockServer = new WireMockServer(8881);
         wireMockServer.start();
@@ -61,13 +61,12 @@ class PaymentManagerClientTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
         
-        WrapperTransactionDetails wtd = pmClient.getPMEventDetails("123");
+        TransactionDetails wtd = pmClient.getPMEventDetails("123");
         
         assertNotNull(wtd);
-        assertNotNull(wtd.getTransactionDetails());
-        assertEquals("0",wtd.getTransactionDetails().getUser().getUserId());
-        assertEquals("OK",wtd.getTransactionDetails().getPaymentAuthorizationRequest().getAuthOutcome());
-        assertEquals("0",wtd.getTransactionDetails().getWallet().getIdWallet()); 
+        assertEquals(Long.valueOf("78385"),wtd.getUser().getUserId());
+        assertEquals(Long.valueOf("7090141621"),wtd.getTransaction().getIdTransaction());
+        assertEquals(Long.valueOf("125647"),wtd.getWallet().getIdWallet()); 
         
         wireMockServer.stop();
 	}
