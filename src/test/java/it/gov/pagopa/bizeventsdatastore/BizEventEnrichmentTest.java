@@ -239,6 +239,7 @@ class BizEventEnrichmentTest {
         wireMockServer.stop();
     }
 	
+	
 	private static void setMock(PaymentManagerClient mock) {
 	    try {
 	        Field instance = PaymentManagerClient.class.getDeclaredField("instance");
