@@ -12,6 +12,7 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class TransactionDetails {
+	private String origin;
 	private User user;
 	private Transaction transaction;
 	private WalletItem wallet;
