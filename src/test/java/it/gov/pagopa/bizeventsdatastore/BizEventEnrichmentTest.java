@@ -89,6 +89,28 @@ class BizEventEnrichmentTest {
     }
 	
 	@Test
+    void runException() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+		
+		PaymentManagerClient pmClient = mock(PaymentManagerClient.class);
+		
+		// set mock instance in the singleton
+		BizEventEnrichmentTest.setMock(pmClient);
+		
+		// precondition
+		when(pmClient.getPMEventDetails(anyString())).thenThrow(new RuntimeException("test exception"));
+		
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        bizEvtMsgList.add (bizEventMsg);
+        
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+        
+        assertEquals(StatusType.FAILED, result);
+    }
+	
+	@Test
     void runMaxRetry() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
 		
 		PaymentManagerClient pmClient = mock(PaymentManagerClient.class);

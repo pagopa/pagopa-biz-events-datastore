@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
-import it.gov.pagopa.bizeventsdatastore.model.Psp;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
