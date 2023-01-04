@@ -21,7 +21,7 @@ public class User {
 	@JsonProperty("idUser")
 	private long userId;
 	@Key
-	private String userStatus;
+	private long userStatus;
 	@Key
 	private String userStatusDescription;
 	@Key
