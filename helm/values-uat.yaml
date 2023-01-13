@@ -77,7 +77,7 @@ microservice-chart:
     MAX_INTERVAL_MILLIS: "1000"
     MULTIPLIER: "1.5"
     RANDOMIZATION_FACTOR: "0.5"
-    MAX_RETRY_ON_TRIGGER_ATTEMPTS: "1"
+    MAX_RETRY_ON_TRIGGER_ATTEMPTS: "10"
     TRIGGER_SCHEDULE: "0 */2 * * * *"
     TRIGGER_SQL_QUERY: "select TOP 10 * from Items r where r.eventStatus = 'FAILED' and r.version = '2' order by r.paymentInfo.paymentDateTime ASC"
   envSecret:
@@ -94,4 +94,12 @@ microservice-chart:
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
   nodeSelector: {}
   tolerations: []
-  affinity: {}
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+          - matchExpressions:
+              - key: node_type
+                operator: In
+                values:
+                  - "user"

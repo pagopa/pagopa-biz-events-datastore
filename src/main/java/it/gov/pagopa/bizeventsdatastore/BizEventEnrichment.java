@@ -100,14 +100,17 @@ public class BizEventEnrichment {
 			be.setEventStatus(StatusType.RETRY);
 			// retry count increment
 			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
+			be.setEventErrorMessage(e.getMessage());
 		} catch (PM4XXException | IllegalArgumentException e) {
 			String errorMsg = "blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
 			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
+			be.setEventErrorMessage(e.getMessage());
 		} catch (Exception e) {
 			String errorMsg = "blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
 			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
+			be.setEventErrorMessage(e.getMessage());
 		}
 		
 		return be;

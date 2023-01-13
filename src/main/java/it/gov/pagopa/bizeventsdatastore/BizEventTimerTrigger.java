@@ -51,6 +51,8 @@ public class BizEventTimerTrigger {
 
 			be.setEventStatus(StatusType.RETRY);
 			be.setEventRetryEnrichmentCount(0);
+			be.setEventErrorMessage("");
+			be.setEventTriggeredBySchedule(Boolean.TRUE);
 			// UPDATE biz-event status
 			message = String.format("BizEventTimerTriggerProcessor function COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
