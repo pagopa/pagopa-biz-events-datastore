@@ -35,4 +35,8 @@ public class BizEvent {
 	private StatusType eventStatus = StatusType.NA;
 	@Builder.Default
 	private Integer eventRetryEnrichmentCount = 0;
+	@Builder.Default
+	private Boolean eventTriggeredBySchedule = Boolean.FALSE;
+	private String eventErrorMessage;
+	
 }
