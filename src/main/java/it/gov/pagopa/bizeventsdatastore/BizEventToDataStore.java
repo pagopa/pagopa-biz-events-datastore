@@ -40,8 +40,8 @@ public class BizEventToDataStore {
 
         Logger logger = context.getLogger();
 
-//        String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
-//        logger.info(message);
+        String message = String.format("BizEventToDataStore function called at: %s", LocalDateTime.now());
+        logger.info(message);
 
         // persist the item
         try {
