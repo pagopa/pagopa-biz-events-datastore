@@ -44,7 +44,7 @@ class BizEventTimerTriggerTest {
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 		bizEvtMsgList.add (bizEventMsg);
 		@SuppressWarnings("unchecked")
-		OutputBinding<BizEvent> BizEventToCosmos = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+		OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
 		function.processBizEventScheduledTrigger("timer info", bizEvtMsgList.toArray(new BizEvent[bizEvtMsgList.size()]), BizEventToCosmos, context);
 		

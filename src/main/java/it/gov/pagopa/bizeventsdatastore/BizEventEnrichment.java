@@ -56,8 +56,8 @@ public class BizEventEnrichment {
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
 		Logger logger = context.getLogger();
 
-		String msg = String.format("BizEventEnrichment function numevents %d", items.size());
-		logger.info(msg);
+//		String msg = String.format("BizEventEnrichment function numevents %d", items.size());
+//		logger.info(msg);
 
 		for (BizEvent be: items) {
 			
