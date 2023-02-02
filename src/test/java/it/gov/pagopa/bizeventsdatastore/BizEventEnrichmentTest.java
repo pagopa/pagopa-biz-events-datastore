@@ -79,7 +79,7 @@ class BizEventEnrichmentTest {
         @SuppressWarnings("unchecked")
         OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
-        OutputBinding<BizEvent> BizEventToCosmos = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
         function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
@@ -130,7 +130,7 @@ class BizEventEnrichmentTest {
         @SuppressWarnings("unchecked")
         OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
-        OutputBinding<BizEvent> BizEventToCosmos = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
         function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;

@@ -2,6 +2,7 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -48,18 +49,24 @@ public class BizEventEnrichment {
 					collectionName = "biz-events",
 					createIfNotExists = false,
 					connectionStringSetting = "COSMOS_CONN_STRING")
-			OutputBinding<BizEvent> documentdb,
+			OutputBinding<List<BizEvent>> documentdb,
 			final ExecutionContext context
 			) {
 		
+		List<BizEvent> itemsToUpdate = new ArrayList<>();
+		Logger logger = context.getLogger();
+
+//		String msg = String.format("BizEventEnrichment function numevents %d", items.size());
+//		logger.info(msg);
+
 		for (BizEvent be: items) {
-			Logger logger = context.getLogger();
-	        String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s and numEnrichmentRetry %s", 
-	        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-	        logger.info(message);
-	        
+			
 	        if (be.getEventStatus().equals(StatusType.NA) || 
 	        		(be.getEventStatus().equals(StatusType.RETRY) && be.getEventRetryEnrichmentCount() <= maxRetryAttempts)) {
+	        	
+	        	String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s and numEnrichmentRetry %s", 
+		        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
+		        logger.info(message);
 				
 	        	be.setEventStatus(StatusType.DONE);
 				
@@ -75,17 +82,19 @@ public class BizEventEnrichment {
 				}
 				
 				/** 
-				 * call the Cosmos DB and update the event.
+				 * Populates the list with events to update.
 				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
 				 */
 				if (be.getEventRetryEnrichmentCount() <= maxRetryAttempts) {
 					message = String.format("BizEventEnrichment COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s", 
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
 			        logger.info(message);
-					documentdb.setValue(be);
+			        itemsToUpdate.add(be);
 				}
 			}	
 		}
+		
+		documentdb.setValue(itemsToUpdate);
 	}
 
 	// the return of the BizEvent has the purpose of testing the correct execution of the method

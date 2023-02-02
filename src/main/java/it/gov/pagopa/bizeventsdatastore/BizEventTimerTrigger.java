@@ -1,6 +1,8 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
@@ -39,11 +41,13 @@ public class BizEventTimerTrigger {
 					collectionName = "biz-events",
 					createIfNotExists = false,
 					connectionStringSetting = "COSMOS_CONN_STRING")
-			OutputBinding<BizEvent> documentdb,
+			OutputBinding<List<BizEvent>> documentdb,
 			final ExecutionContext context) {
+		
+		List<BizEvent> itemsToUpdate = new ArrayList<>();
+		Logger logger = context.getLogger();
 
 		for (BizEvent be: items) {
-			Logger logger = context.getLogger();
 			String message = String.format("BizEventTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
 					+ "In progress the event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), items.length, be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
@@ -53,13 +57,14 @@ public class BizEventTimerTrigger {
 			be.setEventRetryEnrichmentCount(0);
 			be.setEventErrorMessage("");
 			be.setEventTriggeredBySchedule(Boolean.TRUE);
-			// UPDATE biz-event status
+			// Populates the list for the UPDATE of biz-event status
 			message = String.format("BizEventTimerTriggerProcessor function COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
 			logger.info(message);
-			documentdb.setValue(be);
+			itemsToUpdate.add(be);
 		}
-
+		
+		documentdb.setValue(itemsToUpdate);
 
 	}
 }

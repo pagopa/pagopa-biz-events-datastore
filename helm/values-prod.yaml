@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: pagopapcommonacr.azurecr.io/pagopabizeventsdatastore
-    tag: "0.2.1"
+    tag: "0.4.2"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -78,9 +78,8 @@ microservice-chart:
     MULTIPLIER: "1.5"
     RANDOMIZATION_FACTOR: "0.5"
     MAX_RETRY_ON_TRIGGER_ATTEMPTS: "1"
-    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: true
-    TRIGGER_SCHEDULE: "0 0 5 31 2 ?"
-    TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false) order by r.paymentInfo.paymentDateTime ASC"
+    TRIGGER_SCHEDULE: "0 */20 * * * *"
+    TRIGGER_SQL_QUERY: "select TOP 10000 * from Items r where r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false) order by r.paymentInfo.paymentDateTime ASC"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-p-biz-connection-string'
