@@ -1,8 +1,6 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -21,7 +19,6 @@ import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)

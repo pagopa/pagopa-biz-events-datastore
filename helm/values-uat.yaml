@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: pagopaucommonacr.azurecr.io/pagopabizeventsdatastore
-    tag: "0.4.3"
+    tag: "0.4.4"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -79,7 +79,8 @@ microservice-chart:
     RANDOMIZATION_FACTOR: "0.5"
     MAX_RETRY_ON_TRIGGER_ATTEMPTS: "1"
     TRIGGER_SCHEDULE: "0 */1 * * * *"
-    TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount > 0) order by r.paymentInfo.paymentDateTime ASC"
+    TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
+    TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-u-biz-connection-string'

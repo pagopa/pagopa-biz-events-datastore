@@ -1,5 +1,6 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
+import java.time.ZonedDateTime;
 import java.util.List;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
@@ -29,6 +30,8 @@ public class BizEvent {
 	private PaymentInfo paymentInfo;
 	private List<Transfer> transferList;
 	private TransactionDetails transactionDetails;
+	@Builder.Default
+	private Long timestamp = ZonedDateTime.now().toInstant().toEpochMilli();
 	
 	// internal management field
 	@Builder.Default
