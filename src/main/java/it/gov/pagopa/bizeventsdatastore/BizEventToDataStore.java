@@ -1,17 +1,21 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.Cardinality;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.EventHubTrigger;
 import com.microsoft.azure.functions.annotation.FunctionName;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import lombok.NonNull;
 
 /**
@@ -29,6 +33,7 @@ public class BizEventToDataStore {
                     connection = "EVENTHUB_CONN_STRING",
                     cardinality = Cardinality.MANY)
     		List<BizEvent> bizEvtMsg,
+    		@BindingName(value = "PropertiesArray") Map<String, Object>[] properties,
             @CosmosDBOutput(
     	            name = "BizEventDatastore",
     	            databaseName = "db",
@@ -40,12 +45,24 @@ public class BizEventToDataStore {
 
         Logger logger = context.getLogger();
 
-        String message = String.format("BizEventToDataStore function called at %s with events list size %s", LocalDateTime.now(), bizEvtMsg.size());
+        String message = String.format("BizEventToDataStore function called at %s with events list size %s and properties size %s", LocalDateTime.now(), bizEvtMsg.size(), properties.length);
         logger.info(message);
-
+        
         // persist the item
         try {
-            documentdb.setValue(bizEvtMsg);
+        	if (bizEvtMsg.size() == properties.length) {
+        		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
+    	        for (int i=0; i<bizEvtMsg.size(); i++) {	
+    	        	BizEvent bz = bizEvtMsg.get(i);
+	        		bz.setProperties(properties[i]);
+	        		bizEvtMsgWithProperties.add(bz);
+    	        }
+    	        documentdb.setValue(bizEvtMsgWithProperties);
+            } else {
+            	throw new AppException("Error during processing - "
+            			+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size="+bizEvtMsg.size()+"; properties.length="+properties.length+"]");
+            }
+        	
         } catch (NullPointerException e) {
             logger.severe("NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         } catch (Exception e) {

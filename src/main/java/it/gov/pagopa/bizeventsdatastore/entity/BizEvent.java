@@ -2,6 +2,7 @@ package it.gov.pagopa.bizeventsdatastore.entity;
 
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.Map;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import lombok.AllArgsConstructor;
@@ -32,6 +33,7 @@ public class BizEvent {
 	private TransactionDetails transactionDetails;
 	@Builder.Default
 	private Long timestamp = ZonedDateTime.now().toInstant().toEpochMilli();
+	private Map<String, Object> properties;
 	
 	// internal management field
 	@Builder.Default
