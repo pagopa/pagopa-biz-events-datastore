@@ -81,8 +81,6 @@ public class BizEventEnrichment {
 				if (be.getEventStatus()==StatusType.DONE) {
 					// items in DONE status good for the Event Hub
 					itemsDone.add(be);
-				} else {
-					discarder++;
 				}
 				
 				/** 
@@ -94,6 +92,8 @@ public class BizEventEnrichment {
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
 			        logger.info(message);
 			        itemsToUpdate.add(be);
+				} else {
+					discarder++;
 				}
 			}	
 		}
