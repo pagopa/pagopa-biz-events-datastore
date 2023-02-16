@@ -77,7 +77,7 @@ class BizEventEnrichmentTest {
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
         bizEvtMsgList.add (bizEventMsg);
         @SuppressWarnings("unchecked")
-        OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> BizEventToEH = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
@@ -128,7 +128,7 @@ class BizEventEnrichmentTest {
         bizEventMsg.setEventRetryEnrichmentCount(4);
         bizEvtMsgList.add (bizEventMsg);
         @SuppressWarnings("unchecked")
-        OutputBinding<BizEvent> BizEventToEH = (OutputBinding<BizEvent>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> BizEventToEH = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 

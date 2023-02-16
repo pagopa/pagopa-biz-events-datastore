@@ -43,7 +43,7 @@ public class BizEventEnrichment {
 					name = "PdndBizEventHub", 
 					eventHubName = "", // blank because the value is included in the connection string
 					connection = "PDND_EVENTHUB_CONN_STRING")
-			OutputBinding<BizEvent> bizEvtMsg,
+			OutputBinding<List<BizEvent>> bizEvtMsg,
 			@CosmosDBOutput(
 					name = "EnrichedBizEventDatastore",
 					databaseName = "db",
@@ -54,6 +54,7 @@ public class BizEventEnrichment {
 			final ExecutionContext context
 			) {
 		
+		List<BizEvent> itemsDone = new ArrayList<>();
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
 		Logger logger = context.getLogger();
 
@@ -78,8 +79,8 @@ public class BizEventEnrichment {
 				
 				// if status is DONE put the event on the Event Hub
 				if (be.getEventStatus()==StatusType.DONE) {
-					// call the Event Hub
-					bizEvtMsg.setValue(be);
+					// items in DONE status good for the Event Hub
+					itemsDone.add(be);
 				}
 				
 				/** 
@@ -94,7 +95,9 @@ public class BizEventEnrichment {
 				}
 			}	
 		}
-		
+		// call the Event Hub
+		bizEvtMsg.setValue(itemsDone);
+		// call the Datastore
 		documentdb.setValue(itemsToUpdate);
 	}
 
