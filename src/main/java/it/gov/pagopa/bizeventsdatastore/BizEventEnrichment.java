@@ -36,7 +36,7 @@ public class BizEventEnrichment {
 					collectionName = "biz-events",
 					leaseCollectionName = "biz-events-leases",
 					createLeaseCollectionIfNotExists = true,
-					maxItemsPerInvocation=1000,
+//					maxItemsPerInvocation=1000,
 					connectionStringSetting = "COSMOS_CONN_STRING") 
 			List<BizEvent> items,
 			@EventHubOutput(
