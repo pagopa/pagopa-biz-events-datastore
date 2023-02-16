@@ -95,7 +95,10 @@ public class BizEventEnrichment {
 				} else {
 					discarder++;
 				}
-			}	
+			} else {
+				discarder++;
+			}
+
 		}
 
 		// discarder
