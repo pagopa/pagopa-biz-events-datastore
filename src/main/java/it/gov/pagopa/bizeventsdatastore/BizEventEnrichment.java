@@ -36,7 +36,7 @@ public class BizEventEnrichment {
 					collectionName = "biz-events",
 					leaseCollectionName = "biz-events-leases",
 					createLeaseCollectionIfNotExists = true,
-					maxItemsPerInvocation=1000,
+					maxItemsPerInvocation=100,
 					connectionStringSetting = "COSMOS_CONN_STRING") 
 			List<BizEvent> items,
 			@EventHubOutput(
@@ -58,7 +58,7 @@ public class BizEventEnrichment {
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
 		Logger logger = context.getLogger();
 
-		String msg = String.format("BizEventEnrichment function numevents trigger %d", items.size());
+		String msg = String.format("BizEventEnrichment function - num events triggered %d", items.size());
 		logger.info(msg);
 
 		for (BizEvent be: items) {
@@ -96,8 +96,12 @@ public class BizEventEnrichment {
 			}	
 		}
 		// call the Event Hub
+		msg = String.format("BizEventEnrichment function - number of events in DONE sent to the event hub %d", itemsDone.size());
+		logger.info(msg);
 		bizEvtMsg.setValue(itemsDone);
 		// call the Datastore
+		msg = String.format("BizEventEnrichment function - number of events to update on the datastore %d", itemsToUpdate.size());
+		logger.info(msg);
 		documentdb.setValue(itemsToUpdate);
 	}
 
