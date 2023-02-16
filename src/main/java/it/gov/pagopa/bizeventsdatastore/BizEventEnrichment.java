@@ -58,9 +58,9 @@ public class BizEventEnrichment {
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
 		Logger logger = context.getLogger();
 
-		String msg = String.format("BizEventEnrichment function - num events triggered %d", items.size());
+		String msg = String.format("BizEventEnrichment %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
-
+		int discarder = 0;
 		for (BizEvent be: items) {
 			
 	        if (be.getEventStatus().equals(StatusType.NA) || 
@@ -74,13 +74,15 @@ public class BizEventEnrichment {
 				
 				// check if the event is to enrich -> field 'idPaymentManager' valued but section 'transactionDetails' not present
 				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
-					this.enrichBizEvent(be, logger);
+					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
 				
 				// if status is DONE put the event on the Event Hub
 				if (be.getEventStatus()==StatusType.DONE) {
 					// items in DONE status good for the Event Hub
 					itemsDone.add(be);
+				} else {
+					discarder++;
 				}
 				
 				/** 
@@ -92,44 +94,43 @@ public class BizEventEnrichment {
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
 			        logger.info(message);
 			        itemsToUpdate.add(be);
-				} else {
-					message = String.format("BizEventEnrichment NOOOO COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s",
-							LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-					logger.info(message);
 				}
-
 			}	
 		}
+
+		// discarder
+		msg = String.format("BizEventEnrichment %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+		logger.info(msg);
 		// call the Event Hub
-		msg = String.format("BizEventEnrichment function - number of events in DONE sent to the event hub %d", itemsDone.size());
+		msg = String.format("BizEventEnrichment %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size());
 		logger.info(msg);
 		bizEvtMsg.setValue(itemsDone);
 		// call the Datastore
-		msg = String.format("BizEventEnrichment function - number of events to update on the datastore %d", itemsToUpdate.size());
+		msg = String.format("BizEventEnrichment %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
 		logger.info(msg);
 		documentdb.setValue(itemsToUpdate);
 	}
 
 	// the return of the BizEvent has the purpose of testing the correct execution of the method
-	public BizEvent enrichBizEvent(BizEvent be, Logger logger) {
+	public BizEvent enrichBizEvent(BizEvent be, Logger logger, String invocationId) {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
 			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager());
 			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
-			logger.warning("non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
+			logger.warning("BizEventEnrichment "+ invocationId +" function - non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);
 			// retry count increment
 			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
 			be.setEventErrorMessage(e.getMessage());
 		} catch (PM4XXException | IllegalArgumentException e) {
-			String errorMsg = "blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			String errorMsg = "BizEventEnrichment "+ invocationId +" function - blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
 			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 			be.setEventErrorMessage(e.getMessage());
 		} catch (Exception e) {
-			String errorMsg = "blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
+			String errorMsg = "BizEventEnrichment "+ invocationId +" function - blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
 			logger.log(Level.SEVERE, errorMsg, e);
 			be.setEventStatus(StatusType.FAILED);
 			be.setEventErrorMessage(e.getMessage());
