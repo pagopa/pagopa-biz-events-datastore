@@ -92,7 +92,12 @@ public class BizEventEnrichment {
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
 			        logger.info(message);
 			        itemsToUpdate.add(be);
+				} else {
+					message = String.format("BizEventEnrichment NOOOO COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s",
+							LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
+					logger.info(message);
 				}
+
 			}	
 		}
 		// call the Event Hub
