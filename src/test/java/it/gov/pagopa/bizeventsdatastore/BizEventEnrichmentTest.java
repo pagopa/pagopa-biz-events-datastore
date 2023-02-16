@@ -105,7 +105,7 @@ class BizEventEnrichmentTest {
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
         bizEvtMsgList.add (bizEventMsg);
         
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger, "1").getEventStatus();
         
         assertEquals(StatusType.FAILED, result);
     }
@@ -165,7 +165,7 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger, "1").getEventStatus();
      
         assertEquals(StatusType.FAILED, result);
         
@@ -198,7 +198,7 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        StatusType result = function.enrichBizEvent(bizEventMsg, logger).getEventStatus();
+        StatusType result = function.enrichBizEvent(bizEventMsg, logger, "1").getEventStatus();
      
         assertEquals(StatusType.FAILED, result);
         
@@ -231,7 +231,7 @@ class BizEventEnrichmentTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
 
-        BizEvent result = function.enrichBizEvent(bizEventMsg, logger);
+        BizEvent result = function.enrichBizEvent(bizEventMsg, logger, "1");
      
         assertEquals(StatusType.RETRY, result.getEventStatus());
         assertTrue (result.getEventRetryEnrichmentCount()>0);
