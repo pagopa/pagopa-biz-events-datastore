@@ -36,7 +36,7 @@ public class BizEventEnrichment {
 					collectionName = "biz-events",
 					leaseCollectionName = "biz-events-leases",
 					createLeaseCollectionIfNotExists = true,
-//					maxItemsPerInvocation=1000,
+					maxItemsPerInvocation=1000,
 					connectionStringSetting = "COSMOS_CONN_STRING") 
 			List<BizEvent> items,
 			@EventHubOutput(
@@ -95,6 +95,9 @@ public class BizEventEnrichment {
 				}
 			}	
 		}
+
+		String msgE = String.format("BizEventEnrichment function numevents trigger evh %d", itemsDone.size());
+		logger.info(msgE);
 		// call the Event Hub
 		bizEvtMsg.setValue(itemsDone);
 		// call the Datastore
