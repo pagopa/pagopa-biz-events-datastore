@@ -58,7 +58,7 @@ public class BizEventEnrichment {
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
 		Logger logger = context.getLogger();
 
-		String msg = String.format("BizEventEnrichment %s function - num events triggered %d", context.getInvocationId(),  items.size());
+		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
 		int discarder = 0;
 		for (BizEvent be: items) {
@@ -99,14 +99,14 @@ public class BizEventEnrichment {
 		}
 
 		// discarder
-		msg = String.format("BizEventEnrichment %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
+		msg = String.format("BizEventEnrichment stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
 		logger.info(msg);
 		// call the Event Hub
-		msg = String.format("BizEventEnrichment %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size());
+		msg = String.format("BizEventEnrichment stat %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size());
 		logger.info(msg);
 		bizEvtMsg.setValue(itemsDone);
 		// call the Datastore
-		msg = String.format("BizEventEnrichment %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
+		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
 		logger.info(msg);
 		documentdb.setValue(itemsToUpdate);
 	}
