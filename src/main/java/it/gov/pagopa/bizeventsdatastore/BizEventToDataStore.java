@@ -1,6 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,9 @@ public class BizEventToDataStore {
         		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
     	        for (int i=0; i<bizEvtMsg.size(); i++) {	
     	        	BizEvent bz = bizEvtMsg.get(i);
+    	        	// set the event creation date
+    	        	bz.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
+    	        	// set the event associated properties
 	        		bz.setProperties(properties[i]);
 	        		bizEvtMsgWithProperties.add(bz);
     	        }
