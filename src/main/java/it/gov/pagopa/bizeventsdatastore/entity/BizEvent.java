@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
-import java.time.ZonedDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -31,8 +30,7 @@ public class BizEvent {
 	private PaymentInfo paymentInfo;
 	private List<Transfer> transferList;
 	private TransactionDetails transactionDetails;
-	@Builder.Default
-	private Long timestamp = ZonedDateTime.now().toInstant().toEpochMilli();
+	private Long timestamp;  // to be valued with ZonedDateTime.now().toInstant().toEpochMilli();
 	private Map<String, Object> properties;
 	
 	// internal management field
