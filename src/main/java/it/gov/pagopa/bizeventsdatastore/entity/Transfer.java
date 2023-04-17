@@ -23,9 +23,9 @@ public class Transfer {
 	private String amount;
 	private String transferCategory;
 	private String remittanceInformation;
-	@JsonProperty("IBAN")
-	@JsonAlias("IBAN")
-	private String iban;
+//	@JsonProperty("IBAN")
+//	@JsonAlias("IBAN")
+	private String IBAN;
 	@JsonProperty(value="MBD")
 	private MBD mbd;
 	private List<MapEntry> metadata;
