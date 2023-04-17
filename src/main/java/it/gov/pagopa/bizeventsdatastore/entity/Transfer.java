@@ -2,6 +2,7 @@ package it.gov.pagopa.bizeventsdatastore.entity;
 
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
@@ -22,7 +23,8 @@ public class Transfer {
 	private String amount;
 	private String transferCategory;
 	private String remittanceInformation;
-	@JsonProperty(value="IBAN")
+	@JsonProperty("IBAN")
+	@JsonAlias("IBAN")
 	private String iban;
 	@JsonProperty(value="MBD")
 	private MBD mbd;
