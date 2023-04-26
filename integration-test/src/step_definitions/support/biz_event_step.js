@@ -15,13 +15,13 @@ After(function () {
 });
 
 // Given
-
 Given('a random biz event with id {string} published on eventhub', async function (id) {
+	eventId = id;
     // prior cancellation to avoid dirty cases
     await deleteDocument(id);
-
-    eventId = id;
+    console.log("eventId", eventId)
     const event = createEvent(eventId);
+    console.log (event)
     let responseToCheck =  await publishEvent(event);
 
     assert.strictEqual(responseToCheck.status, 201);

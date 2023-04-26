@@ -46,6 +46,7 @@ function sleep(ms) {
 }
 
 function createEvent(id) {
+	console.log(id);
     json_event = {
         "id": id,
         "version": "1",
@@ -94,7 +95,8 @@ function createEvent(id) {
             "totalNotice": "1",
             "paymentMethod": "creditCard",
             "touchpoint": "app",
-            "remittanceInformation": "test"
+            "remittanceInformation": "test",
+            "IUR": "iur1234567890"
         },
         "transferList": [
             {
@@ -113,6 +115,7 @@ function createEvent(id) {
             }
         ]
     }
+    console.log(json_event);
     return json_event
 }
 
