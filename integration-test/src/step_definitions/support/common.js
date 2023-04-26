@@ -46,7 +46,7 @@ function sleep(ms) {
 }
 
 function createEvent(id) {
-    json_event = {
+    let json_event = {
         "id": id,
         "version": "1",
         "idPaymentManager": "11999923",
@@ -94,7 +94,8 @@ function createEvent(id) {
             "totalNotice": "1",
             "paymentMethod": "creditCard",
             "touchpoint": "app",
-            "remittanceInformation": "test"
+            "remittanceInformation": "test",
+            "IUR": "iur1234567890"
         },
         "transferList": [
             {
