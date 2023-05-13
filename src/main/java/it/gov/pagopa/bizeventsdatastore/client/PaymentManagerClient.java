@@ -35,7 +35,7 @@ public class PaymentManagerClient {
 	private final JsonFactory jsonFactory = new GsonFactory();
     private final String paymentManagerHost = System.getenv("PM_CLIENT_HOST"); // es: https://api.xxx.platform.pagopa.it
     private final String getPaymentEventDetails = 
-    		System.getenv("PM_GET_PAYMENT_DETAILS") != null ? System.getenv("PM_GET_PAYMENT_DETAILS") : "/payment-manager/events/v1/payment-events/%s";
+    		System.getenv("PM_GET_PAYMENT_DETAILS") != null ? System.getenv("PM_GET_PAYMENT_DETAILS") : "/payment-manager/events/v1/payment-events/%s%s";
     private final String apiKey = System.getenv("PM_API_KEY");
     
     
@@ -60,9 +60,9 @@ public class PaymentManagerClient {
         return instance;
     }
     
-	public TransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+	public TransactionDetails getPMEventDetails(String idPayment, String method) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
-    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment));
+    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment, method));
     	
     	HttpRequest request = this.buildGetRequestToPM(url);
     	

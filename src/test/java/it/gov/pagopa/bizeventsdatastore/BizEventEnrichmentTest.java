@@ -68,7 +68,7 @@ class BizEventEnrichmentTest {
 		
 		// precondition
 		TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
-		lenient().when(pmClient.getPMEventDetails(anyString())).thenReturn(wrapperTD);
+		lenient().when(pmClient.getPMEventDetails(anyString(), "")).thenReturn(wrapperTD);
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -97,7 +97,7 @@ class BizEventEnrichmentTest {
 		BizEventEnrichmentTest.setMock(pmClient);
 		
 		// precondition
-		when(pmClient.getPMEventDetails(anyString())).thenThrow(new RuntimeException("test exception"));
+		when(pmClient.getPMEventDetails(anyString(), "")).thenThrow(new RuntimeException("test exception"));
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         
