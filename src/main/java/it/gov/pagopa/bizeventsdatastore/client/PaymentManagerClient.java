@@ -62,7 +62,7 @@ public class PaymentManagerClient {
     
 	public TransactionDetails getPMEventDetails(String idPayment, String method) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
-    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment, method));
+    	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment, method.toLowerCase()));
     	
     	HttpRequest request = this.buildGetRequestToPM(url);
     	
