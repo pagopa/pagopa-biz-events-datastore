@@ -124,7 +124,7 @@ public class BizEventEnrichment {
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
 			String pMethod = be.getPaymentInfo().getPaymentMethod();
-			String method = ((pMethod.equalsIgnoreCase(BPAY_PAYMENT_TYPE) || pMethod.equalsIgnoreCase(PPAL_PAYMENT_TYPE)) ? "?method=" + pMethod : "");
+			String method = ((pMethod.equalsIgnoreCase(BPAY_PAYMENT_TYPE) || pMethod.equalsIgnoreCase(PPAL_PAYMENT_TYPE)) ? pMethod : "");
 			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager(), method);
 			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
