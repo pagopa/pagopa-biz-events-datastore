@@ -87,6 +87,36 @@ class BizEventEnrichmentTest {
         // test assertion -> this line means the call was successful
         assertTrue(true);
     }
+
+    @Test
+    void runOkWithMethod() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+
+        PaymentManagerClient pmClient = mock(PaymentManagerClient.class);
+
+        // set mock instance in the singleton
+        BizEventEnrichmentTest.setMock(pmClient);
+
+        // precondition
+        TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
+        lenient().when(pmClient.getPMEventDetails(anyString(), "PPAL")).thenReturn(wrapperTD);
+
+        Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+        bizEvtMsgList.add (bizEventMsg);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> BizEventToEH = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        // test execution
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
 	
 	@Test
     void runException() throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
