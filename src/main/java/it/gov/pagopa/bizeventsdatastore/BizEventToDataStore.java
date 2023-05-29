@@ -52,8 +52,14 @@ public class BizEventToDataStore {
         // persist the item
         try {
         	if (bizEvtMsg.size() == properties.length) {
+
         		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
-    	        for (int i=0; i<bizEvtMsg.size(); i++) {	
+    	        for (int i=0; i<bizEvtMsg.size(); i++) {
+
+					String msg = String.format("BizEventToDataStore function called at %s with event id %s rx",
+							LocalDateTime.now(), bizEvtMsg.get(i).getId());
+					logger.info(msg);
+
     	        	BizEvent bz = bizEvtMsg.get(i);
     	        	// set the event creation date
     	        	bz.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
