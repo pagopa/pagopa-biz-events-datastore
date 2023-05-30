@@ -28,6 +28,10 @@ public class BizEventEnrichment {
 	private final int maxRetryAttempts = 
 			System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
+	private final String BPAY_PAYMENT_TYPE = "BPAY";
+
+	private final String PPAL_PAYMENT_TYPE = "PPAL";
+
 	@FunctionName("BizEventEnrichmentProcessor")
 	public void processBizEventEnrichment(
 			@CosmosDBTrigger(
@@ -119,7 +123,9 @@ public class BizEventEnrichment {
 		// call the Payment Manager
 		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
 		try {
-			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager());
+			String pMethod = be.getPaymentInfo().getPaymentMethod();
+			String method = ((pMethod.equalsIgnoreCase(BPAY_PAYMENT_TYPE) || pMethod.equalsIgnoreCase(PPAL_PAYMENT_TYPE)) ? pMethod : "");
+			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager(), method);
 			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 		} catch (PM5XXException | IOException e) {
 			logger.warning("BizEventEnrichment "+ invocationId +" function - non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());

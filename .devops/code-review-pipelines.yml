@@ -11,7 +11,7 @@ pr:
   - main
 
 pool:
-  vmImage: 'ubuntu-18.04'
+  vmImage: 'ubuntu-latest'
 
 variables:
   MAVEN_CACHE_FOLDER: $(Pipeline.Workspace)/.m2/repository
@@ -38,7 +38,7 @@ steps:
         sonar.projectName=$(SONARCLOUD_PROJECT_NAME)
         sonar.coverage.exclusions=**/config/*,**/*Mock*,**/model/**,**/entity/*
         sonar.cpd.exclusions=**/model/**,**/entity/*
-      
+
 
   - task: Maven@3
     displayName: 'Run Junit Test'

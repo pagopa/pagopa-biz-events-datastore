@@ -60,12 +60,15 @@ public class PaymentManagerClient {
         return instance;
     }
     
-	public TransactionDetails getPMEventDetails(String idPayment) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
+	public TransactionDetails getPMEventDetails(String idPayment, String method) throws IOException, IllegalArgumentException, PM5XXException, PM4XXException {
     	
     	GenericUrl url = new GenericUrl(paymentManagerHost + String.format(getPaymentEventDetails, idPayment));
-    	
+
+		if(method != null && !method.equals(""))
+			url.set("method", method.toLowerCase());	// set query param method
+
     	HttpRequest request = this.buildGetRequestToPM(url);
-    	
+
     	if (enableRetry) {
     		this.setRequestRetry(request);
     	}

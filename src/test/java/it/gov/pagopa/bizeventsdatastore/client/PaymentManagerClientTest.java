@@ -61,7 +61,7 @@ class PaymentManagerClientTest {
         retry.setAccessible(true); // Suppress Java language access checking
         retry.set(pmClient, true);
         
-        TransactionDetails wtd = pmClient.getPMEventDetails("123");
+        TransactionDetails wtd = pmClient.getPMEventDetails("123", "");
         
         assertNotNull(wtd);
         assertEquals(Long.valueOf("78385"),wtd.getUser().getUserId());
@@ -93,7 +93,7 @@ class PaymentManagerClientTest {
         
         try {
         
-        	pmClient.getPMEventDetails("123");
+        	pmClient.getPMEventDetails("123", "");
         	// an exception had to be raised
             fail(); 
         
@@ -128,7 +128,7 @@ class PaymentManagerClientTest {
         
         try {
         
-        	pmClient.getPMEventDetails("123");
+        	pmClient.getPMEventDetails("123", "");
         	// an exception had to be raised
             fail(); 
         
