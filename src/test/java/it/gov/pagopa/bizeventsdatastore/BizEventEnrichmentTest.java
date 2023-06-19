@@ -8,6 +8,7 @@ import static com.github.tomakehurst.wiremock.client.WireMock.urlEqualTo;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -68,7 +69,7 @@ class BizEventEnrichmentTest {
 		
 		// precondition
 		TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
-		lenient().when(pmClient.getPMEventDetails(anyString(), "")).thenReturn(wrapperTD);
+		lenient().when(pmClient.getPMEventDetails(anyString(), eq(""))).thenReturn(wrapperTD);
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -98,7 +99,7 @@ class BizEventEnrichmentTest {
 
         // precondition
         TransactionDetails wrapperTD = TestUtil.readModelFromFile("payment-manager/transactionDetails.json", TransactionDetails.class);
-        lenient().when(pmClient.getPMEventDetails(anyString(), "PPAL")).thenReturn(wrapperTD);
+        lenient().when(pmClient.getPMEventDetails(anyString(), eq("PPAL"))).thenReturn(wrapperTD);
 
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -127,7 +128,7 @@ class BizEventEnrichmentTest {
 		BizEventEnrichmentTest.setMock(pmClient);
 		
 		// precondition
-		when(pmClient.getPMEventDetails(anyString(), "")).thenThrow(new RuntimeException("test exception"));
+		when(pmClient.getPMEventDetails(anyString(), eq(""))).thenThrow(new RuntimeException("test exception"));
 		
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         
