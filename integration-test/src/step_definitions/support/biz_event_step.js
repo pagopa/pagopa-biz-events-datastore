@@ -15,15 +15,12 @@ After(function () {
 });
 
 // Given
-
 Given('a random biz event with id {string} published on eventhub', async function (id) {
+	eventId = id;
     // prior cancellation to avoid dirty cases
     await deleteDocument(id);
-
-    eventId = id;
     const event = createEvent(eventId);
     let responseToCheck =  await publishEvent(event);
-
     assert.strictEqual(responseToCheck.status, 201);
 });
 
@@ -36,6 +33,6 @@ When('biz event has been properly stored into datastore after {int} ms', async f
 // Then
 
 Then('the datastore returns the event with id {string}', async function (targetId) {
-    responseToCheck = await getDocumentById(targetId);
+    let responseToCheck = await getDocumentById(targetId);
     assert.strictEqual(responseToCheck.data.Documents[0].id, targetId);
 });
