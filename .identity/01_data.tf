@@ -67,3 +67,8 @@ data "azurerm_key_vault_secret" "key_vault_integration_ehub_tx_biz_key" {
   key_vault_id = data.azurerm_key_vault.domain_key_vault[0].id
 }
 
+data "azurerm_key_vault_secret" "key_vault_integration_ehub_biz_connection_string" {
+  count  = var.env_short != "p" ? 1 : 0
+  name = format("ehub-%s-biz-connection-string", var.env_short)
+  key_vault_id = data.azurerm_key_vault.domain_key_vault[0].id
+}
