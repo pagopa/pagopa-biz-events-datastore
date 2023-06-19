@@ -120,5 +120,11 @@ resource "github_actions_environment_secret" "secret_integration_test_ehub_tx_bi
   plaintext_value  = data.azurerm_key_vault_secret.key_vault_integration_ehub_tx_biz_key[0].value
 }
 
-
-
+#tfsec:ignore:github-actions-no-plain-text-action-secrets
+resource "github_actions_environment_secret" "secret_integration_test_ehub_biz_connection_string" {
+  count  = var.env_short != "p" ? 1 : 0
+  repository       = local.github.repository
+  environment      = var.env
+  secret_name      = "EVENTHUB_CONN_STRING"
+  plaintext_value  = data.azurerm_key_vault_secret.key_vault_integration_ehub_biz_connection_string[0].value
+}
