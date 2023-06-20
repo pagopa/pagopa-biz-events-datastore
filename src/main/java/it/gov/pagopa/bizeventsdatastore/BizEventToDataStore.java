@@ -61,6 +61,8 @@ public class BizEventToDataStore {
 					logger.info(msg);
 
     	        	BizEvent bz = bizEvtMsg.get(i);
+    	        	// set the IUR also on Debtor Position
+    	        	bz.getDebtorPosition().setIur(bz.getPaymentInfo().getIUR());
     	        	// set the event creation date
     	        	bz.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
     	        	// set the event associated properties

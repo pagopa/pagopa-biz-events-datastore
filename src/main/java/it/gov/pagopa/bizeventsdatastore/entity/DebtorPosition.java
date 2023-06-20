@@ -15,4 +15,5 @@ public class DebtorPosition {
 	private String modelType;
 	private String noticeNumber;
 	private String iuv;
+	private String iur;
 }
