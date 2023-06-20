@@ -68,6 +68,7 @@
     "paymentMethod": "cash",
     "touchpoint": "atm",
     "remittanceInformation": "test",
+    "IUR": "iur1234567890",
     "metadata": [{"key":"?", "value":"?"},{"key":"?2","value":"?2"}]
   },
   "transferList": [

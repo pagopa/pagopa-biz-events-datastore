@@ -58,7 +58,8 @@ export function getPaymentEventForTest(id) {
             "totalNotice": "1",
             "paymentMethod": "creditCard",
             "touchpoint": "app",
-            "remittanceInformation": "test"
+            "remittanceInformation": "test",
+            "IUR": "iur1234567890"
         },
         "transferList": [
             {
