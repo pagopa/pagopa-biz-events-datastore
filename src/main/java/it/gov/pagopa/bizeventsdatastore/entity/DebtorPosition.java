@@ -1,5 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore.entity;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,4 +17,6 @@ public class DebtorPosition {
 	private String modelType;
 	private String noticeNumber;
 	private String iuv;
+	@JsonProperty(value="IUR")
+	private String IUR;
 }
