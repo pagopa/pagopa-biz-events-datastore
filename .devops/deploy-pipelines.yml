@@ -233,6 +233,7 @@ stages:
                 cd integration-test && \
                 export EVENT_HUB_TX_PRIMARY_KEY=$EVENT_HUB_TX_PRIMARY_KEY && \
                 export COSMOS_DB_PRIMARY_KEY=$COSMOS_DB_PRIMARY_KEY && \
+                export EVENTHUB_CONN_STRING=$EVENTHUB_CONN_STRING && \
                 yarn install && \
                 yarn test:$DEPLOYMENT_ENVIRONMENT"
             env:
