@@ -77,9 +77,6 @@ jobs:
           export SUBKEY=${{ secrets.SUBKEY }}      
           export CANARY=${{ inputs.canary }}      
           export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
-          export EVENT_HUB_TX_PRIMARY_KEY=${{ secrets.EVENT_HUB_TX_PRIMARY_KEY }}
-          export COSMOS_DB_PRIMARY_KEY=${{ secrets.COSMOS_DB_PRIMARY_KEY }}
-          export EVENTHUB_CONN_STRING=${{secrets.EVENTHUB_CONN_STRING}}
           
           cd ./integration-test
           chmod +x ./run_integration_test.sh
