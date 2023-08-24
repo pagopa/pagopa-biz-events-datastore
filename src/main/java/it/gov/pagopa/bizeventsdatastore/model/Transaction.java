@@ -15,13 +15,13 @@ import lombok.Setter;
 @Builder
 public class Transaction {
 	@Key
-	private long idTransaction;
+	private long transactionId;
 	@Key
-	private long grandTotal;
+	private String grandTotal;
 	@Key
-	private long amount;
+	private String amount;
 	@Key
-	private long fee;
+	private String fee;
 	@Key
 	private String transactionStatus;
 	@Key
@@ -38,5 +38,9 @@ public class Transaction {
 	private String accountCode;
 	@Key
 	private Psp psp;
+	@Key
+	private String timestampOperation;
+	@Key
+	private String paymentGateway;
 	
 }

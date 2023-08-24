@@ -20,4 +20,10 @@ public class Psp {
 	private String businessName;
 	@Key
 	private String serviceName;
+	@Key
+	private String brokerName;
+	@Key
+	private String idPsp;
+	@Key
+	private String pspOnUs;
 }
