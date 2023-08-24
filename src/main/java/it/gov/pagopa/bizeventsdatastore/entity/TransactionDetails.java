@@ -16,4 +16,5 @@ public class TransactionDetails {
 	private User user;
 	private Transaction transaction;
 	private WalletItem wallet;
+	private InfoTransactionDetails info;
 }

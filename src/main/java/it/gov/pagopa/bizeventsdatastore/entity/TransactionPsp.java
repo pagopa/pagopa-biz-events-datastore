@@ -15,4 +15,7 @@ public class TransactionPsp {
 	private String idChannel;
 	private String businessName;
 	private String serviceName;
+	private String brokerName;
+	private String idPsp;
+	private String pspOnUs;
 }

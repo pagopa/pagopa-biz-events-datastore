@@ -12,10 +12,10 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Transaction {
-	private long idTransaction;
-	private long grandTotal;
-	private long amount;
-	private long fee;
+	private long transactionId;
+	private String grandTotal;
+	private String amount;
+	private String fee;
 	private String transactionStatus;
 	private String accountingStatus;
 	private String rrn;
@@ -24,4 +24,6 @@ public class Transaction {
 	private String numAut;
 	private String accountCode;
 	private TransactionPsp psp;
+	private String timestampOperation;
+	private String paymentGateway;
 }
