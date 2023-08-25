@@ -1,6 +1,6 @@
 {
 	"transaction": {
-		"idTransaction": 7090141621,
+		"transactionId": 7090141621,
 		"grandTotal": 10142,
 		"amount": 10012,
 		"fee": 130,

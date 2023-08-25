@@ -65,7 +65,7 @@ class PaymentManagerClientTest {
         
         assertNotNull(wtd);
         assertEquals(Long.valueOf("78385"),wtd.getUser().getUserId());
-        assertEquals(Long.valueOf("7090141621"),wtd.getTransaction().getIdTransaction());
+        assertEquals(Long.valueOf("7090141621"),wtd.getTransaction().getTransactionId());
         assertEquals(Long.valueOf("125647"),wtd.getWallet().getIdWallet()); 
         
         wireMockServer.stop();
