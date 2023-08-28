@@ -14,8 +14,13 @@
 		"psp": {
 			"idChannel": "00348170101_01_ONUS",
 			"businessName": "UniCredit S.p.A",
-			"serviceName": "Pagamento con carte"
-		}
+			"serviceName": "Pagamento con carte",
+			"brokerName": "Unicredit",
+			"idPsp": "UNCRDT",
+			"pspOnUs": "false"
+		},
+		"timestampOperation": "2022-12-22T16:30:30Z",
+		"paymentGateway": "Unicredit-Gateway"
 	},
 	"wallet": {
 		"idWallet": 125647,
