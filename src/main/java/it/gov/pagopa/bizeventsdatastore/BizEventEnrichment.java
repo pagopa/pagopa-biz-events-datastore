@@ -63,6 +63,7 @@ public class BizEventEnrichment {
 		Logger logger = context.getLogger();
 
 		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
+		logger.info("test");
 		logger.info(msg);
 		int discarder = 0;
 		for (BizEvent be: items) {
