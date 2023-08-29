@@ -80,6 +80,10 @@ public class BizEventEnrichment {
 				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
+
+				if(null != be.getTransactionDetails() && null != be.getTransactionDetails().getTransaction()) {
+					be.getTransactionDetails().getTransaction().setTransactionId(be.getTransactionDetails().getTransaction().getIdTransaction());
+				}
 				
 				// if status is DONE put the event on the Event Hub
 				if (be.getEventStatus()==StatusType.DONE) {
