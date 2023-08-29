@@ -83,7 +83,7 @@ class BizEventEnrichmentTest {
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -107,13 +107,16 @@ class BizEventEnrichmentTest {
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
         bizEvtMsgList.add (bizEventMsg);
+        //Adding these two lines + json file to test temporary solution for transactionId field, can be removed in the future
+        BizEvent bizEventMsgWithTD = TestUtil.readModelFromFile("payment-manager/bizEventWithTransactionDetails.json", BizEvent.class);
+        bizEvtMsgList.add(bizEventMsgWithTD);
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> BizEventToEH = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -164,7 +167,7 @@ class BizEventEnrichmentTest {
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);;
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
