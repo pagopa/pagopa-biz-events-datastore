@@ -81,6 +81,7 @@ public class BizEventEnrichment {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
 
+				// adding transactionId field for NDP, temporary solution
 				if(null != be.getTransactionDetails() && null != be.getTransactionDetails().getTransaction()) {
 					be.getTransactionDetails().getTransaction().setTransactionId(be.getTransactionDetails().getTransaction().getIdTransaction());
 				}
