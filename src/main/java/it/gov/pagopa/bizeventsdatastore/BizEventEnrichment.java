@@ -81,11 +81,6 @@ public class BizEventEnrichment {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
 
-				// adding transactionId field for NDP, temporary solution
-				if(null != be.getTransactionDetails() && null != be.getTransactionDetails().getTransaction()) {
-					be.getTransactionDetails().getTransaction().setTransactionId(be.getTransactionDetails().getTransaction().getIdTransaction());
-				}
-				
 				// if status is DONE put the event on the Event Hub
 				if (be.getEventStatus()==StatusType.DONE) {
 					// items in DONE status good for the Event Hub
@@ -132,6 +127,8 @@ public class BizEventEnrichment {
 			String method = ((pMethod.equalsIgnoreCase(BPAY_PAYMENT_TYPE) || pMethod.equalsIgnoreCase(PPAL_PAYMENT_TYPE)) ? pMethod : "");
 			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager(), method);
 			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
+			//Task PAGOPA-1193: adding mapping transactionId to align the PM with NDP, remove when ready
+			be.getTransactionDetails().getTransaction().setTransactionId(td.getTransaction().getIdTransaction());
 		} catch (PM5XXException | IOException e) {
 			logger.warning("BizEventEnrichment "+ invocationId +" function - non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);

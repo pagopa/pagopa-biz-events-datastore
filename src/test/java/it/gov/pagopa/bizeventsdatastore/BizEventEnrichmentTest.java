@@ -110,6 +110,8 @@ class BizEventEnrichmentTest {
         //Adding these two lines + json file to test temporary solution for transactionId field, can be removed in the future
         BizEvent bizEventMsgWithTD = TestUtil.readModelFromFile("payment-manager/bizEventWithTransactionDetails.json", BizEvent.class);
         bizEvtMsgList.add(bizEventMsgWithTD);
+        BizEvent bizEventMsgPM = TestUtil.readModelFromFile("payment-manager/bizEventPM.json", BizEvent.class);
+        bizEvtMsgList.add(bizEventMsgPM);
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> BizEventToEH = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         @SuppressWarnings("unchecked")
