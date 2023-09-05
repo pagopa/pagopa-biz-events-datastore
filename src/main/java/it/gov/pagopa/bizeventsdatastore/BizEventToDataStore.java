@@ -82,13 +82,19 @@ public class BizEventToDataStore {
 						// set the event associated properties
 						bz.setProperties(properties[i]);
 
-						// WRITE IN THE CACHE
+						// WRITE IN THE CACHE: The result of the insertion in the cache is logged to verify the correct functioning
 						String result = this.saveBizEventId(bizEvtMsg.get(i).getId());
 						msg = String.format("BizEvent message with id %s was cached with result: %s",
 								bizEvtMsg.get(i).getId(), result);
 						logger.info(msg);
 
 						bizEvtMsgWithProperties.add(bz);
+					}
+					else {
+						// just to track duplicate events  
+						msg = String.format("The BizEvent message with id %s has already been processed previously, it is discarded",
+								bizEvtMsg.get(i).getId());
+						logger.info(msg);
 					}
     	        }
     	        documentdb.setValue(bizEvtMsgWithProperties);
