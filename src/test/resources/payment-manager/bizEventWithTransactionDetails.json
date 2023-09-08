@@ -1,0 +1,109 @@
+{
+  "id": "54b9fcee-26b1-48c6-81f3-91ccfd67f380",
+  "version": "2",
+  "idPaymentManager": "15735423",
+  "complete": false,
+  "missingInfo": [
+    "idPaymentManager",
+    "debtor.streetName",
+    "paymentInfo.primaryCiIncurredFee",
+    "paymentInfo.idBundle",
+    "paymentInfo.idCiBundle"
+  ],
+  "receiptId": "9dd3d6b0c14a48b9ada3874cdd4d62c3",
+  "debtorPosition": {
+    "modelType": "2",
+    "noticeNumber": "021283113132391591",
+    "iuv": "283113132391591"
+  },
+  "creditor": {
+    "idPA": "00000000099",
+    "idBrokerPA": "nodo-doc-dev",
+    "idStation": "nodo-doc-dev_v2_1",
+    "companyName": "nodo-doc-dev",
+    "officeName": "officeName"
+  },
+  "psp": {
+    "idBrokerPsp": "nodo-doc-dev",
+    "idChannel": "nodo-doc-dev",
+    "idPsp": "nodo-doc-dev",
+    "psp": "nodo-doc-dev",
+    "pspPartitaIVA": "NODODOCDEV1",
+    "pspFiscalCode": "NODODOCDEV123456",
+    "channelDescription": "atm"
+  },
+  "debtor": {
+    "fullName": "fullName",
+    "entityUniqueIdentifierType": "F",
+    "entityUniqueIdentifierValue": "entity",
+    "civicNumber": "civicNumber",
+    "postalCode": "postalCode",
+    "city": "city",
+    "stateProvinceRegion": "stateProvinceRegion",
+    "country": "IT",
+    "eMail": "mail@mail.it"
+  },
+  "payer": {
+    "fullName": "fullName",
+    "entityUniqueIdentifierType": "F",
+    "entityUniqueIdentifierValue": "asdlol",
+    "streetName": "streetName",
+    "civicNumber": "civicNumber",
+    "postalCode": "postalCode",
+    "city": "city",
+    "stateProvinceRegion": "stateProvinceRegion",
+    "country": "IT",
+    "eMail": "mail@mail.it"
+  },
+  "paymentInfo": {
+    "description": "test",
+    "paymentDateTime": "2022-11-28T13:05:13.145372",
+    "applicationDate": "2021-01-01",
+    "transferDate": "2021-01-01",
+    "dueDate": "2021-10-27",
+    "paymentToken": "9dd3d6b0c14a48b9ada3874cdd4d62c3",
+    "amount": 101.0,
+    "fee": 10.0,
+    "totalNotice": 1,
+    "paymentMethod": "cash",
+    "touchpoint": "atm",
+    "remittanceInformation": "test",
+    "IUR": "iur1234567890",
+    "metadata": [{"key":"?", "value":"?"},{"key":"?2","value":"?2"}]
+  },
+  "transferList": [
+    {
+      "idTransfer": "1",
+      "fiscalCodePA": "00000000099",
+      "companyName": "nodo-doc-dev",
+      "amount": 50.0,
+      "transferCategory": "transferCategory",
+      "remittanceInformation": "remittanceInformation",
+      "IBAN": "IT96R0123454321000000012345",
+      "metadata": [{"key":"?", "value":"?"},{"key":"?2","value":"?2"}]
+    },
+    {
+      "idTransfer": "2",
+      "fiscalCodePA": "00000000099",
+      "companyName": "nodo-doc-dev",
+      "amount": 51.0,
+      "transferCategory": "transferCategory",
+      "remittanceInformation": "remittanceInformation",
+      "IBAN": "IT96R0123454321000000012345"
+    }
+  ],
+  "transactionDetails": {
+    "user": {
+      "fullName": "John Doe",
+      "type": "F",
+      "fiscalCode": "JHNDOE00A01F205N",
+      "notificationEmail": "john.doe@mail.it",
+      "userId": "1234",
+      "userStatus": "11",
+      "userStatusDescription": "REGISTERED_SPID"
+    },
+    "transaction": {
+      "idTransaction": 123456
+    }
+  }
+}

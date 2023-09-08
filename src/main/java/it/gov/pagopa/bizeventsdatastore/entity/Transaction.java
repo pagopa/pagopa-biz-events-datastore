@@ -13,6 +13,7 @@ import lombok.Setter;
 @Builder
 public class Transaction {
 	private long idTransaction;
+	private long transactionId;
 	private long grandTotal;
 	private long amount;
 	private long fee;
