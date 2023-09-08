@@ -23,14 +23,25 @@ microservice-chart:
     periodSeconds: 10
   deployment:
     create: true
-  service:
+  serviceMonitor:
     create: true
+    endpoints:
+      - interval: 10s #jmx-exporter
+        targetPort: 12345
+        path: /metrics
+  ports:
+    - 80 #http
+    - 12345 #jmx-exporter
+  service:
     type: ClusterIP
-    port: 80
+    ports:
+      - 80 #http
+      - 12345 #jmx-exporter
   ingress:
     create: true
     host: "weuuat.bizevents.internal.uat.platform.pagopa.it"
     path: /pagopa-biz-events-datastore-service/(.*)
+    servicePort: 80
   serviceAccount:
     create: false
     annotations: {}
@@ -43,15 +54,15 @@ microservice-chart:
     allowPrivilegeEscalation: false
   resources:
     requests:
-      memory: "1512Mi"
+      memory: "512Mi"
       cpu: "0.5"
     limits:
-      memory: "1512Mi"
+      memory: "512Mi"
       cpu: "0.5"
   autoscaling:
     enable: true
     minReplica: 1
-    maxReplica: 10
+    maxReplica: 5
     pollingInterval: 10 # seconds
     cooldownPeriod: 50 # seconds
     triggers:
@@ -60,6 +71,12 @@ microservice-chart:
           # Required
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "75"
+      - type: memory
+        metadata:
+          # Required
+          type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
+          value: "70"
+  fileConfig: {}
   envConfig:
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
@@ -81,6 +98,9 @@ microservice-chart:
     TRIGGER_SCHEDULE: "0 0 */6 * * *"
     TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
     TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
+  envFieldRef:
+    APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
+    APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-u-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-u-biz-connection-string'
@@ -105,6 +125,8 @@ microservice-chart:
                 values:
                   - "user"
   canaryDelivery:
+    create: false
     deployment:
+      create: false
       image:
         tag: 0.5.4-2-PAGOPA-1115-migrazione-biz-events-datastore
