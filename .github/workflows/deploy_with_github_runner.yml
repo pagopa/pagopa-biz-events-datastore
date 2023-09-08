@@ -82,7 +82,7 @@ jobs:
           runner_name: ${{ needs.create_runner.outputs.runner_name }}
           pat_token: ${{ secrets.BOT_TOKEN_GITHUB }}
 
-  update_openapi:
+  # update_openapi:
     needs: [ deploy ]
     runs-on: ubuntu-latest
     name: Update OpenAPI
