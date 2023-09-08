@@ -81,6 +81,9 @@ microservice-chart:
     TRIGGER_SCHEDULE: "0 0 */6 * * *"
     TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
     TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
+    REDIS_HOST: "pagopa-d-redis.redis.cache.windows.net"
+    REDIS_PORT: "6380"
+    REDIS_EXPIRE_TIME_MS: "3600000" # an hour
   envSecret:
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
@@ -90,6 +93,7 @@ microservice-chart:
     COSMOS_DB_PRIMARY_KEY: 'cosmos-d-biz-key'
     PM_API_KEY: 'payment-manager-subscription-key' # Ocp-Apim-Subscription-Key
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
+    REDIS_PWD: "redis-password"
   keyvault:
     name: "pagopa-d-bizevents-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
