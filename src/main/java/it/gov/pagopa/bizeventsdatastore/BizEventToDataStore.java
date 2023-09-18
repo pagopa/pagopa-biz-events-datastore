@@ -50,9 +50,9 @@ public class BizEventToDataStore {
             @CosmosDBOutput(
     	            name = "BizEventDatastore",
     	            databaseName = "db",
-    	            collectionName = "biz-events",
+    	            containerName = "biz-events",
     	            createIfNotExists = false,
-                    connectionStringSetting = "COSMOS_CONN_STRING")
+    	            connection = "COSMOS_CONN_STRING")
                     @NonNull OutputBinding<List<BizEvent>> documentdb,
             final ExecutionContext context) {
 
