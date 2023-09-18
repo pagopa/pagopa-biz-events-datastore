@@ -28,20 +28,20 @@ public class BizEventEnrichment {
 	private final int maxRetryAttempts = 
 			System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
-	private final String BPAY_PAYMENT_TYPE = "BPAY";
+	private static final String BPAY_PAYMENT_TYPE = "BPAY";
 
-	private final String PPAL_PAYMENT_TYPE = "PPAL";
+	private static final String PPAL_PAYMENT_TYPE = "PPAL";
 
 	@FunctionName("BizEventEnrichmentProcessor")
 	public void processBizEventEnrichment(
 			@CosmosDBTrigger(
 					name = "BizEventDatastore",
 					databaseName = "db",
-					collectionName = "biz-events",
-					leaseCollectionName = "biz-events-leases",
-					createLeaseCollectionIfNotExists = true,
+					containerName = "biz-events",
+					leaseContainerName = "biz-events-leases",
+					createLeaseContainerIfNotExists = true,
 					maxItemsPerInvocation=100,
-					connectionStringSetting = "COSMOS_CONN_STRING") 
+					connection = "COSMOS_CONN_STRING") 
 			List<BizEvent> items,
 			@EventHubOutput(
 					name = "PdndBizEventHub", 
@@ -51,9 +51,9 @@ public class BizEventEnrichment {
 			@CosmosDBOutput(
 					name = "EnrichedBizEventDatastore",
 					databaseName = "db",
-					collectionName = "biz-events",
+					containerName = "biz-events",
 					createIfNotExists = false,
-					connectionStringSetting = "COSMOS_CONN_STRING")
+					connection = "COSMOS_CONN_STRING")
 			OutputBinding<List<BizEvent>> documentdb,
 			final ExecutionContext context
 			) {
