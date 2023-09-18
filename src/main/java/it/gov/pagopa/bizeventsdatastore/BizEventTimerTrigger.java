@@ -30,17 +30,17 @@ public class BizEventTimerTrigger {
 			@CosmosDBInput(
 					name = "EnrichedBizEventDatastoreInput",
 					databaseName = "db",
-					collectionName = "biz-events",
-					connectionStringSetting = "COSMOS_CONN_STRING",
+					containerName = "biz-events",
+					connection = "COSMOS_CONN_STRING",
 					sqlQuery = "%TRIGGER_SQL_QUERY%"
 					)
 			BizEvent[] items,
 			@CosmosDBOutput(
 					name = "EnrichedBizEventDatastoreOutput",
 					databaseName = "db",
-					collectionName = "biz-events",
+					containerName = "biz-events",
 					createIfNotExists = false,
-					connectionStringSetting = "COSMOS_CONN_STRING")
+					connection = "COSMOS_CONN_STRING")
 			OutputBinding<List<BizEvent>> documentdb,
 			final ExecutionContext context) {
 		
