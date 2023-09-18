@@ -36,6 +36,8 @@ public class BizEventToDataStore {
 	private final int expireTimeInMS = 
 			System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
 	
+	private static final String REDIS_ID_PREFIX = "biz_";
+	
     @FunctionName("EventHubBizEventProcessor")
     public void processBizEvent (
             @EventHubTrigger(
@@ -112,11 +114,11 @@ public class BizEventToDataStore {
     }
     
     public String findByBizEventId(String id) {
-    	return jedis.get(id);
+    	return jedis.get(REDIS_ID_PREFIX+id);
     }
     
     public String saveBizEventId(String id) {
-		return jedis.set(id, id, new SetParams().px(expireTimeInMS));
+		return jedis.set(REDIS_ID_PREFIX+id, id, new SetParams().px(expireTimeInMS));
     }
     
     
