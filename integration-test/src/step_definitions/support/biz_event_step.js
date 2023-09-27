@@ -3,8 +3,10 @@ const {createEvent, sleep} = require("./common");
 const {publishEvent} = require("./event_hub_client");
 const {getDocumentById, deleteDocument} = require("./datastore_client");
 const {After, Given, When, Then} = require('@cucumber/cucumber');
+const {makeIdMix, makeIdNumber} = require("./utility/helpers")
 
 let eventId;
+let eventCreationTimestamp;
 
 
 // After each Scenario
@@ -15,12 +17,12 @@ After(function () {
 });
 
 // Given
-Given('a random biz event with id {string} published on eventhub', async function (id) {
-	eventId = id;
-    // prior cancellation to avoid dirty cases
-    await deleteDocument(id);
+Given('a random biz event is published on eventhub', async function () {
+	eventId = makeIdMix(15);
+    
     const event = createEvent(eventId);
     let responseToCheck =  await publishEvent(event);
+    
     assert.strictEqual(responseToCheck.status, 201);
 });
 
@@ -30,9 +32,23 @@ When('biz event has been properly stored into datastore after {int} ms', async f
     await sleep(time);
 });
 
-// Then
+// Given
+When('the eventhub sends the same biz event again', async function () {    
+    const event = createEvent(eventId);
+    let responseToCheck =  await publishEvent(event);
+    
+    assert.strictEqual(responseToCheck.status, 201);
+});
 
-Then('the datastore returns the event with id {string}', async function (targetId) {
-    let responseToCheck = await getDocumentById(targetId);
-    assert.strictEqual(responseToCheck.data.Documents[0].id, targetId);
+// Then
+Then('the datastore returns the event', async function () {
+    let responseToCheck = await getDocumentById(eventId);
+    eventCreationTimestamp = responseToCheck.data.Documents[0]._ts;
+    assert.strictEqual(responseToCheck.data.Documents[0].id, eventId);
+});
+
+Then('the datastore returns the not updated event', async function () {
+    responseToCheck = await getDocumentById(eventId);
+    assert.strictEqual(responseToCheck.data.Documents[0].id, eventId);
+    assert.strictEqual(responseToCheck.data.Documents[0]._ts, eventCreationTimestamp);
 });
