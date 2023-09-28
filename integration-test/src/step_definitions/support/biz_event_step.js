@@ -45,7 +45,7 @@ When('the eventhub sends the same biz event again', async function () {
 // Then
 Then('the datastore returns the event', async function () {
     let responseToCheck = await getDocumentById(eventId);
-    console.log(responseToCheck.data);
+    console.log("*** getDocumentById", "eventId= "+eventId, responseToCheck.data);
     eventCreationTimestamp = responseToCheck.data.Documents[0]._ts;
     assert.strictEqual(responseToCheck.data.Documents[0].id, eventId);
 });

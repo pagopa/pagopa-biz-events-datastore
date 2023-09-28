@@ -32,7 +32,7 @@ function getDocumentById(id) {
             }
         ]
     }
-
+console.log("*** request ", cosmos_db_uri+path, body, headers)
     return post(cosmos_db_uri+path, body, headers)
 }
 
