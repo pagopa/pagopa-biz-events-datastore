@@ -2,7 +2,7 @@ const assert = require('assert');
 const {createEvent, sleep} = require("./common");
 const {publishEvent} = require("./event_hub_client");
 const {getDocumentById, deleteDocument} = require("./datastore_client");
-const {After, Given, When, Then} = require('@cucumber/cucumber');
+const {After, Given, When, Then, setDefaultTimeout} = require('@cucumber/cucumber');
 const {makeIdMix, makeIdNumber} = require("./utility/helpers")
 
 let eventId;
