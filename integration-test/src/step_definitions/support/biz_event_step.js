@@ -8,6 +8,8 @@ const {makeIdMix, makeIdNumber} = require("./utility/helpers")
 let eventId;
 let eventCreationTimestamp;
 
+setDefaultTimeout(360 * 1000);
+
 
 // After each Scenario
 
