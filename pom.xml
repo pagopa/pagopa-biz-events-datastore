@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.7.0-2-PAGOPA-1253-integration-test-adjustment</version>
+	<version>0.7.0-3-PAGOPA-1253-integration-test-adjustment</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
