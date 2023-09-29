@@ -21,7 +21,7 @@ function getDocumentById(id) {
     const authorizationToken = getCosmosDBAuthorizationToken(verb,authorizationType,authorizationVersion,authorizationSignature,resourceType,resourceLink,date);
 
     let partitionKeyArray = [];
-    const headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json', true);
+    const headers = getCosmosDBAPIHeaders(authorizationToken, date, partitionKeyArray, 'application/query+json', 'true');
 
     const body = {
         "query": "SELECT * FROM c where c.id=@id",
@@ -32,7 +32,6 @@ function getDocumentById(id) {
             }
         ]
     }
-
     return post(cosmos_db_uri+path, body, headers)
 }
 
