@@ -57,6 +57,8 @@ jobs:
           export SUBKEY=${{ secrets.SUBKEY }}
           export CANARY=${{ inputs.canary }}
           export CUCUMBER_PUBLISH_TOKEN=${{ secrets.CUCUMBER_PUBLISH_TOKEN }}
+          export COSMOS_DB_PRIMARY_KEY=${{ secrets.COSMOS_DB_PRIMARY_KEY }}
+          export EVENT_HUB_TX_PRIMARY_KEY=${{ secrets.EVENT_HUB_TX_PRIMARY_KEY }}
 
           cd ./integration-test
           chmod +x ./run_integration_test.sh
@@ -66,7 +68,7 @@ jobs:
     needs: [ integration_test ]
     runs-on: ubuntu-latest
     name: Notify
-    if: ${{ always() && inputs.notify == 'true' }}
+    if: ${{ always() && (inputs == null || inputs.notify == 'true') }}
     steps:
       - name: Report Status
         if: ${{ inputs.notify }}
