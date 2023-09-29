@@ -20,6 +20,7 @@ import it.gov.pagopa.bizeventsdatastore.client.RedisClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import lombok.NonNull;
+import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.params.SetParams;
 
@@ -33,7 +34,7 @@ public class BizEventToDataStore {
 	
 	public static final JedisPooled jedis = RedisClient.getInstance().redisConnectionFactory();
 	
-	private final int expireTimeInMS = 
+	private static final int EXPIRE_TIME_IN_MS = 
 			System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
 	
 	private static final String REDIS_ID_PREFIX = "biz_";
@@ -73,7 +74,7 @@ public class BizEventToDataStore {
 					logger.info(msg);
 					
 					// READ FROM THE CACHE: The cache is queried to find out if the event has already been queued --> if yes it is skipped
-					String value = this.findByBizEventId(bizEvtMsg.get(i).getId());
+					String value = this.findByBizEventId(bizEvtMsg.get(i).getId(), logger);
 					
 					if (Strings.isNullOrEmpty(value)) {
 						BizEvent bz = bizEvtMsg.get(i);
@@ -85,7 +86,7 @@ public class BizEventToDataStore {
 						bz.setProperties(properties[i]);
 
 						// WRITE IN THE CACHE: The result of the insertion in the cache is logged to verify the correct functioning
-						String result = this.saveBizEventId(bizEvtMsg.get(i).getId());
+						String result = this.saveBizEventId(bizEvtMsg.get(i).getId(), logger);
 						msg = String.format("BizEvent message with id %s was cached with result: %s",
 								bizEvtMsg.get(i).getId(), result);
 						logger.info(msg);
@@ -113,12 +114,24 @@ public class BizEventToDataStore {
 
     }
     
-    public String findByBizEventId(String id) {
-    	return jedis.get(REDIS_ID_PREFIX+id);
+    public String findByBizEventId(String id, Logger logger) {
+    	try (Connection j = jedis.getPool().getResource()){
+    		return jedis.get(REDIS_ID_PREFIX+id);
+    	} catch (Exception e) {
+    		String msg = String.format("Error getting existing connection to Redis. A new one is created. [error message = %s]", e.getMessage());
+    		logger.warning(msg);
+    		return RedisClient.getInstance().redisConnectionFactory().get(REDIS_ID_PREFIX+id);
+    	}
     }
     
-    public String saveBizEventId(String id) {
-		return jedis.set(REDIS_ID_PREFIX+id, id, new SetParams().px(expireTimeInMS));
+    public String saveBizEventId(String id, Logger logger) {
+    	try (Connection j = jedis.getPool().getResource()){
+    		return jedis.set(REDIS_ID_PREFIX+id, id, new SetParams().px(EXPIRE_TIME_IN_MS));
+    	} catch (Exception e) {
+    		String msg = String.format("Error getting existing connection to Redis. A new one is created. [error message = %s]", e.getMessage());
+    		logger.warning(msg);
+    		return RedisClient.getInstance().redisConnectionFactory().set(REDIS_ID_PREFIX+id, id, new SetParams().px(EXPIRE_TIME_IN_MS));
+    	}
     }
     
     

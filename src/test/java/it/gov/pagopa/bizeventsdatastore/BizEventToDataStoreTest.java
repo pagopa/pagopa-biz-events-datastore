@@ -50,8 +50,8 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         
-        doReturn(null).when(function).findByBizEventId(anyString());
-        doReturn("OK").when(function).saveBizEventId(anyString());
+        doReturn(null).when(function).findByBizEventId(anyString(), logger);
+        doReturn("OK").when(function).saveBizEventId(anyString(), logger);
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
@@ -93,7 +93,7 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         
-        doReturn("123").when(function).findByBizEventId(anyString());
+        doReturn("123").when(function).findByBizEventId(anyString(), logger);
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
