@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.7.0-5-PAGOPA-1247-upgrade-extension-bundle</version>
+	<version>0.7.0-6-PAGOPA-1263-broken-pipe-redis</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
