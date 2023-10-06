@@ -1,6 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -33,6 +34,7 @@ class BizEventToDataStoreTest {
 
     @Mock
     ExecutionContext context;
+    
 
     @Test
     void runOk() {
@@ -50,8 +52,8 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         
-        doReturn(null).when(function).findByBizEventId(anyString());
-        doReturn("OK").when(function).saveBizEventId(anyString());
+        doReturn(null).when(function).findByBizEventId(anyString(), any(Logger.class));
+        doReturn("OK").when(function).saveBizEventId(anyString(), any(Logger.class));
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
@@ -93,8 +95,31 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         
-        doReturn("123").when(function).findByBizEventId(anyString());
+        doReturn("123").when(function).findByBizEventId(anyString(), any(Logger.class));
 
+        // test execution
+        function.processBizEvent(bizEvtMsg, properties, document, context);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+    
+    @Test
+    void runBizEventRedisException() {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        
+        PaymentInfo pi = PaymentInfo.builder().IUR("iur").build();
+        DebtorPosition dp = DebtorPosition.builder().iuv("iuv").build();
+        
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (BizEvent.builder().id("123").paymentInfo(pi).debtorPosition(dp).build());
+        
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
 
