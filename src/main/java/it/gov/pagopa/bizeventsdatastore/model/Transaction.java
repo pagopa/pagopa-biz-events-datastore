@@ -38,5 +38,7 @@ public class Transaction {
 	private String accountCode;
 	@Key
 	private Psp psp;
+	@Key
+	private String origin;
 	
 }

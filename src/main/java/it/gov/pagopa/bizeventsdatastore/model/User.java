@@ -32,4 +32,8 @@ public class User {
 	private String fullName;
 	@Key
 	private String fiscalCode;
+	@Key
+	private String name;
+	@Key
+	private String surname;
 }
