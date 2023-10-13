@@ -66,7 +66,6 @@ public class BizEventEnrichment {
 		logger.info(msg);
 		int discarder = 0;
 		for (BizEvent be: items) {
-			
 	        if (be.getEventStatus().equals(StatusType.NA) || 
 	        		(be.getEventStatus().equals(StatusType.RETRY) && be.getEventRetryEnrichmentCount() <= maxRetryAttempts)) {
 	        	
@@ -80,6 +79,8 @@ public class BizEventEnrichment {
 				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
+
+				be.alignPdfReceipt();
 
 				// if status is DONE put the event on the Event Hub
 				if (be.getEventStatus()==StatusType.DONE) {

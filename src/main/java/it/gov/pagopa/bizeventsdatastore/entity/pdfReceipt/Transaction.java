@@ -14,9 +14,6 @@ public class Transaction {
 	private boolean requestedByDebtor;
 	private String rrn;
 	private String authCode;
-	private String numAut;
-	private String accountCode;
 	private Psp psp;
 	private PaymentMethod paymentMethod;
-	private User user;
 }
