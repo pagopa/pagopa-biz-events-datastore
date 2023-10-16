@@ -56,49 +56,62 @@ public class BizEvent {
 		if(this.payer.getEntityUniqueIdentifierValue() == null) {
 			return;
 		}
-		Payee payee = Payee.builder()
-				.name(this.creditor.getOfficeName())
-				.taxCode(this.creditor.getCompanyName())
-				.build();
-		it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Debtor debtor = it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Debtor.builder()
-				.fullName(this.debtor.getFullName())
-				.taxCode(this.debtor.getEntityUniqueIdentifierValue())
-				.build();
+		Payee payee = null;
+		it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Debtor debtor = null;
+		if(this.creditor != null && this.debtor != null){
+			payee = Payee.builder()
+					.name(this.creditor.getOfficeName())
+					.taxCode(this.creditor.getCompanyName())
+					.build();
+			debtor = it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Debtor.builder()
+					.fullName(this.debtor.getFullName())
+					.taxCode(this.debtor.getEntityUniqueIdentifierValue())
+					.build();
+		}
 		String value = null;
 		RefNumberType type = null;
-		if(this.debtorPosition.getModelType().equals("1")) {
-			value = this.debtorPosition.getIuv();
-			type = RefNumberType.CODICE_AVVISO;
-		} else if(this.debtorPosition.getModelType().equals("2")) {
-			value = this.debtorPosition.getIuv();
-			type = RefNumberType.IUV;
+		if(this.debtorPosition != null) {
+			if(this.debtorPosition.getModelType().equals("1")) {
+				value = this.debtorPosition.getIuv();
+				type = RefNumberType.CODICE_AVVISO;
+			} else if(this.debtorPosition.getModelType().equals("2")) {
+				value = this.debtorPosition.getIuv();
+				type = RefNumberType.IUV;
+			}
 		}
 		RefNumber refNumber = RefNumber.builder()
 				.value(value)
 				.type(type)
 				.build();
-		Item item = Item.builder()
-				.subject(this.paymentInfo.getRemittanceInformation())
-				.amount(this.paymentInfo.getAmount())
-				.refNumber(refNumber)
-				.debtor(debtor)
-				.payee(payee)
-				.build();
-		Cart cart = Cart.builder()
-				.amountPartial(this.paymentInfo.getAmount())
-				.item(item)
-				.build();
-		Data data = Data.builder()
-				.fullName(this.payer.getFullName())
-				.taxCode(this.payer.getEntityUniqueIdentifierValue())
-				.build();
+		Item item = null;
+		Cart cart = null;
+		if(this.paymentInfo != null){
+			item = Item.builder()
+					.subject(this.paymentInfo.getRemittanceInformation())
+					.amount(this.paymentInfo.getAmount())
+					.refNumber(refNumber)
+					.debtor(debtor)
+					.payee(payee)
+					.build();
+			cart = Cart.builder()
+					.amountPartial(this.paymentInfo.getAmount())
+					.item(item)
+					.build();
+		}
+		Data data = null;
+		if(this.payer == null) {
+			data = Data.builder()
+					.fullName(this.payer.getFullName())
+					.taxCode(this.payer.getEntityUniqueIdentifierValue())
+					.build();
+		}
 		User user = User.builder()
 				.data(data)
 				.build();
 		if(this.getTransactionDetails() != null && this.getTransactionDetails().getWallet() != null && this.getTransactionDetails().getTransaction() != null) {
 			PaymentMethod paymentMethod = this.mapPaymentMethod();
 			it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Psp psp = it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Psp.builder()
-					.name((transactionDetails.getTransaction().getPsp().getBusinessName() != null) ? transactionDetails.getTransaction().getPsp().getBusinessName() : this.psp.getPsp())
+					.name(mapPspName())
 					.fee((Objects.isNull(transactionDetails.getTransaction().getFee())) ? String.valueOf(transactionDetails.getTransaction().getFee()) : this.paymentInfo.getFee())
 					.build();
 			Transaction transaction = mapTransaction(psp, paymentMethod);
@@ -115,6 +128,16 @@ public class BizEvent {
 				.name(brand)
 				.accountHolder(holder)
 				.build();
+	}
+
+	private String mapPspName() {
+		String name = null;
+		if(this.transactionDetails.getTransaction().getPsp() != null && this.transactionDetails.getTransaction().getPsp().getBusinessName() != null) {
+			name = this.transactionDetails.getTransaction().getPsp().getBusinessName();
+		} else {
+			name = (this.psp != null && this.psp.getPsp() != null) ? this.psp.getPsp() : null;
+		}
+		return name;
 	}
 
 	private Transaction mapTransaction(it.gov.pagopa.bizeventsdatastore.entity.pdfReceipt.Psp psp, PaymentMethod paymentMethod) {
