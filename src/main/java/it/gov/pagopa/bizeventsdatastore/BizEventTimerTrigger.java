@@ -58,8 +58,6 @@ public class BizEventTimerTrigger {
 			be.setEventErrorMessage(System.getenv().getOrDefault("TRIGGER_CUSTOM_ERROR_MESSAGE", "-"));
 			be.setEventTriggeredBySchedule(Boolean.TRUE);
 
-			be.alignPdfReceipt();
-
 			// Populates the list for the UPDATE of biz-event status
 			message = String.format("BizEventTimerTriggerProcessor function COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
