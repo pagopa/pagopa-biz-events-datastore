@@ -91,8 +91,6 @@ public class BizEventToDataStore {
 								bizEvtMsg.get(i).getId(), result);
 						logger.info(msg);
 
-						bz.alignPdfReceipt();
-
 						bizEvtMsgWithProperties.add(bz);
 					}
 					else {
