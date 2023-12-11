@@ -20,4 +20,6 @@ public class User {
 	private String userId;
 	private String userStatus;
 	private String userStatusDescription;
+	private String name;
+	private String surname;
 }

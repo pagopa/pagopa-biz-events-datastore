@@ -23,6 +23,4 @@ public class TransactionDetails {
 	private Transaction transaction;
 	@Key
 	private WalletItem wallet;
-	@Key
-	private InfoECommerce info;
 }
