@@ -1,39 +1,48 @@
 {
-	"transaction": {
-		"idTransaction": 7090141621,
-		"grandTotal": 10142,
-		"amount": 10012,
-		"fee": 130,
-		"transactionStatus": "Autorizzato",
-		"accountingStatus": "Contabilizzato",
-		"rrn": "223561000348",
-		"authorizationCode": "00",
-		"creationDate": "2022-12-22T16:30:30Z",
-		"numAut": "189327",
-		"accountCode": "00",
-		"psp": {
-			"idChannel": "00348170101_01_ONUS",
-			"businessName": "UniCredit S.p.A",
-			"serviceName": "Pagamento con carte"
-		}
-	},
-	"wallet": {
-		"idWallet": 125647,
-		"walletType": "CREDIT_CARD",
-		"enableableFunctions": [
-			"pagoPA",
-			"FA",
-			"BPD"
-		],
-		"pagoPa": true,
-		"onboardingChannel": "IO-PAY",
-		"favourite": false,
-		"createDate": "2022-12-22T16:30:30Z",
-		"info": {}
-	},
-	"user": {
-		"idUser": 78385,
-		"userStatus": 0,
-		"userStatusDescription": "ANONYMOUS"
-	}
+    "transaction": {
+        "idTransaction": 7090140980,
+        "grandTotal": 12130,
+        "amount": 12000,
+        "fee": 130,
+        "transactionStatus": "Autorizzato",
+        "accountingStatus": "Contabilizzato",
+        "origin": "IO",
+        "rrn": "223481000380",
+        "authorizationCode": "00",
+        "creationDate": "2022-12-14T14:28:41Z",
+        "numAut": "855646",
+        "accountCode": "00",
+        "psp": {
+            "idChannel": "00348170101_01_ONUS",
+            "businessName": "UniCredit S.p.A",
+            "serviceName": "Pagamento con carte"
+        }
+    },
+    "wallet": {
+        "idWallet": 119134,
+        "walletType": "Card",
+        "enableableFunctions": ["FA", "BPD", "pagoPA"],
+        "pagoPa": true,
+        "onboardingChannel": "IO",
+        "favourite": true,
+        "createDate": "2022-12-14T14:28:41Z",
+        "info": {
+            "type": "CardInfo",
+            "holder": "Test Mc",
+            "blurredNumber": "3477",
+            "hashPan": "ceb3d483de53fb29a6f04f101bf347f83fc57b4f1e7dae88e2afe524465a8c69",
+            "expireMonth": "12",
+            "expireYear": "2030",
+            "brand": "MASTERCARD",
+            "brandLogo": "https://uat.wisp2.pagopa.gov.it/wallet/assets/img/creditcard/carta_mc.png"
+        }
+    },
+    "user": {
+        "idUser": 71167,
+        "userStatus": 11,
+        "name": "MARCO",
+        "surname": "TORMEN",
+        "fiscalCode": "TRMMRC82A06H501Y",
+        "userStatusDescription": "REGISTERED_SPID"
+    }
 }

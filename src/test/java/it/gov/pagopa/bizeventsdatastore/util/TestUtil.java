@@ -6,6 +6,7 @@ import java.nio.file.Files;
 import java.util.Objects;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
@@ -20,6 +21,7 @@ public class TestUtil {
 		var content = Files.readString(file.toPath());
 		ObjectMapper objectMapper = new ObjectMapper();
 		objectMapper.registerModule(new JavaTimeModule());
+		objectMapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
 		return objectMapper.readValue(content, clazz);
 	}
 
