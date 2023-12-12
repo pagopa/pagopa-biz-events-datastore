@@ -11,15 +11,10 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Info {
-	private String type;
-	private String blurredNumber;
-	private String holder;
-	private String expireMonth;
-	private String expireYear;
+public class InfoECommerce {
 	private String brand;
-	private String issuerAbi;
-	private String issuerName;
-	private String label;
-	private String hashPan;
+	private String brandLogo;
+	private String clientId;
+	private String paymentMethodName;
+	private String type;
 }

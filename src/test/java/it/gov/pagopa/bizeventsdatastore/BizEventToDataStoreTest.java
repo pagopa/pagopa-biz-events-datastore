@@ -24,7 +24,9 @@ import com.microsoft.azure.functions.OutputBinding;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.DebtorPosition;
+import it.gov.pagopa.bizeventsdatastore.entity.InfoECommerce;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
+import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToDataStoreTest {
@@ -44,9 +46,17 @@ class BizEventToDataStoreTest {
         
         PaymentInfo pi = PaymentInfo.builder().IUR("iur").build();
         DebtorPosition dp = DebtorPosition.builder().iuv("iuv").build();
+        InfoECommerce iec = InfoECommerce.builder()
+        		.brand("VISA")
+        		.brandLogo("https://dev.checkout.pagopa.it/assets/creditcard/carta_visa.png")
+        		.clientId("CHECKOUT")
+        		.paymentMethodName("Carte")
+        		.type("CP")
+        		.build();
+        TransactionDetails td = TransactionDetails.builder().info(iec).build();
         
         List<BizEvent> bizEvtMsg = new ArrayList<>();
-        bizEvtMsg.add (BizEvent.builder().id("123").paymentInfo(pi).debtorPosition(dp).build());
+        bizEvtMsg.add (BizEvent.builder().id("123").paymentInfo(pi).debtorPosition(dp).transactionDetails(td).build());
         
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")

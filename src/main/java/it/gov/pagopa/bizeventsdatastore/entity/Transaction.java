@@ -25,4 +25,5 @@ public class Transaction {
 	private String numAut;
 	private String accountCode;
 	private TransactionPsp psp;
+	private String origin;
 }

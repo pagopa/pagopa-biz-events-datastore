@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.model;
 
-
 import com.google.api.client.util.Key;
 
 import lombok.AllArgsConstructor;
@@ -14,15 +13,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class TransactionDetails {
-	@Builder.Default
-	private String origin = "PaymentManager";
+public class InfoECommerce {
 	@Key
-	private User user;
+	private String brand;
 	@Key
-	private Transaction transaction;
+	private String brandLogo;
 	@Key
-	private WalletItem wallet;
+	private String clientId;
 	@Key
-	private InfoECommerce info;
+	private String paymentMethodName;
+	@Key
+	private String type;
 }
