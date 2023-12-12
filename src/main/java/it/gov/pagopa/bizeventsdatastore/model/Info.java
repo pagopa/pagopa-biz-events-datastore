@@ -32,4 +32,6 @@ public class Info {
 	private String issuerName;
 	@Key
 	private String label;
+	@Key
+	private String hashPan;
 }

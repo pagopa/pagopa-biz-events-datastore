@@ -21,4 +21,5 @@ public class Info {
 	private String issuerAbi;
 	private String issuerName;
 	private String label;
+	private String hashPan;
 }
