@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.9.0</version>
+	<version>0.9.0-1-PAGOPA-1376-new-fields-mapping</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
