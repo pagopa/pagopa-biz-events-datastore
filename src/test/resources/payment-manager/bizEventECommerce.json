@@ -1,0 +1,102 @@
+  {
+    "id": "2d30dd02-da16-4e4e-8f89-1508f91fecca",
+    "version": "2",
+    "complete": false,
+    "missingInfo": [
+      "idPaymentManager",
+      "creditor.officeName",
+      "psp.pspPartitaIVA",
+      "debtor.streetName",
+      "debtor.civicNumber",
+      "debtor.postalCode",
+      "debtor.city",
+      "debtor.stateProvinceRegion",
+      "debtor.country",
+      "debtor.eMail",
+      "payer",
+      "paymentInfo.transferDate",
+      "paymentInfo.primaryCiIncurredFee",
+      "paymentInfo.idBundle",
+      "paymentInfo.idCiBundle",
+      "paymentInfo.paymentMethod",
+      "paymentInfo.metadata"
+    ],
+    "receiptId": "c55207c5c97c45fbb5b70ebe3158e35b",
+    "debtorPosition": {
+      "modelType": "2",
+      "noticeNumber": "004010000013126636",
+      "iuv": "010000013126636"
+    },
+    "creditor": {
+      "idPA": "80001630054",
+      "idBrokerPA": "06188330150",
+      "idStation": "06188330150_04",
+      "companyName": "Provincia di Asti"
+    },
+    "psp": {
+      "idBrokerPsp": "13212880150",
+      "idChannel": "13212880150_02_ONUS",
+      "idPsp": "CIPBITMM",
+      "psp": "Nexi",
+      "pspFiscalCode": "04107060966",
+      "channelDescription": "NA"
+    },
+    "debtor": {
+      "fullName": "FORZA SRL",
+      "entityUniqueIdentifierType": "G",
+      "entityUniqueIdentifierValue": "04923439090903"
+    },
+    "paymentInfo": {
+      "description": "Importo ridotto, verbale: V/13794/U/2023",
+      "paymentDateTime": "2023-12-18T11:08:14.025602",
+      "applicationDate": "2023-12-18",
+      "dueDate": "2099-12-31",
+      "paymentToken": "c55207c5c97c45fbb5b70ebe3158e35b",
+      "amount": 298.3,
+      "fee": 2.0,
+      "totalNotice": 1,
+      "touchpoint": "NA",
+      "remittanceInformation": "Importo ridotto, verbale: V/232323/U/2023",
+      "IUR": "c55207c5c97c45fbb5b70ebe3158e35b"
+    },
+    "transferList": [
+      {
+        "idTransfer": "1",
+        "fiscalCodePA": "80001630054",
+        "companyName": "Provincia di Asti",
+        "amount": 298.3,
+        "transferCategory": "9/0201121SA/",
+        "remittanceInformation": "Importo ridotto, verbale: V/232323/U/2023",
+        "IBAN": "IT94S0600000000000000006109"
+      }
+    ],
+    "transactionDetails": {
+      "info": {
+        "clientId": "CHECKOUT",
+        "brandLogo": "https://checkout.pagopa.it/assets/creditcard/mastercard.png",
+        "brand": "MASTERCARD",
+        "paymentMethodName": "CARDS",
+        "type": "CP"
+      },
+      "transaction": {
+        "timestampOperation": "2023-12-18T10:09:34.730109Z",
+        "grandTotal": 300.3,
+        "amount": 298.3,
+        "transactionStatus": "Confermato",
+        "creationDate": "2023-12-18T10:08:14.153411241Z",
+        "psp": {
+          "idPsp": "CIPBITMM",
+          "businessName": "Nexi",
+          "pspOnUs": true,
+          "brokerName": "13212880150",
+          "idChannel": "13212880150_02_ONUS"
+        },
+        "paymentGateway": "XPAY",
+        "transactionId": "abea935ac6dc4924a900e8f833234d97",
+        "fee": 2.0,
+        "authorizationCode": "840174",
+        "rrn": "q-7835hf5938hf935h5h"
+      },
+      "user": { "type": "GUEST" }
+    }
+  }

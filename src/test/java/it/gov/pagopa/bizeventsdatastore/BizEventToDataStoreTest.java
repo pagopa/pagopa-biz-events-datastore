@@ -7,6 +7,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -27,6 +28,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.DebtorPosition;
 import it.gov.pagopa.bizeventsdatastore.entity.InfoECommerce;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToDataStoreTest {
@@ -67,6 +69,30 @@ class BizEventToDataStoreTest {
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+    
+    @Test
+    void runECommerceOk() throws IOException {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEventECommerce.json", BizEvent.class);
+        bizEvtMsgList.add (bizEventMsg);
+        
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        
+        doReturn(null).when(function).findByBizEventId(anyString(), any(Logger.class));
+        doReturn("OK").when(function).saveBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        function.processBizEvent(bizEvtMsgList, properties, document, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
