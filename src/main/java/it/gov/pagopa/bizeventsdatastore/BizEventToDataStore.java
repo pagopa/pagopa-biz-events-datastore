@@ -115,6 +115,7 @@ public class BizEventToDataStore {
     }
     
     public String findByBizEventId(String id, Logger logger) {
+		logger.info(String.format("redis findByBizEventId %s",id));
     	try (Connection j = jedis.getPool().getResource()){
     		return jedis.get(REDIS_ID_PREFIX+id);
     	} catch (Exception e) {
