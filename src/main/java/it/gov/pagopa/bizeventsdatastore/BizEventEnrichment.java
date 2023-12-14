@@ -128,7 +128,7 @@ public class BizEventEnrichment {
 			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager(), method);
 			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
 			//Task PAGOPA-1193: adding mapping transactionId to align the PM with NDP, remove when ready
-			be.getTransactionDetails().getTransaction().setTransactionId(td.getTransaction().getIdTransaction());
+			be.getTransactionDetails().getTransaction().setTransactionId(String.valueOf(td.getTransaction().getIdTransaction()));
 		} catch (PM5XXException | IOException e) {
 			logger.warning("BizEventEnrichment "+ invocationId +" function - non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
 			be.setEventStatus(StatusType.RETRY);

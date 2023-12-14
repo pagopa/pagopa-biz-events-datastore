@@ -12,8 +12,8 @@ import lombok.Setter;
 @AllArgsConstructor
 @Builder
 public class Transaction {
-	private long idTransaction;
-	private long transactionId;
+	private String idTransaction;
+	private String transactionId;
 	private long grandTotal;
 	private long amount;
 	private long fee;
