@@ -1,5 +1,5 @@
   {
-    "id": "2d30dd02-da16-4e4e-8f89-1508f91fecca",
+    "id": "2d30dd02-da16-4e4e-8f89-1508f91Xfed",
     "version": "2",
     "complete": false,
     "missingInfo": [
@@ -21,11 +21,11 @@
       "paymentInfo.paymentMethod",
       "paymentInfo.metadata"
     ],
-    "receiptId": "c55207c5c97c45fbb5b70ebe3158e35b",
+    "receiptId": "c55207c5c97c45fbb5b70ebe9999e35b",
     "debtorPosition": {
       "modelType": "2",
-      "noticeNumber": "004010000013126636",
-      "iuv": "010000013126636"
+      "noticeNumber": "00401000001898989",
+      "iuv": "0100008998986"
     },
     "creditor": {
       "idPA": "80001630054",
@@ -42,7 +42,7 @@
       "channelDescription": "NA"
     },
     "debtor": {
-      "fullName": "FORZA SRL",
+      "fullName": "FORZA SFOR",
       "entityUniqueIdentifierType": "G",
       "entityUniqueIdentifierValue": "04923439090903"
     },
@@ -51,13 +51,13 @@
       "paymentDateTime": "2023-12-18T11:08:14.025602",
       "applicationDate": "2023-12-18",
       "dueDate": "2099-12-31",
-      "paymentToken": "c55207c5c97c45fbb5b70ebe3158e35b",
+      "paymentToken": "c55207c5c97c45fbb5b70ebe9999e35b",
       "amount": 298.3,
       "fee": 2.0,
       "totalNotice": 1,
       "touchpoint": "NA",
       "remittanceInformation": "Importo ridotto, verbale: V/232323/U/2023",
-      "IUR": "c55207c5c97c45fbb5b70ebe3158e35b"
+      "IUR": "c55207998987c45fbb5b70ebe999e35b"
     },
     "transferList": [
       {
@@ -92,7 +92,7 @@
           "idChannel": "13212880150_02_ONUS"
         },
         "paymentGateway": "XPAY",
-        "transactionId": "abea935ac6dc4924a900e8f833234d97",
+        "transactionId": "abea935ac6dc4924a87878yuyi4d97",
         "fee": 2.0,
         "authorizationCode": "840174",
         "rrn": "q-7835hf5938hf935h5h"
