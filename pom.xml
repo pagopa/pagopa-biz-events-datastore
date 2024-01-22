@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.11.1-1-PAGOPA-1454-sviluppo-biz-evt-migrazione-a-java-17</version>
+	<version>0.11.1-2-PAGOPA-1454-sviluppo-biz-evt-migrazione-a-java-17</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
