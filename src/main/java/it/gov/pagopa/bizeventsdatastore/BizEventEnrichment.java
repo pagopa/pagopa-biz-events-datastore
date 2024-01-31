@@ -17,50 +17,81 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
+import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
+import it.gov.pagopa.bizeventsdatastore.entity.view.WalletInfo;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
 import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
+import static it.gov.pagopa.bizeventsdatastore.util.BizEventToViewUtils.*;
+
 
 public class BizEventEnrichment {
-	
-	private final int maxRetryAttempts = 
-			System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
-	private static final String BPAY_PAYMENT_TYPE = "BPAY";
+    private final int maxRetryAttempts =
+            System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
-	private static final String PPAL_PAYMENT_TYPE = "PPAL";
+    private static final String BPAY_PAYMENT_TYPE = "BPAY";
 
-	@FunctionName("BizEventEnrichmentProcessor")
-	public void processBizEventEnrichment(
-			@CosmosDBTrigger(
-					name = "BizEventDatastore",
-					databaseName = "db",
-					containerName = "biz-events",
-					leaseContainerName = "biz-events-leases",
-					createLeaseContainerIfNotExists = true,
-					maxItemsPerInvocation=100,
-					connection = "COSMOS_CONN_STRING") 
-			List<BizEvent> items,
-			@EventHubOutput(
-					name = "PdndBizEventHub", 
-					eventHubName = "", // blank because the value is included in the connection string
-					connection = "PDND_EVENTHUB_CONN_STRING")
-			OutputBinding<List<BizEvent>> bizEvtMsg,
-			@CosmosDBOutput(
-					name = "EnrichedBizEventDatastore",
-					databaseName = "db",
-					containerName = "biz-events",
-					createIfNotExists = false,
-					connection = "COSMOS_CONN_STRING")
-			OutputBinding<List<BizEvent>> documentdb,
-			final ExecutionContext context
-			) {
-		
-		List<BizEvent> itemsDone = new ArrayList<>();
-		List<BizEvent> itemsToUpdate = new ArrayList<>();
-		Logger logger = context.getLogger();
+    private static final String PPAL_PAYMENT_TYPE = "PPAL";
+
+    @FunctionName("BizEventEnrichmentProcessor")
+    public void processBizEventEnrichment(
+            @CosmosDBTrigger(
+                    name = "BizEventDatastore",
+                    databaseName = "db",
+                    containerName = "biz-events",
+                    leaseContainerName = "biz-events-leases",
+                    createLeaseContainerIfNotExists = true,
+                    maxItemsPerInvocation = 100,
+                    connection = "COSMOS_CONN_STRING")
+            List<BizEvent> items,
+            @EventHubOutput(
+                    name = "PdndBizEventHub",
+                    eventHubName = "", // blank because the value is included in the connection string
+                    connection = "PDND_EVENTHUB_CONN_STRING")
+            OutputBinding<List<BizEvent>> bizEvtMsg,
+            @CosmosDBOutput(
+                    name = "EnrichedBizEventDatastore",
+                    databaseName = "db",
+                    containerName = "biz-events",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEvent>> documentdb,
+            @CosmosDBOutput(
+                    name = "BizEventUserView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-user",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewUser>> bizEventUserView,
+            @CosmosDBOutput(
+                    name = "BizEventGeneralView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-general",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
+            @CosmosDBOutput(
+                    name = "BizEventCartView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-cart",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewCart>> bizEventCartView,
+            final ExecutionContext context
+    ) {
+
+        List<BizEvent> itemsDone = new ArrayList<>();
+        List<BizEvent> itemsToUpdate = new ArrayList<>();
+        List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+        List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
+        List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+        Logger logger = context.getLogger();
 
 		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
@@ -81,10 +112,28 @@ public class BizEventEnrichment {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
 
-				// if status is DONE put the event on the Event Hub
-				if (be.getEventStatus()==StatusType.DONE) {
-					// items in DONE status good for the Event Hub
-					itemsDone.add(be);
+                // if status is DONE put the event on the Event Hub
+                if (be.getEventStatus()==StatusType.DONE) {
+                    // items in DONE status good for the Event Hub
+                    UserDetail debtorUserDetail = tokenizeUserDetail(getDebtor(be.getDebtor()));
+                    UserDetail payerUserDetail = tokenizeUserDetail(getPayer(be));
+                    if (debtorUserDetail != null || payerUserDetail != null) {
+                        BizEventsViewGeneral generalView = buildGeneralView(be, payerUserDetail);
+                        BizEventsViewCart cartView = buildCartView(be, debtorUserDetail);
+                        generalViewToInsert.add(generalView);
+                        cartViewToInsert.add(cartView);
+                    }
+
+                    if(debtorUserDetail != null) {
+                        BizEventsViewUser debtorUserView = buildUserView(be, debtorUserDetail);
+                        userViewToInsert.add(debtorUserView);
+                    }
+                    if(payerUserDetail != null) {
+                        BizEventsViewUser payerUserView = buildUserView(be, payerUserDetail);
+                        userViewToInsert.add(payerUserView);
+                    }
+
+                    itemsDone.add(be);
 				}
 				
 				/** 
@@ -116,6 +165,15 @@ public class BizEventEnrichment {
 		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
 		logger.info(msg);
 		documentdb.setValue(itemsToUpdate);
+
+
+		// Insert in Biz-event views
+		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the Biz-event views: user - %d, general - %d, cart - %d ",
+				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
+		logger.info(msg);
+		bizEventUserView.setValue(userViewToInsert);
+		bizEventGeneralView.setValue(generalViewToInsert);
+		bizEventCartView.setValue(cartViewToInsert);
 	}
 
 	// the return of the BizEvent has the purpose of testing the correct execution of the method
@@ -149,4 +207,53 @@ public class BizEventEnrichment {
 		
 		return be;
 	}
+
+    private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
+        return BizEventsViewCart.builder()
+                .transactionId(getTransactionId(bizEvent))
+                .eventId(bizEvent.getId())
+                .subject(getItemSubject(bizEvent))
+                .amount(getItemAmount(bizEvent.getPaymentInfo()))
+                .debtor(debtor)
+                .payee(getPayee(bizEvent.getCreditor()))
+                .refNumberType(getRefNumberType(bizEvent.getDebtorPosition()))
+                .refNumberValue(getRefNumberValue(bizEvent.getDebtorPosition()))
+                .build();
+    }
+
+    private BizEventsViewGeneral buildGeneralView(BizEvent bizEvent, UserDetail payer) {
+        return BizEventsViewGeneral.builder()
+                .transactionId(getTransactionId(bizEvent))
+                .authCode(getAuthCode(bizEvent.getTransactionDetails()))
+                .rrn(getRrn(bizEvent))
+                .transactionDate(getTransactionDate(bizEvent))
+                .pspName(getPspName(bizEvent))
+                .walletInfo(
+                        WalletInfo.builder()
+                                .accountHolder(getPaymentMethodAccountHolder(bizEvent.getTransactionDetails()))
+                                .brand(getBrand(bizEvent.getTransactionDetails()))
+                                .blurredNumber(getBlurredNumber(bizEvent.getTransactionDetails()))
+                                .build())
+                .payer(payer)
+                .fee(getFee(bizEvent.getTransactionDetails()))
+                .paymentMethod(getPaymentMethod(bizEvent.getPaymentInfo()))
+                .origin(getOrigin(bizEvent.getTransactionDetails()))
+				.totalNotice(getTotalNotice(bizEvent.getPaymentInfo()))
+                .build();
+    }
+
+    private UserDetail tokenizeUserDetail(UserDetail userDetail) {
+        // TODO tokenize PII
+
+        return userDetail;
+    }
+
+    private BizEventsViewUser buildUserView(BizEvent be, UserDetail userDetail) {
+        return BizEventsViewUser.builder()
+                .taxCode(userDetail.getTaxCode())
+                .transactionId(getTransactionId(be))
+                .transactionDate(getTransactionDate(be))
+                .hidden(false)
+                .build();
+    }
 }
