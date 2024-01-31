@@ -1,19 +1,12 @@
 package it.gov.pagopa.bizeventsdatastore;
 
-import java.io.IOException;
-import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.Logger;
-
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.EventHubOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
-
 import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
@@ -22,10 +15,20 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.entity.view.WalletInfo;
+import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
 import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
+import it.gov.pagopa.bizeventsdatastore.service.impl.PDVTokenizerServiceRetryWrapperImpl;
 import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
+
+import java.io.IOException;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import static it.gov.pagopa.bizeventsdatastore.util.BizEventToViewUtils.*;
 
@@ -39,7 +42,17 @@ public class BizEventEnrichment {
 
     private static final String PPAL_PAYMENT_TYPE = "PPAL";
 
-    @FunctionName("BizEventEnrichmentProcessor")
+	private final PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry;
+
+	public BizEventEnrichment() {
+		this.pdvTokenizerServiceRetry = new PDVTokenizerServiceRetryWrapperImpl();
+	}
+
+	BizEventEnrichment(PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry) {
+		this.pdvTokenizerServiceRetry = pdvTokenizerServiceRetry;
+	}
+
+	@FunctionName("BizEventEnrichmentProcessor")
     public void processBizEventEnrichment(
             @CosmosDBTrigger(
                     name = "BizEventDatastore",
@@ -242,18 +255,32 @@ public class BizEventEnrichment {
                 .build();
     }
 
+	private BizEventsViewUser buildUserView(BizEvent be, UserDetail userDetail) {
+		return BizEventsViewUser.builder()
+				.taxCode(userDetail.getTaxCode())
+				.transactionId(getTransactionId(be))
+				.transactionDate(getTransactionDate(be))
+				.hidden(false)
+				.build();
+	}
+
     private UserDetail tokenizeUserDetail(UserDetail userDetail) {
-        // TODO tokenize PII
+		if (userDetail == null || userDetail.getTaxCode() == null) {
+			return null;
+		}
+		String tokenizedFiscalCode;
+		try {
+			tokenizedFiscalCode = pdvTokenizerServiceRetry.generateTokenForFiscalCodeWithRetry(userDetail.getTaxCode());
+		} catch (PDVTokenizerException | JsonProcessingException e) {
+			return null;
+		}
+		if (tokenizedFiscalCode == null) {
+			return null;
+		}
 
-        return userDetail;
-    }
-
-    private BizEventsViewUser buildUserView(BizEvent be, UserDetail userDetail) {
-        return BizEventsViewUser.builder()
-                .taxCode(userDetail.getTaxCode())
-                .transactionId(getTransactionId(be))
-                .transactionDate(getTransactionDate(be))
-                .hidden(false)
-                .build();
+        return UserDetail.builder()
+				.name(userDetail.getName())
+				.taxCode(tokenizedFiscalCode)
+				.build();
     }
 }

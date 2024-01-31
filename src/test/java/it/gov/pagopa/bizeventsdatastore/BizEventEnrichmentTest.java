@@ -83,7 +83,7 @@ class BizEventEnrichmentTest {
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, null, null, null, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -118,7 +118,7 @@ class BizEventEnrichmentTest {
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, null, null, null, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -169,7 +169,7 @@ class BizEventEnrichmentTest {
         OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
         // test execution
-        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, context);
+        function.processBizEventEnrichment(bizEvtMsgList, BizEventToEH, BizEventToCosmos, null, null, null, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
