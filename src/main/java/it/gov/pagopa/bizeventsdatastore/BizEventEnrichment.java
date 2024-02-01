@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
@@ -13,14 +12,12 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
-import it.gov.pagopa.bizeventsdatastore.entity.view.WalletInfo;
-import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
-import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
-import it.gov.pagopa.bizeventsdatastore.service.impl.PDVTokenizerServiceRetryWrapperImpl;
+import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
 
 import java.io.IOException;
@@ -29,8 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import static it.gov.pagopa.bizeventsdatastore.util.BizEventToViewUtils.*;
 
 
 public class BizEventEnrichment {
@@ -42,14 +37,14 @@ public class BizEventEnrichment {
 
     private static final String PPAL_PAYMENT_TYPE = "PPAL";
 
-	private final PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry;
+	private final BizEventToViewService bizEventToViewService;
 
 	public BizEventEnrichment() {
-		this.pdvTokenizerServiceRetry = new PDVTokenizerServiceRetryWrapperImpl();
+		this.bizEventToViewService = new BizEventToViewServiceImpl();
 	}
 
-	BizEventEnrichment(PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry) {
-		this.pdvTokenizerServiceRetry = pdvTokenizerServiceRetry;
+	BizEventEnrichment(BizEventToViewService bizEventToViewService) {
+		this.bizEventToViewService = bizEventToViewService;
 	}
 
 	@FunctionName("BizEventEnrichmentProcessor")
@@ -125,31 +120,27 @@ public class BizEventEnrichment {
 					this.enrichBizEvent(be, logger, context.getInvocationId());
 				}
 
-                // if status is DONE put the event on the Event Hub
+				// if status is DONE put the event on the Event Hub
                 if (be.getEventStatus()==StatusType.DONE) {
                     // items in DONE status good for the Event Hub
-                    UserDetail debtorUserDetail = tokenizeUserDetail(getDebtor(be.getDebtor()));
-                    UserDetail payerUserDetail = tokenizeUserDetail(getPayer(be));
-                    if (debtorUserDetail != null || payerUserDetail != null) {
-                        BizEventsViewGeneral generalView = buildGeneralView(be, payerUserDetail);
-                        BizEventsViewCart cartView = buildCartView(be, debtorUserDetail);
-                        generalViewToInsert.add(generalView);
-                        cartViewToInsert.add(cartView);
-                    }
-
-                    if(debtorUserDetail != null) {
-                        BizEventsViewUser debtorUserView = buildUserView(be, debtorUserDetail);
-                        userViewToInsert.add(debtorUserView);
-                    }
-                    if(payerUserDetail != null) {
-                        BizEventsViewUser payerUserView = buildUserView(be, payerUserDetail);
-                        userViewToInsert.add(payerUserView);
-                    }
-
-                    itemsDone.add(be);
+					try {
+						BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
+						if (bizEventToViewResult != null) {
+							userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
+							generalViewToInsert.add(bizEventToViewResult.getGeneralView());
+							cartViewToInsert.add(bizEventToViewResult.getCartView());
+						}
+						itemsDone.add(be);
+					} catch (Exception e) {
+						String errMsg = String.format("Error on mapping biz-event with id %s to its views", be.getId());
+						logger.log(Level.SEVERE, errMsg, e);
+						be.setEventErrorMessage(e.getMessage());
+						be.setEventStatus(StatusType.RETRY);
+						be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount() + 1);
+					}
 				}
 				
-				/** 
+				/*
 				 * Populates the list with events to update.
 				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
 				 */
@@ -184,9 +175,15 @@ public class BizEventEnrichment {
 		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the Biz-event views: user - %d, general - %d, cart - %d ",
 				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
 		logger.info(msg);
-		bizEventUserView.setValue(userViewToInsert);
-		bizEventGeneralView.setValue(generalViewToInsert);
-		bizEventCartView.setValue(cartViewToInsert);
+		if (!userViewToInsert.isEmpty()) {
+			bizEventUserView.setValue(userViewToInsert);
+		}
+		if (!generalViewToInsert.isEmpty()) {
+			bizEventGeneralView.setValue(generalViewToInsert);
+		}
+		if (!cartViewToInsert.isEmpty()) {
+			bizEventCartView.setValue(cartViewToInsert);
+		}
 	}
 
 	// the return of the BizEvent has the purpose of testing the correct execution of the method
@@ -220,67 +217,4 @@ public class BizEventEnrichment {
 		
 		return be;
 	}
-
-    private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
-        return BizEventsViewCart.builder()
-                .transactionId(getTransactionId(bizEvent))
-                .eventId(bizEvent.getId())
-                .subject(getItemSubject(bizEvent))
-                .amount(getItemAmount(bizEvent.getPaymentInfo()))
-                .debtor(debtor)
-                .payee(getPayee(bizEvent.getCreditor()))
-                .refNumberType(getRefNumberType(bizEvent.getDebtorPosition()))
-                .refNumberValue(getRefNumberValue(bizEvent.getDebtorPosition()))
-                .build();
-    }
-
-    private BizEventsViewGeneral buildGeneralView(BizEvent bizEvent, UserDetail payer) {
-        return BizEventsViewGeneral.builder()
-                .transactionId(getTransactionId(bizEvent))
-                .authCode(getAuthCode(bizEvent.getTransactionDetails()))
-                .rrn(getRrn(bizEvent))
-                .transactionDate(getTransactionDate(bizEvent))
-                .pspName(getPspName(bizEvent))
-                .walletInfo(
-                        WalletInfo.builder()
-                                .accountHolder(getPaymentMethodAccountHolder(bizEvent.getTransactionDetails()))
-                                .brand(getBrand(bizEvent.getTransactionDetails()))
-                                .blurredNumber(getBlurredNumber(bizEvent.getTransactionDetails()))
-                                .build())
-                .payer(payer)
-                .fee(getFee(bizEvent.getTransactionDetails()))
-                .paymentMethod(getPaymentMethod(bizEvent.getPaymentInfo()))
-                .origin(getOrigin(bizEvent.getTransactionDetails()))
-				.totalNotice(getTotalNotice(bizEvent.getPaymentInfo()))
-                .build();
-    }
-
-	private BizEventsViewUser buildUserView(BizEvent be, UserDetail userDetail) {
-		return BizEventsViewUser.builder()
-				.taxCode(userDetail.getTaxCode())
-				.transactionId(getTransactionId(be))
-				.transactionDate(getTransactionDate(be))
-				.hidden(false)
-				.build();
-	}
-
-    private UserDetail tokenizeUserDetail(UserDetail userDetail) {
-		if (userDetail == null || userDetail.getTaxCode() == null) {
-			return null;
-		}
-		String tokenizedFiscalCode;
-		try {
-			tokenizedFiscalCode = pdvTokenizerServiceRetry.generateTokenForFiscalCodeWithRetry(userDetail.getTaxCode());
-		} catch (PDVTokenizerException | JsonProcessingException e) {
-			return null;
-		}
-		if (tokenizedFiscalCode == null) {
-			return null;
-		}
-
-        return UserDetail.builder()
-				.name(userDetail.getName())
-				.taxCode(tokenizedFiscalCode)
-				.build();
-    }
 }

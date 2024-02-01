@@ -1,4 +1,4 @@
-package it.gov.pagopa.bizeventsdatastore.model;
+package it.gov.pagopa.bizeventsdatastore.model.pm;
 
 import java.util.List;
 
