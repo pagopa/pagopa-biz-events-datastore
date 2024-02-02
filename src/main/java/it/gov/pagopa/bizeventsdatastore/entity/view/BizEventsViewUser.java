@@ -17,4 +17,5 @@ public class BizEventsViewUser {
     private String transactionId;
     private String transactionDate;
     private boolean hidden;
+    private boolean isPayer;
 }

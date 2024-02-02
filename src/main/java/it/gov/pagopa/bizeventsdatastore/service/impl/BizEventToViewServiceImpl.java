@@ -86,12 +86,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
         List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
         if (debtorUserDetail != null) {
-            BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtorUserDetail);
+            BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtorUserDetail, false);
             userViewToInsert.add(debtorUserView);
         }
 
         if (payerUserDetail != null) {
-            BizEventsViewUser payerUserView = buildUserView(bizEvent, payerUserDetail);
+            BizEventsViewUser payerUserView = buildUserView(bizEvent, payerUserDetail, true);
             userViewToInsert.add(payerUserView);
         }
 
@@ -389,12 +389,13 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
-    private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail) {
+    private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer) {
         return BizEventsViewUser.builder()
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
                 .hidden(false)
+                .isPayer(isPayer)
                 .build();
     }
 

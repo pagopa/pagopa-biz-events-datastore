@@ -29,9 +29,11 @@ import org.junit.jupiter.api.Test;
 import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -86,6 +88,17 @@ class BizEventToViewServiceImplTest {
         assertNotNull(result.getCartView());
         assertEquals(2, result.getUserViewList().size());
 
+        if (result.getUserViewList().get(0).isPayer()) {
+            assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+            assertTrue(result.getUserViewList().get(0).isPayer());
+            assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getUserViewList().get(1).getTaxCode());
+            assertFalse(result.getUserViewList().get(1).isPayer());
+        } else {
+            assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(1).getTaxCode());
+            assertTrue(result.getUserViewList().get(1).isPayer());
+            assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+            assertFalse(result.getUserViewList().get(0).isPayer());
+        }
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
 
