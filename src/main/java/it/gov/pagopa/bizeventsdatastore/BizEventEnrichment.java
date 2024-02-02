@@ -32,6 +32,7 @@ public class BizEventEnrichment {
 
     private final int maxRetryAttempts =
             System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
+    private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
     private static final String BPAY_PAYMENT_TYPE = "BPAY";
 
@@ -124,11 +125,13 @@ public class BizEventEnrichment {
                 if (be.getEventStatus()==StatusType.DONE) {
                     // items in DONE status good for the Event Hub
 					try {
-						BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
-						if (bizEventToViewResult != null) {
-							userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
-							generalViewToInsert.add(bizEventToViewResult.getGeneralView());
-							cartViewToInsert.add(bizEventToViewResult.getCartView());
+						if (enableTransactionListView) {
+							BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
+							if (bizEventToViewResult != null) {
+								userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
+								generalViewToInsert.add(bizEventToViewResult.getGeneralView());
+								cartViewToInsert.add(bizEventToViewResult.getCartView());
+							}
 						}
 						itemsDone.add(be);
 					} catch (Exception e) {

@@ -26,6 +26,9 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -53,6 +56,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
+@ExtendWith(SystemStubsExtension.class)
 class BizEventEnrichmentTest {
 
 	private BizEventEnrichment function;
@@ -86,6 +90,9 @@ class BizEventEnrichmentTest {
 
     @Mock
     private BizEventToViewService bizEventToViewService;
+
+    @SystemStub
+    private EnvironmentVariables environment = new EnvironmentVariables("ENABLE_TRANSACTION_LIST_VIEW", "true");
 
     @BeforeEach
     void setUp() {
