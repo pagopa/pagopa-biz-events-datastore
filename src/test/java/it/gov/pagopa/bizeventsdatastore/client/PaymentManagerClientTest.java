@@ -23,7 +23,7 @@ import com.github.tomakehurst.wiremock.WireMockServer;
 
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)

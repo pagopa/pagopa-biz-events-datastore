@@ -20,7 +20,7 @@ import com.google.gson.reflect.TypeToken;
 
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
@@ -90,7 +90,7 @@ public class PaymentManagerClient {
 	}
 	
 	public void setRequestRetry(HttpRequest request) {
-		/** 
+		/*
 		 * Retry section config
 		 */
 		ExponentialBackOff backoff = new ExponentialBackOff.Builder()

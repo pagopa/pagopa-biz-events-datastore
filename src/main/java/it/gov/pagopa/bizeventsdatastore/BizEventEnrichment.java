@@ -1,5 +1,25 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.CosmosDBOutput;
+import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
+import com.microsoft.azure.functions.annotation.EventHubOutput;
+import com.microsoft.azure.functions.annotation.FunctionName;
+import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
+import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
+import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
+import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
+import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
+import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
+
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -7,60 +27,80 @@ import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
-import com.microsoft.azure.functions.annotation.EventHubOutput;
-import com.microsoft.azure.functions.annotation.FunctionName;
-
-import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
-import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
-import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
-import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
-import it.gov.pagopa.bizeventsdatastore.model.TransactionDetails;
-import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
-
 
 public class BizEventEnrichment {
-	
-	private final int maxRetryAttempts = 
-			System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
 
-	private static final String BPAY_PAYMENT_TYPE = "BPAY";
+    private final int maxRetryAttempts =
+            System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
+    private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
-	private static final String PPAL_PAYMENT_TYPE = "PPAL";
+    private static final String BPAY_PAYMENT_TYPE = "BPAY";
+
+    private static final String PPAL_PAYMENT_TYPE = "PPAL";
+
+	private final BizEventToViewService bizEventToViewService;
+
+	public BizEventEnrichment() {
+		this.bizEventToViewService = new BizEventToViewServiceImpl();
+	}
+
+	BizEventEnrichment(BizEventToViewService bizEventToViewService) {
+		this.bizEventToViewService = bizEventToViewService;
+	}
 
 	@FunctionName("BizEventEnrichmentProcessor")
-	public void processBizEventEnrichment(
-			@CosmosDBTrigger(
-					name = "BizEventDatastore",
-					databaseName = "db",
-					containerName = "biz-events",
-					leaseContainerName = "biz-events-leases",
-					createLeaseContainerIfNotExists = true,
-					maxItemsPerInvocation=100,
-					connection = "COSMOS_CONN_STRING") 
-			List<BizEvent> items,
-			@EventHubOutput(
-					name = "PdndBizEventHub", 
-					eventHubName = "", // blank because the value is included in the connection string
-					connection = "PDND_EVENTHUB_CONN_STRING")
-			OutputBinding<List<BizEvent>> bizEvtMsg,
-			@CosmosDBOutput(
-					name = "EnrichedBizEventDatastore",
-					databaseName = "db",
-					containerName = "biz-events",
-					createIfNotExists = false,
-					connection = "COSMOS_CONN_STRING")
-			OutputBinding<List<BizEvent>> documentdb,
-			final ExecutionContext context
-			) {
-		
-		List<BizEvent> itemsDone = new ArrayList<>();
-		List<BizEvent> itemsToUpdate = new ArrayList<>();
-		Logger logger = context.getLogger();
+    public void processBizEventEnrichment(
+            @CosmosDBTrigger(
+                    name = "BizEventDatastore",
+                    databaseName = "db",
+                    containerName = "biz-events",
+                    leaseContainerName = "biz-events-leases",
+                    createLeaseContainerIfNotExists = true,
+                    maxItemsPerInvocation = 100,
+                    connection = "COSMOS_CONN_STRING")
+            List<BizEvent> items,
+            @EventHubOutput(
+                    name = "PdndBizEventHub",
+                    eventHubName = "", // blank because the value is included in the connection string
+                    connection = "PDND_EVENTHUB_CONN_STRING")
+            OutputBinding<List<BizEvent>> bizEvtMsg,
+            @CosmosDBOutput(
+                    name = "EnrichedBizEventDatastore",
+                    databaseName = "db",
+                    containerName = "biz-events",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEvent>> documentdb,
+            @CosmosDBOutput(
+                    name = "BizEventUserView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-user",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewUser>> bizEventUserView,
+            @CosmosDBOutput(
+                    name = "BizEventGeneralView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-general",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
+            @CosmosDBOutput(
+                    name = "BizEventCartView",
+                    databaseName = "db",
+                    containerName = "biz-events-view-cart",
+                    createIfNotExists = false,
+                    connection = "COSMOS_CONN_STRING")
+            OutputBinding<List<BizEventsViewCart>> bizEventCartView,
+            final ExecutionContext context
+    ) {
+
+        List<BizEvent> itemsDone = new ArrayList<>();
+        List<BizEvent> itemsToUpdate = new ArrayList<>();
+        List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+        List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
+        List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+        Logger logger = context.getLogger();
 
 		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
@@ -82,12 +122,28 @@ public class BizEventEnrichment {
 				}
 
 				// if status is DONE put the event on the Event Hub
-				if (be.getEventStatus()==StatusType.DONE) {
-					// items in DONE status good for the Event Hub
-					itemsDone.add(be);
+                if (be.getEventStatus()==StatusType.DONE) {
+                    // items in DONE status good for the Event Hub
+					try {
+						if (enableTransactionListView) {
+							BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
+							if (bizEventToViewResult != null) {
+								userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
+								generalViewToInsert.add(bizEventToViewResult.getGeneralView());
+								cartViewToInsert.add(bizEventToViewResult.getCartView());
+							}
+						}
+						itemsDone.add(be);
+					} catch (Exception e) {
+						String errMsg = String.format("Error on mapping biz-event with id %s to its views", be.getId());
+						logger.log(Level.SEVERE, errMsg, e);
+						be.setEventErrorMessage(e.getMessage());
+						be.setEventStatus(StatusType.RETRY);
+						be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount() + 1);
+					}
 				}
 				
-				/** 
+				/*
 				 * Populates the list with events to update.
 				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
 				 */
@@ -116,6 +172,21 @@ public class BizEventEnrichment {
 		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
 		logger.info(msg);
 		documentdb.setValue(itemsToUpdate);
+
+
+		// Insert in Biz-event views
+		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the Biz-event views: user - %d, general - %d, cart - %d ",
+				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
+		logger.info(msg);
+		if (!userViewToInsert.isEmpty()) {
+			bizEventUserView.setValue(userViewToInsert);
+		}
+		if (!generalViewToInsert.isEmpty()) {
+			bizEventGeneralView.setValue(generalViewToInsert);
+		}
+		if (!cartViewToInsert.isEmpty()) {
+			bizEventCartView.setValue(cartViewToInsert);
+		}
 	}
 
 	// the return of the BizEvent has the purpose of testing the correct execution of the method

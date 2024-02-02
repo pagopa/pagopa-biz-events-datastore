@@ -1,4 +1,4 @@
-package it.gov.pagopa.bizeventsdatastore.model;
+package it.gov.pagopa.bizeventsdatastore.model.pm;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.api.client.util.Key;

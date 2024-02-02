@@ -1,4 +1,4 @@
-package it.gov.pagopa.bizeventsdatastore.model;
+package it.gov.pagopa.bizeventsdatastore.model.pm;
 
 import com.google.api.client.util.Key;
 
@@ -13,11 +13,15 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @Builder
-public class Psp {
+public class InfoECommerce {
 	@Key
-	private String idChannel;
+	private String brand;
 	@Key
-	private String businessName;
+	private String brandLogo;
 	@Key
-	private String serviceName;
+	private String clientId;
+	@Key
+	private String paymentMethodName;
+	@Key
+	private String type;
 }

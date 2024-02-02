@@ -74,5 +74,15 @@ public class ObjectMapperUtils {
         return objectMapper.writeValueAsString(value);
     }
 
-
+    /**
+     * Maps string to object of defined Class
+     *
+     * @param string   String to map
+     * @param outClass Class to be mapped to
+     * @param <T>      Defined Class
+     * @return object of the defined Class
+     */
+    public static <T> T mapString(final String string, Class<T> outClass) throws JsonProcessingException {
+        return objectMapper.readValue(string, outClass);
+    }
 }
