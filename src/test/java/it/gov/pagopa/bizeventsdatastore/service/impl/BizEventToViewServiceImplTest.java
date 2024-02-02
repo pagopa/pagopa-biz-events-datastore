@@ -62,8 +62,10 @@ class BizEventToViewServiceImplTest {
 
     @Test
     void mapBizEventToViewSuccess() throws PDVTokenizerException, JsonProcessingException {
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(anyString()))
-                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE, TOKENIZED_PAYER_TAX_CODE);
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
+                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
+                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
 
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -113,6 +115,49 @@ class BizEventToViewServiceImplTest {
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
         assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getCartView().getDebtor().getTaxCode());
+    }
+
+    @Test
+    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws PDVTokenizerException, JsonProcessingException {
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
+                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
+
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .debtor(Debtor.builder()
+                        .fullName("user-name user-surname")
+                        .entityUniqueIdentifierValue(VALID_USER_CF)
+                        .build())
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .build())
+                        .build())
+                .build();
+
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+
+        assertNotNull(result);
+        assertNotNull(result.getUserViewList());
+        assertNotNull(result.getGeneralView());
+        assertNotNull(result.getCartView());
+        assertEquals(1, result.getUserViewList().size());
+
+        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+        assertTrue(result.getUserViewList().get(0).isPayer());
+        assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+
+        assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+        assertEquals(bizEvent.getDebtor().getFullName(), result.getGeneralView().getPayer().getName());
+        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(1, result.getGeneralView().getTotalNotice());
+
+        assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+        assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+        assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getCartView().getDebtor().getTaxCode());
     }
 
     @Test

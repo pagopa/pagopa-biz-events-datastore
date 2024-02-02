@@ -67,11 +67,19 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
      */
     @Override
     public BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
-        UserDetail debtorUserDetail;
-        UserDetail payerUserDetail;
+        UserDetail debtor = getDebtor(bizEvent.getDebtor());
+        UserDetail payer = getPayer(bizEvent);
+        UserDetail tokenizedDebtor = null;
+        UserDetail tokenizedPayer;
+        boolean sameDebtorAndPayer = false;
         try {
-            debtorUserDetail = tokenizeUserDetail(getDebtor(bizEvent.getDebtor()));
-            payerUserDetail = tokenizeUserDetail(getPayer(bizEvent));
+            if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
+                tokenizedPayer = tokenizeUserDetail(payer);
+                sameDebtorAndPayer = true;
+            } else {
+                tokenizedPayer = tokenizeUserDetail(payer);
+                tokenizedDebtor = tokenizeUserDetail(debtor);
+            }
         } catch (Exception e) {
             if (e instanceof PDVTokenizerException || e instanceof JsonProcessingException) {
                 log.error("Error when tokenizing data for biz-even views. Biz-event id {}", bizEvent.getId(), e);
@@ -80,25 +88,25 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
             throw e;
         }
 
-        if (debtorUserDetail == null && payerUserDetail == null) {
+        if (tokenizedDebtor == null && tokenizedPayer == null) {
             return null;
         }
 
         List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-        if (debtorUserDetail != null) {
-            BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtorUserDetail, false);
+        if (tokenizedDebtor != null) {
+            BizEventsViewUser debtorUserView = buildUserView(bizEvent, tokenizedDebtor, false);
             userViewToInsert.add(debtorUserView);
         }
 
-        if (payerUserDetail != null) {
-            BizEventsViewUser payerUserView = buildUserView(bizEvent, payerUserDetail, true);
+        if (tokenizedPayer != null) {
+            BizEventsViewUser payerUserView = buildUserView(bizEvent, tokenizedPayer, true);
             userViewToInsert.add(payerUserView);
         }
 
         return BizEventToViewResult.builder()
                 .userViewList(userViewToInsert)
-                .generalView(buildGeneralView(bizEvent, payerUserDetail))
-                .cartView(buildCartView(bizEvent, debtorUserDetail))
+                .generalView(buildGeneralView(bizEvent, tokenizedPayer))
+                .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
                 .build();
     }
 
