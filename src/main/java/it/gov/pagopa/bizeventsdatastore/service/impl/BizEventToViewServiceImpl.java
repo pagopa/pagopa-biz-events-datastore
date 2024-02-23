@@ -16,26 +16,24 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.entity.view.WalletInfo;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
+import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
-import java.time.DateTimeException;
-import java.time.LocalDateTime;
-import java.time.OffsetDateTime;
-import java.time.format.DateTimeFormatter;
-import java.time.format.DateTimeFormatterBuilder;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.TimeZone;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * {@inheritDoc}
@@ -50,7 +48,6 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     private static final String MODEL_TYPE_NOTICE = "2";
     private static final String REF_TYPE_NOTICE = "codiceAvviso";
     private static final String REF_TYPE_IUV = "IUV";
-    private static final String RECEIPT_DATE_FORMAT = "dd MMMM yyyy, HH:mm:ss";
 
     private final PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry;
 
@@ -64,9 +61,10 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     /**
      * {@inheritDoc}
+     * @throws AppException 
      */
     @Override
-    public BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
+    public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException, AppException {
         UserDetail debtor = getDebtor(bizEvent.getDebtor());
         UserDetail payer = getPayer(bizEvent);
         UserDetail tokenizedDebtor = null;
@@ -102,12 +100,17 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
             BizEventsViewUser payerUserView = buildUserView(bizEvent, tokenizedPayer, true);
             userViewToInsert.add(payerUserView);
         }
+        
+        BizEventToViewResult result = BizEventToViewResult.builder()
+        .userViewList(userViewToInsert)
+        .generalView(buildGeneralView(bizEvent, tokenizedPayer))
+        .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
+        .build();
+        
+        
+        BizEventsViewValidator.validate(logger, result, bizEvent);
 
-        return BizEventToViewResult.builder()
-                .userViewList(userViewToInsert)
-                .generalView(buildGeneralView(bizEvent, tokenizedPayer))
-                .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
-                .build();
+        return result;
     }
 
     private UserDetail tokenizeUserDetail(UserDetail userDetail) throws PDVTokenizerException, JsonProcessingException {
@@ -216,11 +219,11 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 transactionDetails.getTransaction() != null &&
                 transactionDetails.getTransaction().getCreationDate() != null
         ) {
-            return dateFormatZoned(transactionDetails.getTransaction().getCreationDate());
+            return transactionDetails.getTransaction().getCreationDate();
         }
         PaymentInfo paymentInfo = bizEvent.getPaymentInfo();
         if (paymentInfo != null && paymentInfo.getPaymentDateTime() != null) {
-            return dateFormat(paymentInfo.getPaymentDateTime());
+            return paymentInfo.getPaymentDateTime();
         }
         return null;
     }
@@ -362,6 +365,10 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return Integer.parseInt(paymentInfo.getTotalNotice());
     }
+    
+    boolean getIsCart(PaymentInfo paymentInfo) {
+    	return paymentInfo != null && paymentInfo.getTotalNotice() != null && Integer.parseInt(paymentInfo.getTotalNotice()) > 1;
+    }
 
     private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
         return BizEventsViewCart.builder()
@@ -394,6 +401,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .paymentMethod(getPaymentMethod(bizEvent.getPaymentInfo()))
                 .origin(getOrigin(bizEvent.getTransactionDetails()))
                 .totalNotice(getTotalNotice(bizEvent.getPaymentInfo()))
+                .isCart(getIsCart(bizEvent.getPaymentInfo()))
                 .build();
     }
 
@@ -426,27 +434,6 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
             }
         }
         return remittanceInformation;
-    }
-
-    private String dateFormatZoned(String date) {
-        DateTimeFormatter formatter = new DateTimeFormatterBuilder()
-                .append(DateTimeFormatter.ofPattern(RECEIPT_DATE_FORMAT))
-                .toFormatter(Locale.ITALY)
-                .withZone(TimeZone.getTimeZone("Europe/Rome").toZoneId());
-        try {
-            return OffsetDateTime.parse(date).format(formatter);
-        } catch (DateTimeException e) {
-            return null;
-        }
-    }
-
-    private String dateFormat(String date) {
-        DateTimeFormatter simpleDateFormat = DateTimeFormatter.ofPattern(RECEIPT_DATE_FORMAT).withLocale(Locale.ITALY);
-        try {
-            return LocalDateTime.parse(date).format(simpleDateFormat);
-        } catch (DateTimeException e) {
-            return null;
-        }
     }
 
     private String currencyFormat(String value) {

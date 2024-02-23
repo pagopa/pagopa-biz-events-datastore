@@ -126,7 +126,7 @@ public class BizEventEnrichment {
                     // items in DONE status good for the Event Hub
 					try {
 						if (enableTransactionListView) {
-							BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
+							BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
 							if (bizEventToViewResult != null) {
 								userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
 								generalViewToInsert.add(bizEventToViewResult.getGeneralView());
