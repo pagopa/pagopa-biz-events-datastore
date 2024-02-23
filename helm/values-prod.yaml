@@ -95,7 +95,7 @@ microservice-chart:
     MULTIPLIER: "1.5"
     RANDOMIZATION_FACTOR: "0.5"
     MAX_RETRY_ON_TRIGGER_ATTEMPTS: "1"
-    TRIGGER_SCHEDULE: "0 0 */6 * * *"
+    TRIGGER_SCHEDULE: "0 0 5 31 2 ?" # means disable
     TRIGGER_CUSTOM_ERROR_MESSAGE: "errore"
     TRIGGER_SQL_QUERY: "select TOP 3000 * from Items r where r.eventStatus != 'DONE' order by r._ts ASC"
     REDIS_HOST: "pagopa-p-redis.redis.cache.windows.net"
