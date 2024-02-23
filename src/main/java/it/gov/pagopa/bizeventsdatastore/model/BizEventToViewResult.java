@@ -3,6 +3,7 @@ package it.gov.pagopa.bizeventsdatastore.model;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
+import jakarta.validation.Valid;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,7 +20,10 @@ import java.util.List;
 @Getter
 public class BizEventToViewResult {
 
+	@Valid
     private List<BizEventsViewUser> userViewList;
+	@Valid
     private BizEventsViewGeneral generalView;
+	@Valid
     private BizEventsViewCart cartView;
 }

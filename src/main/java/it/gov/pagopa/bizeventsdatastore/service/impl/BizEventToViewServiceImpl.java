@@ -20,6 +20,7 @@ import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
+import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
 import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
@@ -34,8 +35,10 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 
 /**
  * {@inheritDoc}
@@ -66,7 +69,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
      * {@inheritDoc}
      */
     @Override
-    public BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
+    public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException {
         UserDetail debtor = getDebtor(bizEvent.getDebtor());
         UserDetail payer = getPayer(bizEvent);
         UserDetail tokenizedDebtor = null;
@@ -102,12 +105,17 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
             BizEventsViewUser payerUserView = buildUserView(bizEvent, tokenizedPayer, true);
             userViewToInsert.add(payerUserView);
         }
+        
+        BizEventToViewResult result = BizEventToViewResult.builder()
+        .userViewList(userViewToInsert)
+        .generalView(buildGeneralView(bizEvent, tokenizedPayer))
+        .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
+        .build();
+        
+        
+        BizEventsViewValidator.validate(logger, result);
 
-        return BizEventToViewResult.builder()
-                .userViewList(userViewToInsert)
-                .generalView(buildGeneralView(bizEvent, tokenizedPayer))
-                .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
-                .build();
+        return result;
     }
 
     private UserDetail tokenizeUserDetail(UserDetail userDetail) throws PDVTokenizerException, JsonProcessingException {

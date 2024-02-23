@@ -1,5 +1,7 @@
 package it.gov.pagopa.bizeventsdatastore.service;
 
+import java.util.logging.Logger;
+
 import com.fasterxml.jackson.core.JsonProcessingException;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
@@ -25,5 +27,5 @@ public interface BizEventToViewService {
      * @throws PDVTokenizerException thrown if an error occur when invoking the PDV
      * @throws JsonProcessingException thrown if an error occur when mapping the PDV response
      */
-    BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException;
+    BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException;
 }

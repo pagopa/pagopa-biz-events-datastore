@@ -150,7 +150,7 @@ class BizEventEnrichmentTest {
         when(context.getLogger()).thenReturn(logger);
 
         BizEventToViewResult viewResult = buildBizEventToViewResult();
-        when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
+        when(bizEventToViewService.mapBizEventToView(logger, any())).thenReturn(viewResult);
 
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
@@ -192,7 +192,7 @@ class BizEventEnrichmentTest {
         when(context.getLogger()).thenReturn(logger);
 
         doThrow(new PDVTokenizerException("Error", ReasonErrorCode.ERROR_PDV_IO.getCode()))
-                .when(bizEventToViewService).mapBizEventToView(any());
+                .when(bizEventToViewService).mapBizEventToView(logger, any());
 
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
