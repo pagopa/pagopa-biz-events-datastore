@@ -16,7 +16,7 @@ public class BizEventsViewCart {
     private String transactionId;
     private String eventId;
     private String subject;
-    private Long amount;
+    private String amount;
     private UserDetail payee;
     private UserDetail debtor;
     private String refNumberValue;
