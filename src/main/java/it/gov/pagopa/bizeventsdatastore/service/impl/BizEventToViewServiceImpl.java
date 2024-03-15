@@ -34,6 +34,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.TimeZone;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -363,8 +364,11 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return Integer.parseInt(paymentInfo.getTotalNotice());
     }
 
+    // name               = "biz-events-view-cart",
+    // partition_key_path = "/transactionId",
     private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
         return BizEventsViewCart.builder()
+                .id(UUID.randomUUID().toString())
                 .transactionId(getTransactionId(bizEvent))
                 .eventId(bizEvent.getId())
                 .subject(getItemSubject(bizEvent))
@@ -376,8 +380,11 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
+    // name               = "biz-events-view-general",
+    // partition_key_path = "/transactionId",
     private BizEventsViewGeneral buildGeneralView(BizEvent bizEvent, UserDetail payer) {
         return BizEventsViewGeneral.builder()
+                .id(UUID.randomUUID().toString())
                 .transactionId(getTransactionId(bizEvent))
                 .authCode(getAuthCode(bizEvent.getTransactionDetails()))
                 .rrn(getRrn(bizEvent))
@@ -397,8 +404,11 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
+    // name               = "biz-events-view-user",
+    // partition_key_path = "/taxCode",
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer) {
         return BizEventsViewUser.builder()
+                .id(UUID.randomUUID().toString())
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))

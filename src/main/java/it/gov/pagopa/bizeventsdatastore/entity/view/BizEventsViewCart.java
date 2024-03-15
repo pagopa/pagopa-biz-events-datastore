@@ -13,6 +13,7 @@ import lombok.NoArgsConstructor;
 @Builder
 @Getter
 public class BizEventsViewCart {
+    private String id;
     private String transactionId;
     private String eventId;
     private String subject;

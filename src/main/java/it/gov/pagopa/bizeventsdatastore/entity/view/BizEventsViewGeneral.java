@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 public class BizEventsViewGeneral {
+    private String id;    
     private String transactionId;
     private String authCode;
     private PaymentMethodType paymentMethod;
