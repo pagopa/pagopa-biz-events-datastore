@@ -318,9 +318,9 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return null;
     }
 
-    Long getItemAmount(PaymentInfo paymentInfo) {
+    String getItemAmount(PaymentInfo paymentInfo) {
         if (paymentInfo != null && paymentInfo.getAmount() != null) {
-            return Long.parseLong(paymentInfo.getAmount());
+            return paymentInfo.getAmount();
         }
         return null;
     }
