@@ -17,6 +17,7 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @Getter
 public class BizEventsViewGeneral {
+	@NotBlank
 	private String id;
 	@NotBlank
     private String transactionId;
