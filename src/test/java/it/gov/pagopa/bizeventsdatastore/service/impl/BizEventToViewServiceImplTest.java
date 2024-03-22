@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -286,7 +287,8 @@ class BizEventToViewServiceImplTest {
 
         assertNull(result);
     }
-
+    
+    
     @Test
     void mapBizEventToViewFailTokenizer() throws PDVTokenizerException, JsonProcessingException {
     	
@@ -307,6 +309,37 @@ class BizEventToViewServiceImplTest {
                 .build();
 
         assertThrows(PDVTokenizerException.class, () -> sut.mapBizEventToView(logger,bizEvent));
+    }
+    
+    @Test
+    void mapBizEventToViewValidationFail() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
+                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
+                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
+        
+        // event without mandatory psp value
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .debtor(Debtor.builder()
+                        .fullName("debtor")
+                        .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .build())
+                .build();
+
+        assertThrows(AppException.class, () -> sut.mapBizEventToView(logger,bizEvent));  
     }
 
     @Test
