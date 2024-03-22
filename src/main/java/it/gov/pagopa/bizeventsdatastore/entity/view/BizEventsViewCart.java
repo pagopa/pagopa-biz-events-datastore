@@ -18,6 +18,8 @@ import lombok.NoArgsConstructor;
 @Getter
 public class BizEventsViewCart {
 	@NotBlank
+	private String id;
+	@NotBlank
     private String transactionId;
 	@NotBlank
     private String eventId;

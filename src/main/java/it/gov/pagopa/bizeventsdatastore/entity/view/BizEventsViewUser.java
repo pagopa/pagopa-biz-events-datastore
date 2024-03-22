@@ -15,6 +15,7 @@ import lombok.NoArgsConstructor;
 @Getter
 @Builder
 public class BizEventsViewUser {
+	@NotBlank
 	private String id;
 	@NotBlank
     private String taxCode;
