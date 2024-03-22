@@ -2,7 +2,6 @@ package it.gov.pagopa.bizeventsdatastore.entity.view;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -25,8 +24,8 @@ public class BizEventsViewCart {
     private String eventId;
 	@NotBlank
     private String subject;
-	@NotNull
-    private Long amount;
+	@NotBlank
+    private String amount;
 	@Valid
     private UserDetail payee;
 	@Valid

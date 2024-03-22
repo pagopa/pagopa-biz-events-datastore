@@ -30,7 +30,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
-import java.util.UUID;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -319,9 +318,9 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return null;
     }
 
-    Long getItemAmount(PaymentInfo paymentInfo) {
+    String getItemAmount(PaymentInfo paymentInfo) {
         if (paymentInfo != null && paymentInfo.getAmount() != null) {
-            return Long.parseLong(paymentInfo.getAmount());
+            return paymentInfo.getAmount();
         }
         return null;
     }
@@ -373,7 +372,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
         return BizEventsViewCart.builder()
-        		.id(UUID.randomUUID().toString())
+        		.id(bizEvent.getId())
                 .transactionId(getTransactionId(bizEvent))
                 .eventId(bizEvent.getId())
                 .subject(getItemSubject(bizEvent))
@@ -387,7 +386,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private BizEventsViewGeneral buildGeneralView(BizEvent bizEvent, UserDetail payer) {
         return BizEventsViewGeneral.builder()
-        		.id(UUID.randomUUID().toString())
+        		.id(bizEvent.getId())
                 .transactionId(getTransactionId(bizEvent))
                 .authCode(getAuthCode(bizEvent.getTransactionDetails()))
                 .rrn(getRrn(bizEvent))
@@ -410,7 +409,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer) {
         return BizEventsViewUser.builder()
-        		.id(UUID.randomUUID().toString())
+        		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))

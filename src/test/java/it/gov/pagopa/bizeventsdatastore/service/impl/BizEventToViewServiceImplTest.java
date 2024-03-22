@@ -41,7 +41,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -778,14 +777,14 @@ class BizEventToViewServiceImplTest {
     @Test
     void getAmountSuccess() {
         PaymentInfo paymentInfo = PaymentInfo.builder().amount("100").build();
-        Long result = sut.getItemAmount(paymentInfo);
-        assertEquals(100L, result);
+        String result = sut.getItemAmount(paymentInfo);
+        assertEquals("100", result);
     }
 
     @Test
     void getAmountNotPresent() {
         PaymentInfo paymentInfo = PaymentInfo.builder().build();
-        Long result = sut.getItemAmount(paymentInfo);
+        String result = sut.getItemAmount(paymentInfo);
         assertNull(result);
     }
 
