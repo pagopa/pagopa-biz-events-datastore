@@ -13,7 +13,11 @@ import java.io.Serializable;
 @AllArgsConstructor
 public class WalletInfo implements Serializable {
 
-    private String accountHolder;
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = -4005663306506913128L;
+	private String accountHolder;
     private String brand;
     private String blurredNumber;
 }

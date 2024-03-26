@@ -1,6 +1,8 @@
 package it.gov.pagopa.bizeventsdatastore.service.impl;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
+import com.microsoft.azure.functions.ExecutionContext;
+
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.Creditor;
 import it.gov.pagopa.bizeventsdatastore.entity.Debtor;
@@ -19,14 +21,19 @@ import it.gov.pagopa.bizeventsdatastore.entity.WalletItem;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.model.tokenizer.enumeration.ReasonErrorCode;
 import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
+import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -40,6 +47,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class BizEventToViewServiceImplTest {
 
     private static final String TOKENIZED_DEBTOR_TAX_CODE = "tokenizedDebtorTaxCode";
@@ -52,6 +60,9 @@ class BizEventToViewServiceImplTest {
     private PDVTokenizerServiceRetryWrapper tokenizerServiceRetryMock;
 
     private BizEventToViewServiceImpl sut;
+    
+    @Mock
+    private ExecutionContext context;
 
     @BeforeEach
     void setUp() {
@@ -61,28 +72,34 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccess() throws PDVTokenizerException, JsonProcessingException {
+    void mapBizEventToViewSuccess() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
         when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
                 .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
         when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
                 .thenReturn(TOKENIZED_PAYER_TAX_CODE);
-
+        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
                         .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
                 .transactionDetails(TransactionDetails.builder()
                         .user(User.builder()
                                 .name("user-name")
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -118,26 +135,32 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws PDVTokenizerException, JsonProcessingException {
+    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
         when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
                 .thenReturn(TOKENIZED_PAYER_TAX_CODE);
 
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
                 .debtor(Debtor.builder()
                         .fullName("user-name user-surname")
                         .entityUniqueIdentifierValue(VALID_USER_CF)
                         .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
                 .transactionDetails(TransactionDetails.builder()
                         .user(User.builder()
                                 .name("user-name")
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -161,19 +184,27 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyDebtor() throws PDVTokenizerException, JsonProcessingException {
+    void mapBizEventToViewSuccessOnlyDebtor() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
         when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(anyString()))
                 .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
-
+        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
                         .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
+                .transactionDetails(TransactionDetails.builder()
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -195,22 +226,32 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyPayer() throws PDVTokenizerException, JsonProcessingException {
+    void mapBizEventToViewSuccessOnlyPayer() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+    	
         when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(anyString()))
                 .thenReturn(TOKENIZED_PAYER_TAX_CODE);
-
+        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
+                .payer(Payer.builder()
+                        .fullName("payer")
+                        .entityUniqueIdentifierValue(VALID_PAYER_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
                 .transactionDetails(TransactionDetails.builder()
                         .user(User.builder()
                                 .name("user-name")
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -234,18 +275,24 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewFailNoDebtorAndUser() throws PDVTokenizerException, JsonProcessingException {
+    void mapBizEventToViewFailNoDebtorAndUser() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
         assertNull(result);
     }
-
+    
+    
     @Test
     void mapBizEventToViewFailTokenizer() throws PDVTokenizerException, JsonProcessingException {
+    	
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+    	
         doThrow(new PDVTokenizerException("Error", ReasonErrorCode.ERROR_PDV_IO.getCode()))
                 .when(tokenizerServiceRetryMock).generateTokenForFiscalCodeWithRetry(anyString());
 
@@ -260,7 +307,38 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        assertThrows(PDVTokenizerException.class, () -> sut.mapBizEventToView(bizEvent));
+        assertThrows(PDVTokenizerException.class, () -> sut.mapBizEventToView(logger,bizEvent));
+    }
+    
+    @Test
+    void mapBizEventToViewValidationFail() throws PDVTokenizerException, JsonProcessingException, AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
+                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
+        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
+                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
+        
+        // event without mandatory psp value
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .debtor(Debtor.builder()
+                        .fullName("debtor")
+                        .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .build())
+                .build();
+
+        assertThrows(AppException.class, () -> sut.mapBizEventToView(logger,bizEvent));  
     }
 
     @Test
@@ -465,7 +543,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
         String result = sut.getTransactionDate(bizEvent);
-        assertEquals("14 novembre 2023, 19:31:55", result);
+        assertEquals(bizEvent.getTransactionDetails().getTransaction().getCreationDate(), result);
     }
 
     @Test
@@ -476,7 +554,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
         String result = sut.getTransactionDate(bizEvent);
-        assertEquals("14 novembre 2023, 19:31:55", result);
+        assertEquals(bizEvent.getPaymentInfo().getPaymentDateTime(), result);
     }
 
     @Test
@@ -699,14 +777,14 @@ class BizEventToViewServiceImplTest {
     @Test
     void getAmountSuccess() {
         PaymentInfo paymentInfo = PaymentInfo.builder().amount("100").build();
-        Long result = sut.getItemAmount(paymentInfo);
-        assertEquals(100L, result);
+        String result = sut.getItemAmount(paymentInfo);
+        assertEquals("100", result);
     }
 
     @Test
     void getAmountNotPresent() {
         PaymentInfo paymentInfo = PaymentInfo.builder().build();
-        Long result = sut.getItemAmount(paymentInfo);
+        String result = sut.getItemAmount(paymentInfo);
         assertNull(result);
     }
 
