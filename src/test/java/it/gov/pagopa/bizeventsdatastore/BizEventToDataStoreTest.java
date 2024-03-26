@@ -1,5 +1,8 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -14,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -28,6 +32,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.DebtorPosition;
 import it.gov.pagopa.bizeventsdatastore.entity.InfoECommerce;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,6 +87,39 @@ class BizEventToDataStoreTest {
         
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEventECommerce.json", BizEvent.class);
+        bizEvtMsgList.add (bizEventMsg);
+        
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        
+        doReturn(null).when(function).findByBizEventId(anyString(), any(Logger.class));
+        doReturn("OK").when(function).saveBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        function.processBizEvent(bizEvtMsgList, properties, document, context);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+    
+    @Test
+    void runModelType1Ok() throws IOException {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        
+        List<BizEvent> bizEvtMsgList = new ArrayList<>();
+        BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEventModelType1.json", BizEvent.class);
+        
+        
+        assertThat(bizEventMsg.getTransferList(), hasItem(
+        		Matchers.<Transfer>hasProperty("IUR", is("iur1111111111"))
+        ));
+        assertThat(bizEventMsg.getTransferList(), hasItem(
+        		Matchers.<Transfer>hasProperty("IUR", is("iur2222222222"))
+        ));
+        
         bizEvtMsgList.add (bizEventMsg);
         
         Map<String, Object>[] properties = new HashMap[1];

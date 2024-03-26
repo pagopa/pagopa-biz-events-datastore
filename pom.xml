@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.11.5-4-PAGOPA-1618-adjustment-to-doc</version>
+	<version>0.11.6</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
@@ -109,6 +109,13 @@
             <version>0.1.6</version>
             <scope>test</scope>
          </dependency>
+         <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>2.2</version>
+            <scope>test</scope>
+         </dependency>
+         
 
 		<!-- jaxb -->
 		<dependency>
