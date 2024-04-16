@@ -5,7 +5,7 @@
       "cosmosDBURI": "https://pagopa-d-weu-bizevents-ds-cosmos-account.documents.azure.com:443/",
       "databaseID":"db",
       "containerID":"biz-events",
-      "eventHubNamespace":"pagopa-d-evh-ns01",
+      "eventHubNamespace":"pagopa-d-evh-ns03",
       "eventHubName":"nodo-dei-pagamenti-biz-evt",
       "eventHubSender":"pagopa-biz-evt-tx",
       "processTime":"3"
