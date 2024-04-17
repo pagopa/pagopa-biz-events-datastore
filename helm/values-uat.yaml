@@ -83,7 +83,6 @@ microservice-chart:
     COSMOS_DB_NAME: "db"
     COSMOS_DB_CONTAINER_NAME: "biz-events"
     COSMOS_DB_URI: "https://pagopa-u-weu-bizevents-ds-cosmos-account.documents.azure.com:443/"
-    EVENT_HUB_NAMESPACE: "pagopa-u-evh-ns03"
     EVENT_HUB_NAME: "nodo-dei-pagamenti-biz-evt"
     EVENT_HUB_SENDER: "pagopa-biz-evt-tx"
     PM_CLIENT_HOST: "https://api.uat.platform.pagopa.it"
