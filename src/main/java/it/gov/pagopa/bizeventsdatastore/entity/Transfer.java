@@ -3,6 +3,7 @@ package it.gov.pagopa.bizeventsdatastore.entity;
 import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -29,4 +30,6 @@ public class Transfer {
 //	private MBD mbd; -
 	private String MBDAttachment;
 	private List<MapEntry> metadata;
+	@JsonProperty(value="IUR")
+	private String IUR;
 }
