@@ -24,7 +24,7 @@ import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
 
 public class BizEventToViewDataStoreTimerTrigger {
 
-	private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW", "true"));
+	private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
 	private final BizEventToViewService bizEventToViewService;
 
