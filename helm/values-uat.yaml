@@ -4,7 +4,7 @@ microservice-chart:
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.11.9"
+    tag: "0.11.10"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -97,7 +97,7 @@ microservice-chart:
     TRIGGER_SCHEDULE: "0 0 5 31 2 ?" # means disable
     TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
     TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
-    VIEW_TRIGGER_SCHEDULE: "-"  # means disable
+    VIEW_TRIGGER_SCHEDULE: "-" # means disable
     VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-04-24T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
     REDIS_HOST: "pagopa-u-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
