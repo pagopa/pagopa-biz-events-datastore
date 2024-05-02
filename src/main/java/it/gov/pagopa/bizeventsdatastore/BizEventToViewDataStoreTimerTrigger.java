@@ -86,7 +86,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 		if (enableTransactionListView) {
 			Logger logger = context.getLogger();
-			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function called at %s with %s biz-events extracted to process.", 
+			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function Start called at %s with %s biz-events extracted to process.", 
 					LocalDateTime.now(), items.length);
 			logger.info(message);
 			List<BizEvent> itemsToUpdate = new ArrayList<>();
@@ -119,7 +119,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 			
 			String textBlock = """
-					BizEventToViewDataStoreTimerTriggerProcessor function Cosmos Biz-events views - DATA INGESTION at %s:
+					BizEventToViewDataStoreTimerTriggerProcessor function Stop Cosmos Biz-events views - DATA INGESTION at %s:
 					- number of data events ingested on the Biz-event views [user - %d, general - %d, cart - %d]
 					- number of biz events processed and updated [biz-events - %d] on a total of %d items
 					""";
