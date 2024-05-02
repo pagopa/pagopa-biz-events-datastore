@@ -68,15 +68,17 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         UserDetail debtor = getDebtor(bizEvent.getDebtor());
         UserDetail payer = getPayer(bizEvent);
         UserDetail tokenizedDebtor = null;
-        UserDetail tokenizedPayer;
+        UserDetail tokenizedPayer = null;
         boolean sameDebtorAndPayer = false;
         try {
             if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
                 tokenizedPayer = tokenizeUserDetail(payer);
                 sameDebtorAndPayer = true;
             } else {
-                tokenizedPayer = tokenizeUserDetail(payer);
                 tokenizedDebtor = tokenizeUserDetail(debtor);
+                if (payer != null) {
+                    tokenizedPayer = tokenizeUserDetail(payer);
+                }
             }
         } catch (Exception e) {
             if (e instanceof PDVTokenizerException || e instanceof JsonProcessingException) {
