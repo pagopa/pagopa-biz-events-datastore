@@ -2,9 +2,11 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
@@ -86,24 +88,37 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 		if (enableTransactionListView) {
 			Logger logger = context.getLogger();
-			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function Start called at %s with %s biz-events extracted to process.", 
+			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function P-Start called at %s with %s biz-events extracted to process.", 
 					LocalDateTime.now(), items.length);
 			logger.info(message);
-			List<BizEvent> itemsToUpdate = new ArrayList<>();
-			List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-			List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
-			List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+			// List<BizEvent> itemsToUpdate = new ArrayList<>();
+			// List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+			// List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
+			// List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+
+			List<BizEvent> itemsToUpdate = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewUser> userViewToInsert = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewGeneral> generalViewToInsert = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewCart> cartViewToInsert = Collections.synchronizedList(new ArrayList<>());
 			
-			for (BizEvent be: items) {
-				/*
-				message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
-						+ "In progress the event with id %s and timestamp %s", 
-						LocalDateTime.now(), items.length, be.getId(), be.getTimestamp());
-				logger.info(message);
-				*/
+			// for (BizEvent be: items) {
+			// 	/*
+			// 	message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
+			// 			+ "In progress the event with id %s and timestamp %s", 
+			// 			LocalDateTime.now(), items.length, be.getId(), be.getTimestamp());
+			// 	logger.info(message);
+			// 	*/
+			// 	this.bizEventsViewDataIngestion(logger, itemsToUpdate, userViewToInsert, generalViewToInsert,
+			// 			cartViewToInsert, be);
+			// }
+
+			Stream.of(items).parallel().forEach(bizEvent -> {
 				this.bizEventsViewDataIngestion(logger, itemsToUpdate, userViewToInsert, generalViewToInsert,
-						cartViewToInsert, be);
-			}
+						cartViewToInsert, bizEvent);
+			});
+
+
+
 			if (!userViewToInsert.isEmpty()) {
 				bizEventUserView.setValue(userViewToInsert);
 			}
@@ -119,7 +134,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 			
 			String textBlock = """
-					BizEventToViewDataStoreTimerTriggerProcessor function Stop Cosmos Biz-events views - DATA INGESTION at %s:
+					BizEventToViewDataStoreTimerTriggerProcessor function P-Stop Cosmos Biz-events views - DATA INGESTION at %s:
 					- number of data events ingested on the Biz-event views [user - %d, general - %d, cart - %d]
 					- number of biz events processed and updated [biz-events - %d] on a total of %d items
 					""";
