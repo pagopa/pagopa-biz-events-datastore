@@ -97,13 +97,12 @@ microservice-chart:
     TRIGGER_SCHEDULE: "0 0 5 31 2 ?" # means disable
     TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
     TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
-    VIEW_TRIGGER_SCHEDULE: "0 */4 * * * *" # means disable
-    VIEW_TRIGGER_SQL_QUERY: "select TOP 1003 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-05-05T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
+    VIEW_TRIGGER_SCHEDULE: "0 */3 * * * *" # means disable
+    VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-05-05T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
     REDIS_HOST: "pagopa-u-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
-    # PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
-    PDV_TOKENIZER_BASE_PATH: "https://api.tokenizer.pdv.pagopa.it/tokenizer/v1"
+    PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
     PDV_TOKENIZER_INITIAL_INTERVAL: "200"
     PDV_TOKENIZER_MULTIPLIER: "2.0"
     PDV_TOKENIZER_RANDOMIZATION_FACTOR: "0.6"
