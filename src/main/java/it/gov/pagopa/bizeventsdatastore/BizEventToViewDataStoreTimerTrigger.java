@@ -2,9 +2,11 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
@@ -86,20 +88,20 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 		if (enableTransactionListView) {
 			Logger logger = context.getLogger();
-			List<BizEvent> itemsToUpdate = new ArrayList<>();
-			List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-			List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
-			List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function start - called at %s with %s biz-events extracted to process.", 
+					LocalDateTime.now(), items.length);
+			logger.info(message);
 			
-			for (BizEvent be: items) {
-				String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
-						+ "In progress the event with id %s and timestamp %s", 
-						LocalDateTime.now(), items.length, be.getId(), be.getTimestamp());
-				logger.info(message);
-
+			List<BizEvent> itemsToUpdate = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewUser> userViewToInsert = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewGeneral> generalViewToInsert = Collections.synchronizedList(new ArrayList<>());
+			List<BizEventsViewCart> cartViewToInsert = Collections.synchronizedList(new ArrayList<>());
+			
+			Stream.of(items).parallel().forEach(bizEvent -> 
 				this.bizEventsViewDataIngestion(logger, itemsToUpdate, userViewToInsert, generalViewToInsert,
-						cartViewToInsert, be);
-			}
+						cartViewToInsert, bizEvent)
+			);
+
 			if (!userViewToInsert.isEmpty()) {
 				bizEventUserView.setValue(userViewToInsert);
 			}
@@ -112,15 +114,14 @@ public class BizEventToViewDataStoreTimerTrigger {
 			if (!itemsToUpdate.isEmpty()) {
 				documentdb.setValue(itemsToUpdate);
 			}
-
-			
+		
 			String textBlock = """
-					BizEventToViewDataStoreTimerTriggerProcessor function Cosmos Biz-events views - DATA INGESTION at %s:
+					BizEventToViewDataStoreTimerTriggerProcessor function stop - DATA INGESTION at %s:
 					- number of data events ingested on the Biz-event views [user - %d, general - %d, cart - %d]
 					- number of biz events processed and updated [biz-events - %d] on a total of %d items
 					""";
 			// data ingested to Biz-event views
-			String message = String.format(textBlock,
+			message = String.format(textBlock,
 					LocalDateTime.now(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size(), itemsToUpdate.size(), items.length);
 			logger.info(message);
 		}
