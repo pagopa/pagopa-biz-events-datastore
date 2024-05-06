@@ -97,8 +97,8 @@ microservice-chart:
     TRIGGER_SCHEDULE: "0 0 5 31 2 ?" # means disable
     TRIGGER_CUSTOM_ERROR_MESSAGE: "errore"
     TRIGGER_SQL_QUERY: "select TOP 3000 * from Items r where r.eventStatus != 'DONE' order by r._ts ASC"
-    VIEW_TRIGGER_SCHEDULE: "-" # means disable
-    VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-04-24T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
+    VIEW_TRIGGER_SCHEDULE: "-" # means disable "0 */3 * * * *"
+    VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-05-05T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
     REDIS_HOST: "pagopa-p-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
