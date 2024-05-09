@@ -107,7 +107,7 @@ microservice-chart:
     PDV_TOKENIZER_MULTIPLIER: "2.0"
     PDV_TOKENIZER_RANDOMIZATION_FACTOR: "0.6"
     PDV_TOKENIZER_MAX_RETRIES: "3"
-    ENABLE_TRANSACTION_LIST_VIEW: "false"
+    ENABLE_TRANSACTION_LIST_VIEW: "true"
     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
