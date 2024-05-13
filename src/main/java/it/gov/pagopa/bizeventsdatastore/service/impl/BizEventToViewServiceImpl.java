@@ -20,9 +20,7 @@ import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
-import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
 import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
-import lombok.extern.slf4j.Slf4j;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -38,7 +36,6 @@ import java.util.regex.Pattern;
 /**
  * {@inheritDoc}
  */
-@Slf4j
 public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private final String[] unwantedRemittanceInfo = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
@@ -49,15 +46,6 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     private static final String REF_TYPE_NOTICE = "codiceAvviso";
     private static final String REF_TYPE_IUV = "IUV";
 
-    private final PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry;
-
-    public BizEventToViewServiceImpl() {
-        this.pdvTokenizerServiceRetry = new PDVTokenizerServiceRetryWrapperImpl();
-    }
-
-    BizEventToViewServiceImpl(PDVTokenizerServiceRetryWrapper pdvTokenizerServiceRetry) {
-        this.pdvTokenizerServiceRetry = pdvTokenizerServiceRetry;
-    }
 
     /**
      * {@inheritDoc}
@@ -65,66 +53,42 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
      */
     @Override
     public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws PDVTokenizerException, JsonProcessingException, AppException {
-        UserDetail debtor = getDebtor(bizEvent.getDebtor());
-        UserDetail payer = getPayer(bizEvent);
-        UserDetail tokenizedDebtor = null;
-        UserDetail tokenizedPayer = null;
-        boolean sameDebtorAndPayer = false;
-        try {
-            if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
-                tokenizedPayer = tokenizeUserDetail(payer);
-                sameDebtorAndPayer = true;
-            } else {
-                tokenizedDebtor = tokenizeUserDetail(debtor);
-                if (payer != null) {
-                    tokenizedPayer = tokenizeUserDetail(payer);
-                }
-            }
-        } catch (Exception e) {
-            if (e instanceof PDVTokenizerException || e instanceof JsonProcessingException) {
-                log.error("Error when tokenizing data for biz-even views. Biz-event id {}", bizEvent.getId(), e);
-            }
-            log.error("Unexpected error when processing user data for PDV tokenizer. Biz-event id {}", bizEvent.getId(), e);
-            throw e;
-        }
+    	UserDetail debtor = getDebtor(bizEvent.getDebtor());
+    	UserDetail payer = getPayer(bizEvent);
+    	boolean sameDebtorAndPayer = false;
+    	
+    	if (debtor == null && payer == null) {
+    		return null;
+    	}
 
-        if (tokenizedDebtor == null && tokenizedPayer == null) {
-            return null;
-        }
+    	if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
+    		sameDebtorAndPayer = true;
+    		// only the payer user is created when payer and debtor are the same
+    		debtor = null;
+    	} 
 
-        List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-        if (tokenizedDebtor != null) {
-            BizEventsViewUser debtorUserView = buildUserView(bizEvent, tokenizedDebtor, false);
-            userViewToInsert.add(debtorUserView);
-        }
+    	List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+    	
+    	if (debtor != null) {
+    		BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false);
+    		userViewToInsert.add(debtorUserView);
+    	}
 
-        if (tokenizedPayer != null) {
-            BizEventsViewUser payerUserView = buildUserView(bizEvent, tokenizedPayer, true);
-            userViewToInsert.add(payerUserView);
-        }
-        
-        BizEventToViewResult result = BizEventToViewResult.builder()
-        .userViewList(userViewToInsert)
-        .generalView(buildGeneralView(bizEvent, tokenizedPayer))
-        .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? tokenizedPayer : tokenizedDebtor))
-        .build();
-        
-        
-        BizEventsViewValidator.validate(logger, result, bizEvent);
+    	if (payer != null) {
+    		BizEventsViewUser payerUserView = buildUserView(bizEvent, payer, true);
+    		userViewToInsert.add(payerUserView);
+    	}
 
-        return result;
-    }
+    	BizEventToViewResult result = BizEventToViewResult.builder()
+    			.userViewList(userViewToInsert)
+    			.generalView(buildGeneralView(bizEvent, payer))
+    			.cartView(buildCartView(bizEvent, sameDebtorAndPayer ? payer : debtor))
+    			.build();
 
-    private UserDetail tokenizeUserDetail(UserDetail userDetail) throws PDVTokenizerException, JsonProcessingException {
-        if (userDetail == null || userDetail.getTaxCode() == null) {
-            return null;
-        }
-        String tokenizedFiscalCode = pdvTokenizerServiceRetry.generateTokenForFiscalCodeWithRetry(userDetail.getTaxCode());
 
-        return UserDetail.builder()
-                .name(userDetail.getName())
-                .taxCode(tokenizedFiscalCode)
-                .build();
+    	BizEventsViewValidator.validate(logger, result, bizEvent);
+
+    	return result;
     }
 
     UserDetail getDebtor(Debtor debtor) {
