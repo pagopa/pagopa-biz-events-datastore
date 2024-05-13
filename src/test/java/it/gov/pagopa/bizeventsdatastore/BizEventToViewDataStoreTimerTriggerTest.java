@@ -27,7 +27,6 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
-import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
@@ -57,7 +56,7 @@ class BizEventToViewDataStoreTimerTriggerTest {
     }
 
 	@Test
-	void runOK() throws IOException, PDVTokenizerException, AppException {
+	void runOK() throws IOException, AppException {
 
 		// precondition
 		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
@@ -86,13 +85,13 @@ class BizEventToViewDataStoreTimerTriggerTest {
 	}
 	
 	@Test
-	void runKO() throws IOException, PDVTokenizerException, AppException {
+	void runKO() throws IOException, AppException {
 
 		// precondition
 		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
 		when(context.getLogger()).thenReturn(logger);
 		
-        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenThrow(PDVTokenizerException.class);
+        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenThrow(AppException.class);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);

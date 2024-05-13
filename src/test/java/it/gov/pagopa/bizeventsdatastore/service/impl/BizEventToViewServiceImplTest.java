@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.service.impl;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.microsoft.azure.functions.ExecutionContext;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
@@ -22,14 +21,11 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
-import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
-import it.gov.pagopa.bizeventsdatastore.model.tokenizer.enumeration.ReasonErrorCode;
-import it.gov.pagopa.bizeventsdatastore.service.PDVTokenizerServiceRetryWrapper;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Collections;
@@ -41,44 +37,24 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToViewServiceImplTest {
 
-    private static final String TOKENIZED_DEBTOR_TAX_CODE = "tokenizedDebtorTaxCode";
-    private static final String TOKENIZED_PAYER_TAX_CODE = "tokenizedPayerTaxCode";
     private static final String VALID_PAYER_CF = "JHNDOE80D45E507N";
     private static final String VALID_USER_CF = "MNRTLE80D45E507N";
     private static final String INVALID_CF = "an invalid fiscal code";
     private static final String VALID_DEBTOR_CF = "JHNDOE80D05B157Y";
 
-    private PDVTokenizerServiceRetryWrapper tokenizerServiceRetryMock;
-
+    @Spy
     private BizEventToViewServiceImpl sut;
     
     @Mock
     private ExecutionContext context;
 
-    @BeforeEach
-    void setUp() {
-        tokenizerServiceRetryMock = mock(PDVTokenizerServiceRetryWrapper.class);
-
-        sut = spy(new BizEventToViewServiceImpl(tokenizerServiceRetryMock));
-    }
-
     @Test
-    void mapBizEventToViewSuccess() throws PDVTokenizerException, JsonProcessingException, AppException {
+    void mapBizEventToViewSuccess() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
-                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
-                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
         
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -108,14 +84,14 @@ class BizEventToViewServiceImplTest {
         assertEquals(2, result.getUserViewList().size());
 
         if (result.getUserViewList().get(0).isPayer()) {
-            assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
             assertTrue(result.getUserViewList().get(0).isPayer());
-            assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getUserViewList().get(1).getTaxCode());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(1).getTaxCode());
             assertFalse(result.getUserViewList().get(1).isPayer());
         } else {
-            assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(1).getTaxCode());
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(1).getTaxCode());
             assertTrue(result.getUserViewList().get(1).isPayer());
-            assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
             assertFalse(result.getUserViewList().get(0).isPayer());
         }
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
@@ -125,22 +101,19 @@ class BizEventToViewServiceImplTest {
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
         assertEquals(1, result.getGeneralView().getTotalNotice());
 
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
-        assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getCartView().getDebtor().getTaxCode());
+        assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
     }
 
     @Test
-    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws PDVTokenizerException, JsonProcessingException, AppException {
+    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
-                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
-
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .psp(Psp.builder().psp("psp value").build())
@@ -168,27 +141,24 @@ class BizEventToViewServiceImplTest {
         assertNotNull(result.getCartView());
         assertEquals(1, result.getUserViewList().size());
 
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+        assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
         assertTrue(result.getUserViewList().get(0).isPayer());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
 
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getGeneralView().getPayer().getName());
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
         assertEquals(1, result.getGeneralView().getTotalNotice());
 
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getCartView().getDebtor().getTaxCode());
+        assertEquals(VALID_USER_CF, result.getCartView().getDebtor().getTaxCode());
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyDebtor() throws PDVTokenizerException, JsonProcessingException, AppException {
+    void mapBizEventToViewSuccessOnlyDebtor() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(anyString()))
-                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
         
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -213,7 +183,7 @@ class BizEventToViewServiceImplTest {
         assertEquals(1, result.getUserViewList().size());
 
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
-        assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+        assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
 
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertNull(result.getGeneralView().getPayer());
@@ -222,15 +192,12 @@ class BizEventToViewServiceImplTest {
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
-        assertEquals(TOKENIZED_DEBTOR_TAX_CODE, result.getCartView().getDebtor().getTaxCode());
+        assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyPayer() throws PDVTokenizerException, JsonProcessingException, AppException {
+    void mapBizEventToViewSuccessOnlyPayer() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-    	
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(anyString()))
-                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
         
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -260,13 +227,13 @@ class BizEventToViewServiceImplTest {
         assertEquals(1, result.getUserViewList().size());
 
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getUserViewList().get(0).getTaxCode());
+        assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
 
         User user = bizEvent.getTransactionDetails().getUser();
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
-        assertEquals(TOKENIZED_PAYER_TAX_CODE, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
         assertEquals(1, result.getGeneralView().getTotalNotice());
 
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
@@ -275,7 +242,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewFailNoDebtorAndUser() throws PDVTokenizerException, JsonProcessingException, AppException {
+    void mapBizEventToViewFailNoDebtorAndUser() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -289,35 +256,8 @@ class BizEventToViewServiceImplTest {
     
     
     @Test
-    void mapBizEventToViewFailTokenizer() throws PDVTokenizerException, JsonProcessingException {
-    	
+    void mapBizEventToViewValidationFail() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-    	
-        doThrow(new PDVTokenizerException("Error", ReasonErrorCode.ERROR_PDV_IO.getCode()))
-                .when(tokenizerServiceRetryMock).generateTokenForFiscalCodeWithRetry(anyString());
-
-        BizEvent bizEvent = BizEvent.builder()
-                .id("biz-id")
-                .transactionDetails(TransactionDetails.builder()
-                        .user(User.builder()
-                                .name("user-name")
-                                .surname("user-surname")
-                                .fiscalCode(VALID_USER_CF)
-                                .build())
-                        .build())
-                .build();
-
-        assertThrows(PDVTokenizerException.class, () -> sut.mapBizEventToView(logger,bizEvent));
-    }
-    
-    @Test
-    void mapBizEventToViewValidationFail() throws PDVTokenizerException, JsonProcessingException, AppException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_DEBTOR_CF))
-                .thenReturn(TOKENIZED_DEBTOR_TAX_CODE);
-        when(tokenizerServiceRetryMock.generateTokenForFiscalCodeWithRetry(VALID_USER_CF))
-                .thenReturn(TOKENIZED_PAYER_TAX_CODE);
         
         // event without mandatory psp value
         BizEvent bizEvent = BizEvent.builder()

@@ -9,12 +9,11 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.PDVTokenizerException;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
 import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
-import it.gov.pagopa.bizeventsdatastore.model.tokenizer.enumeration.ReasonErrorCode;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 import lombok.SneakyThrows;
@@ -191,7 +190,7 @@ class BizEventEnrichmentTest {
         Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
         when(context.getLogger()).thenReturn(logger);
 
-        doThrow(new PDVTokenizerException("Error", ReasonErrorCode.ERROR_PDV_IO.getCode()))
+        doThrow(new AppException("Error"))
                 .when(bizEventToViewService).mapBizEventToView(any(Logger.class), any());
 
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
