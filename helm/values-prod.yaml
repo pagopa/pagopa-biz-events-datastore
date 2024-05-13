@@ -99,7 +99,6 @@ microservice-chart:
     TRIGGER_SQL_QUERY: "select TOP 3000 * from Items r where r.eventStatus != 'DONE' order by r._ts ASC"
     VIEW_TRIGGER_SCHEDULE: "-" # means disable "0 */3 * * * *"
     VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-05-05T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
-    REDIS_HOST: "pagopa-p-redis.redis.cache.windows.net"
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
     PDV_TOKENIZER_BASE_PATH: "https://api.tokenizer.pdv.pagopa.it/tokenizer/v1"
@@ -121,7 +120,8 @@ microservice-chart:
     COSMOS_DB_PRIMARY_KEY: 'cosmos-p-biz-key'
     PM_API_KEY: 'payment-manager-subscription-key' # Ocp-Apim-Subscription-Key
     AzureWebJobsStorage: 'bizevent-p-azurewebjobsstorage'
-    REDIS_PWD: "redis-password"
+    REDIS_PWD: 'redis-password'
+    REDIS_HOST: 'redis-hostname'
     PDV_TOKENIZER_SUBSCRIPTION_KEY: "tokenizer-api-key"
   keyvault:
     name: "pagopa-p-bizevents-kv"
