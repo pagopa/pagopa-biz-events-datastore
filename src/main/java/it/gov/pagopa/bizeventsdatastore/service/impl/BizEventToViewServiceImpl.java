@@ -68,12 +68,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     	List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
     	
     	if (debtor != null) {
-    		BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false);
+    		BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false, true);
     		userViewToInsert.add(debtorUserView);
     	}
 
     	if (payer != null) {
-    		BizEventsViewUser payerUserView = buildUserView(bizEvent, payer, true);
+    		BizEventsViewUser payerUserView = buildUserView(bizEvent, payer, true, sameDebtorAndPayer);
     		userViewToInsert.add(payerUserView);
     	}
 
@@ -219,6 +219,13 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return null;
     }
+    
+    String getMaskedEmail(TransactionDetails transactionDetails) {
+        if (transactionDetails != null && transactionDetails.getInfo() != null) {
+            return transactionDetails.getInfo().getMaskedEmail();
+        }
+        return null;
+    }
 
     UserDetail getPayer(BizEvent bizEvent) {
         TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
@@ -361,6 +368,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                                 .accountHolder(getPaymentMethodAccountHolder(bizEvent.getTransactionDetails()))
                                 .brand(getBrand(bizEvent.getTransactionDetails()))
                                 .blurredNumber(getBlurredNumber(bizEvent.getTransactionDetails()))
+                                .maskedEmail(getMaskedEmail(bizEvent.getTransactionDetails()))
                                 .build())
                 .payer(payer)
                 .fee(getFee(bizEvent.getTransactionDetails()))
@@ -371,7 +379,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
-    private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer) {
+    private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
@@ -379,6 +387,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .transactionDate(getTransactionDate(bizEvent))
                 .hidden(false)
                 .isPayer(isPayer)
+                .isDebtor(isDebtor)
                 .build();
     }
 
