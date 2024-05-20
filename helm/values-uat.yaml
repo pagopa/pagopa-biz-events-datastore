@@ -101,12 +101,6 @@ microservice-chart:
     VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.eventStatus = 'DONE' and c.timestamp < DateTimeToTimestamp('2024-05-05T16:00:00') order by c.timestamp DESC" # DESC to process the newest entries first
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
-    PDV_TOKENIZER_BASE_PATH: "https://api.uat.tokenizer.pdv.pagopa.it/tokenizer/v1"
-    PDV_TOKENIZER_INITIAL_INTERVAL: "200"
-    PDV_TOKENIZER_MULTIPLIER: "2.0"
-    PDV_TOKENIZER_RANDOMIZATION_FACTOR: "0.6"
-    PDV_TOKENIZER_MAX_RETRIES: "3"
-    ENABLE_TRANSACTION_LIST_VIEW: "true"
     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
   envFieldRef:
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
