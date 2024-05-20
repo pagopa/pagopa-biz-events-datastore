@@ -256,7 +256,7 @@ class BizEventToViewServiceImplTest {
     
     
     @Test
-    void mapBizEventToViewValidationFail() throws AppException {
+    void mapBizEventToViewValidationFail() {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         // event without mandatory psp value
