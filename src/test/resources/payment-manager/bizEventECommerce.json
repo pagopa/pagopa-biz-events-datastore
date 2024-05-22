@@ -76,7 +76,8 @@
         "brandLogo": "https://checkout.pagopa.it/assets/creditcard/mastercard.png",
         "brand": "MASTERCARD",
         "paymentMethodName": "CARDS",
-        "type": "CP"
+        "type": "PPAL",
+        "maskedEmail": "xxx@xxx.it" 
       },
       "transaction": {
         "timestampOperation": "2023-12-18T10:09:34.730109Z",
