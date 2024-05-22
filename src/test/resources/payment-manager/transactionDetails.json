@@ -27,14 +27,15 @@
         "favourite": true,
         "createDate": "2022-12-14T14:28:41Z",
         "info": {
-            "type": "CardInfo",
+            "type": "PPAL",
             "holder": "Test Mc",
             "blurredNumber": "3477",
             "hashPan": "ceb3d483de53fb29a6f04f101bf347f83fc57b4f1e7dae88e2afe524465a8c69",
             "expireMonth": "12",
             "expireYear": "2030",
             "brand": "MASTERCARD",
-            "brandLogo": "https://uat.wisp2.pagopa.gov.it/wallet/assets/img/creditcard/carta_mc.png"
+            "brandLogo": "https://uat.wisp2.pagopa.gov.it/wallet/assets/img/creditcard/carta_mc.png",
+            "maskedEmail": "xxx@xxx.it"
         }
     },
     "user": {

@@ -17,4 +17,5 @@ public class InfoECommerce {
 	private String clientId;
 	private String paymentMethodName;
 	private String type;
+	private String maskedEmail;
 }

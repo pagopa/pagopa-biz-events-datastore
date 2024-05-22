@@ -20,4 +20,5 @@ public class WalletInfo implements Serializable {
 	private String accountHolder;
     private String brand;
     private String blurredNumber;
+    private String maskedEmail;
 }
