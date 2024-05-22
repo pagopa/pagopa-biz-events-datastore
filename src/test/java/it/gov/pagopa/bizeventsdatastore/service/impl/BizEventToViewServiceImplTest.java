@@ -71,6 +71,7 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
@@ -129,6 +130,7 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
@@ -171,6 +173,7 @@ class BizEventToViewServiceImplTest {
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
                 .transactionDetails(TransactionDetails.builder()
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .build())
                 .build();
 
@@ -214,6 +217,7 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
@@ -274,6 +278,7 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
@@ -361,6 +366,7 @@ class BizEventToViewServiceImplTest {
                         .transaction(Transaction.builder()
                                 .transactionId("transacation-id")
                                 .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .build())
                 .build();
         String result = sut.getTransactionId(bizEvent);
