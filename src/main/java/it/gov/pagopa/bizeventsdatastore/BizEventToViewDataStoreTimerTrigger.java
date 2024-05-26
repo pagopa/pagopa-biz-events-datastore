@@ -88,7 +88,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 		if (enableTransactionListView) {
 			Logger logger = context.getLogger();
-			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function start - called at %s with %s biz-events extracted to process.", 
+			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function pp-start - called at %s with %s biz-events extracted to process.", 
 					LocalDateTime.now(), items.length);
 			logger.info(message);
 			
@@ -97,7 +97,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 			List<BizEventsViewGeneral> generalViewToInsert = Collections.synchronizedList(new ArrayList<>());
 			List<BizEventsViewCart> cartViewToInsert = Collections.synchronizedList(new ArrayList<>());
 			
-			Stream.of(items).parallel().forEach(bizEvent -> 
+			Stream.of(items).parallel().unordered().forEach(bizEvent -> 
 				this.bizEventsViewDataIngestion(logger, itemsToUpdate, userViewToInsert, generalViewToInsert,
 						cartViewToInsert, bizEvent)
 			);
@@ -116,7 +116,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 			}
 		
 			String textBlock = """
-					BizEventToViewDataStoreTimerTriggerProcessor function stop - DATA INGESTION at %s:
+					BizEventToViewDataStoreTimerTriggerProcessor function pp-stop - DATA INGESTION at %s:
 					- number of data events ingested on the Biz-event views [user - %d, general - %d, cart - %d]
 					- number of biz events processed and updated [biz-events - %d] on a total of %d items
 					""";
