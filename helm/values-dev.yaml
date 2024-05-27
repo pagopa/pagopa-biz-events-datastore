@@ -94,7 +94,7 @@ microservice-chart: &microservice-chart
     MULTIPLIER: "1.5"
     RANDOMIZATION_FACTOR: "0.5"
     MAX_RETRY_ON_TRIGGER_ATTEMPTS: "1"
-    TRIGGER_SCHEDULE: "-" # means disable
+    TRIGGER_SCHEDULE: "0 0 5 31 2 ?" # means disable
     TRIGGER_CUSTOM_ERROR_MESSAGE: "-"
     TRIGGER_SQL_QUERY: "select TOP 1000 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC"
     VIEW_TRIGGER_SCHEDULE: "-" # means disable
@@ -153,31 +153,31 @@ pagopa-biz-events-datastore:
   envSecret:
     !!merge <<: *envSecret
 # 2 - ingesstion instance
-pagopa-biz-events-ingestion:
-  !!merge <<: *microservice-chart
-  ingress:
-    !!merge <<: *ingress
-    path: /pagopa-biz-events-datastore-service-fake/(.*)
-  resources:
-    !!merge <<: *resources
-    requests:
-      memory: "512Mi"
-      cpu: "0.3"
-    limits:
-      memory: "1024Mi"
-      cpu: "0.8"
-    autoscaling:
-      enable: true
-      minReplica: 1
-      maxReplica: 1
-  envConfig:
-    !!merge <<: *envConfig
-    WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreingestion'
-    VIEW_TRIGGER_SCHEDULE: "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
-    VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c" # DESC to process the newest entries first
-    TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "true"
-    AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
-    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
-  envSecret:
-    !!merge <<: *envSecret
+# pagopa-biz-events-ingestion:
+#   !!merge <<: *microservice-chart
+#   ingress:
+#     !!merge <<: *ingress
+#     path: /pagopa-biz-events-datastore-service-fake/(.*)
+#   resources:
+#     !!merge <<: *resources
+#     requests:
+#       memory: "512Mi"
+#       cpu: "0.3"
+#     limits:
+#       memory: "1024Mi"
+#       cpu: "0.8"
+#     autoscaling:
+#       enable: true
+#       minReplica: 1
+#       maxReplica: 1
+#   envConfig:
+#     !!merge <<: *envConfig
+#     WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreingestion'
+#     VIEW_TRIGGER_SCHEDULE: "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+#     VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c" # DESC to process the newest entries first
+#     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "true"
+#     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
+#     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
+#     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
+#   envSecret:
+#     !!merge <<: *envSecret
