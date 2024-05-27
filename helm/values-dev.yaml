@@ -156,6 +156,7 @@ pagopa-biz-events-ingestion:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
+    path: /notused/(.*) 
   resources:
     !!merge <<: *resources
     requests:
