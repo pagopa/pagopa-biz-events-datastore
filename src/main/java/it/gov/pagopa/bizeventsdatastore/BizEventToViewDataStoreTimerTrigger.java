@@ -88,7 +88,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 
 		if (enableTransactionListView) {
 			Logger logger = context.getLogger();
-			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function pp-start - called at %s with %s biz-events extracted to process.", 
+			String message = String.format("BizEventToViewDataStoreTimerTriggerProcessor function pp-1-start - called at %s with %s biz-events extracted to process.", 
 					LocalDateTime.now(), items.length);
 			logger.info(message);
 			
@@ -116,7 +116,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 			}
 		
 			String textBlock = """
-					BizEventToViewDataStoreTimerTriggerProcessor function pp-stop - DATA INGESTION at %s:
+					BizEventToViewDataStoreTimerTriggerProcessor function pp-1-stop - DATA INGESTION at %s:
 					- number of data events ingested on the Biz-event views [user - %d, general - %d, cart - %d]
 					- number of biz events processed and updated [biz-events - %d] on a total of %d items
 					""";
