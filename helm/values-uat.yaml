@@ -148,6 +148,7 @@ pagopa-biz-events-datastore:
     !!merge <<: *resources
   envConfig:
     !!merge <<: *envConfig
+    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
 # 2 - ingesstion instance
@@ -174,5 +175,8 @@ pagopa-biz-events-ingestion:
     VIEW_TRIGGER_SCHEDULE: "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
     VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c" # DESC to process the newest entries first
     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "true"
+    AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
+    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
