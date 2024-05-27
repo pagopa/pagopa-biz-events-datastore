@@ -152,7 +152,7 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
-2 - ingesstion instance
+# 2 - ingesstion instance
 pagopa-biz-events-ingestion:
   !!merge <<: *microservice-chart
   ingress:
