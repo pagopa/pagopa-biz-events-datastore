@@ -173,7 +173,7 @@ pagopa-biz-events-ingestion:
   envConfig:
     !!merge <<: *envConfig
     WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreingestion'
-    VIEW_TRIGGER_SCHEDULE: "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+    VIEW_TRIGGER_SCHEDULE: "-" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
     VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c" # DESC to process the newest entries first
     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
