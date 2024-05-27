@@ -70,12 +70,12 @@ microservice-chart: &microservice-chart
         metadata:
           # Required
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
-          value: "75"
+          value: "80"
       - type: memory
         metadata:
           # Required
           type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
-          value: "70"
+          value: "80"
   fileConfig: {}
   envConfig: &envConfig
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
