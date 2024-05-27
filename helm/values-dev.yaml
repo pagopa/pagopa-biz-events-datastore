@@ -144,7 +144,6 @@ pagopa-biz-events-datastore:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /pagopa-biz-events-datastore-services/(.*)
   resources:
     !!merge <<: *resources
   envConfig:
@@ -157,7 +156,6 @@ pagopa-biz-events-ingestion:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /pagopa-biz-events-datastore-service-fake/(.*)
   resources:
     !!merge <<: *resources
     requests:
