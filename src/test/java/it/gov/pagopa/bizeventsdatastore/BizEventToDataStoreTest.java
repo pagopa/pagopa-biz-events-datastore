@@ -26,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.RetryContext;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.DebtorPosition;
@@ -44,12 +45,17 @@ class BizEventToDataStoreTest {
     @Mock
     ExecutionContext context;
     
+    @Mock
+    RetryContext retryContext;
+    
 
     @Test
     void runOk() {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(5);
         
         PaymentInfo pi = PaymentInfo.builder().IUR("iur").build();
         DebtorPosition dp = DebtorPosition.builder().iuv("iuv").build();
