@@ -36,7 +36,7 @@ public class BizEventToDataStore {
 	private static final String REDIS_ID_PREFIX = "biz_";
 	
     @FunctionName("EventHubBizEventProcessor")
-	@ExponentialBackoffRetry(maxRetryCount = 5, maximumInterval = "00:15:00", minimumInterval = "00:00:10")
+	@ExponentialBackoffRetry(maxRetryCount = 10, maximumInterval = "01:00:00", minimumInterval = "00:00:10")
     public void processBizEvent (
             @EventHubTrigger(
                     name = "BizEvent",
