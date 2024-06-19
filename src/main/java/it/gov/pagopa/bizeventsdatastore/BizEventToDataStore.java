@@ -10,11 +10,7 @@ import java.util.logging.Logger;
 import com.google.common.base.Strings;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.BindingName;
-import com.microsoft.azure.functions.annotation.Cardinality;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.EventHubTrigger;
-import com.microsoft.azure.functions.annotation.FunctionName;
+import com.microsoft.azure.functions.annotation.*;
 
 import it.gov.pagopa.bizeventsdatastore.client.RedisClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
@@ -40,6 +36,7 @@ public class BizEventToDataStore {
 	private static final String REDIS_ID_PREFIX = "biz_";
 	
     @FunctionName("EventHubBizEventProcessor")
+	@ExponentialBackoffRetry(maxRetryCount = 5, maximumInterval = "00:15:00", minimumInterval = "00:00:10")
     public void processBizEvent (
             @EventHubTrigger(
                     name = "BizEvent",
@@ -110,6 +107,7 @@ public class BizEventToDataStore {
             logger.severe("NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
         } catch (Exception e) {
             logger.severe("Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " : " + e.getMessage());
+			// throw if CosmosException (?)
         }
 
     }
