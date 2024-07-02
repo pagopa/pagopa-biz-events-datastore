@@ -100,7 +100,7 @@ microservice-chart: &microservice-chart
     VIEW_TRIGGER_SCHEDULE: "-" # means disable "0 */3 * * * *" https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
-    ENABLE_TRANSACTION_LIST_VIEW: "false"
+    ENABLE_TRANSACTION_LIST_VIEW: "true"
     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
   envFieldRef: &envFieldRef
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
