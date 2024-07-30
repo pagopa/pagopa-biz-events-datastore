@@ -183,7 +183,7 @@ pagopa-biz-events-ingestion:
     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true" # To enable
+    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "false" # To enable
   envSecret:
     !!merge <<: *envSecret
     VIEW_TRIGGER_SQL_QUERY: 'cosmos-p-biz-view-trigger-sql-query-string'
