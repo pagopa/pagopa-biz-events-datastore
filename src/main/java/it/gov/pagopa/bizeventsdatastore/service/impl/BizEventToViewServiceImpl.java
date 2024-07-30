@@ -396,7 +396,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
             Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");
             Pattern patternPIVA = Pattern.compile("^\\d{11}");
 
-            return patternCF.matcher(taxCode).find() || patternPIVA.matcher(taxCode).find();
+            return patternCF.matcher(taxCode.toUpperCase()).find() || patternPIVA.matcher(taxCode).find();
         }
         return false;
     }
