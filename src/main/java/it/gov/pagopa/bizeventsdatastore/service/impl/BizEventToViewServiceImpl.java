@@ -8,7 +8,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.Payer;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -37,12 +38,14 @@ import java.util.regex.Pattern;
 public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private final String[] unwantedRemittanceInfo = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
+    private final List<String> authenticatedChannels = Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
 
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final String MODEL_TYPE_IUV = "1";
     private static final String MODEL_TYPE_NOTICE = "2";
     private static final String REF_TYPE_NOTICE = "codiceAvviso";
     private static final String REF_TYPE_IUV = "IUV";
+    private static final String SERVICE_IDENTIFIER_KEY = "serviceIdentifier";
 
 
     /**
@@ -105,24 +108,37 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return PaymentMethodType.UNKNOWN;
     }
-
-    OriginType getOrigin(TransactionDetails transactionDetails) {
-        if (transactionDetails != null) {
-            if (transactionDetails.getTransaction() != null
-                    && transactionDetails.getTransaction().getOrigin() != null
-                    && OriginType.isValidOrigin(transactionDetails.getTransaction().getOrigin())
+    
+    boolean isValidChannelOrigin(BizEvent bizEvent) {
+        if (bizEvent.getTransactionDetails() != null) {
+            if (
+                    bizEvent.getTransactionDetails().getTransaction() != null &&
+                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
+                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin().toUpperCase())
             ) {
-                return OriginType.valueOf(transactionDetails.getTransaction().getOrigin());
+                return true;
             }
-            if (transactionDetails.getInfo() != null
-                    && transactionDetails.getInfo().getClientId() != null
-                    && OriginType.isValidOrigin(transactionDetails.getInfo().getClientId())
+            if (
+                    bizEvent.getTransactionDetails().getInfo() != null &&
+                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
+                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getInfo().getClientId().toUpperCase())
             ) {
-                return OriginType.valueOf(transactionDetails.getInfo().getClientId());
+                return true;
             }
         }
-        return OriginType.UNKNOWN;
+        return false;
     }
+    
+    ServiceIdentifierType getServiceIdentifier(Map<String, Object> properties) {
+        if (properties != null && 
+        		properties.get(SERVICE_IDENTIFIER_KEY) != null &&  
+        		ServiceIdentifierType.isValidServiceIdentifier(properties.get(SERVICE_IDENTIFIER_KEY).toString())) {
+        		return ServiceIdentifierType.valueOf(properties.get(SERVICE_IDENTIFIER_KEY).toString());
+        }
+        return ServiceIdentifierType.UNKNOWN;
+    }
+    
+    
 
     String getTransactionId(BizEvent bizEvent) {
         PaymentInfo paymentInfo = bizEvent.getPaymentInfo();
@@ -373,7 +389,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .payer(payer)
                 .fee(getFee(bizEvent.getTransactionDetails()))
                 .paymentMethod(getPaymentMethod(bizEvent.getPaymentInfo()))
-                .origin(getOrigin(bizEvent.getTransactionDetails()))
+                .origin(getServiceIdentifier(bizEvent.getProperties()))
                 .totalNotice(getTotalNotice(bizEvent.getPaymentInfo()))
                 .isCart(getIsCart(bizEvent.getPaymentInfo()))
                 .build();
@@ -385,7 +401,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
-                .hidden(false)
+                .hidden(!this.isValidChannelOrigin(bizEvent))
                 .isPayer(isPayer)
                 .isDebtor(isDebtor)
                 .build();

@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.TransactionPsp;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.entity.User;
 import it.gov.pagopa.bizeventsdatastore.entity.WalletItem;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
@@ -383,32 +385,33 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void getOriginFromTransactionSuccess() {
-        TransactionDetails transactionDetails = TransactionDetails.builder()
-                .transaction(Transaction.builder()
-                        .origin(OriginType.NDP001PROD.name())
-                        .build())
-                .build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.NDP001PROD, result);
+    void getServiceIdentifierForPMSuccess() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", ServiceIdentifierType.PM.name());
+        ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.PM, result);
     }
 
     @Test
-    void getOriginFromInfoSuccess() {
-        TransactionDetails transactionDetails = TransactionDetails.builder()
-                .info(InfoECommerce.builder()
-                        .clientId(OriginType.NDP001PROD.name())
-                        .build())
-                .build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.NDP001PROD, result);
+    void getServiceIdentifierSuccess() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+        ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.NDP001PROD, result);
     }
 
     @Test
-    void getOriginWithNullValuesReturnDefault() {
-        TransactionDetails transactionDetails = TransactionDetails.builder().build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.UNKNOWN, result);
+    void getServiceIdentifierWithUnknownValuePropertiesReturnDefault() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", "NDP004IT");
+    	ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.UNKNOWN, result);
+    }
+    
+    @Test
+    void getServiceIdentifierWithEmptyPropertiesReturnDefault() {
+        ServiceIdentifierType result = sut.getServiceIdentifier(new HashMap<String, Object>());
+        assertEquals(ServiceIdentifierType.UNKNOWN, result);
     }
 
     @Test

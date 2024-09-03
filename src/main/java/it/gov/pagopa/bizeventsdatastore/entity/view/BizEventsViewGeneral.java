@@ -2,7 +2,7 @@ package it.gov.pagopa.bizeventsdatastore.entity.view;
 
 import jakarta.validation.constraints.NotBlank;
 
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -33,7 +33,7 @@ public class BizEventsViewGeneral {
     private UserDetail payer;
     private boolean isCart;
     private String fee;
-    private OriginType origin;
+    private ServiceIdentifierType origin;
     private int totalNotice;
 
 }
