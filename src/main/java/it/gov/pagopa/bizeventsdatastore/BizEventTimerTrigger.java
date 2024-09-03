@@ -51,7 +51,7 @@ public class BizEventTimerTrigger {
 			String message = String.format("BizEventTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
 					+ "In progress the event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), items.length, be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
-			logger.info(message);
+			logger.fine(message);
 
 			be.setEventStatus(StatusType.RETRY);
 			be.setEventRetryEnrichmentCount(0);	
@@ -60,7 +60,7 @@ public class BizEventTimerTrigger {
 			// Populates the list for the UPDATE of biz-event status
 			message = String.format("BizEventTimerTriggerProcessor function COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
 					LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
-			logger.info(message);
+			logger.fine(message);
 			itemsToUpdate.add(be);
 		}
 		
