@@ -109,7 +109,7 @@ public class BizEventToDataStore {
 						
 						String msg = String.format("BizEventToDataStore function with invocationId [%s] cached biz-event message with id [%s] and result: [%s]",
 								context.getInvocationId(), bizEvtMsg.get(i).getId(), result);
-						logger.info(msg);
+						logger.fine(msg);
 						
 						bizEvtMsgWithProperties.add(bz);
 					}
@@ -117,7 +117,7 @@ public class BizEventToDataStore {
 						// just to track duplicate events
 						String msg = String.format("BizEventToDataStore function with invocationId [%s] has already processed and cached biz-event message with id [%s]: it is discarded",
 								context.getInvocationId(), bizEvtMsg.get(i).getId());
-						logger.info(msg);			  
+						logger.fine(msg);			  
 					}
     	        }
     	        documentdb.setValue(bizEvtMsgWithProperties);

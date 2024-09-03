@@ -9,6 +9,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
@@ -34,7 +36,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.TransactionPsp;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.entity.User;
 import it.gov.pagopa.bizeventsdatastore.entity.WalletItem;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.OriginType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
@@ -59,6 +61,9 @@ class BizEventToViewServiceImplTest {
     void mapBizEventToViewSuccess() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
+    	Map<String, Object> properties = new HashMap<>(); 
+    	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+    	
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .psp(Psp.builder().psp("psp value").build())
@@ -74,18 +79,15 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
-                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .info(InfoECommerce.builder().clientId("IO").type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
+                .properties(properties)
                 .build();
 
         BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
-        assertNotNull(result);
-        assertNotNull(result.getUserViewList());
-        assertNotNull(result.getGeneralView());
-        assertNotNull(result.getCartView());
-        assertEquals(2, result.getUserViewList().size());
+        this.checkGeneratedViewResult(result);
 
         if (result.getUserViewList().get(0).isPayer()) {
             assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
@@ -100,6 +102,8 @@ class BizEventToViewServiceImplTest {
         }
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+        assertEquals(false, result.getUserViewList().get(0).isHidden());
+        assertEquals(false, result.getUserViewList().get(1).isHidden());
 
         User user = bizEvent.getTransactionDetails().getUser();
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
@@ -107,6 +111,7 @@ class BizEventToViewServiceImplTest {
         assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
         assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
         assertEquals(1, result.getGeneralView().getTotalNotice());
+        assertEquals(ServiceIdentifierType.NDP001PROD, result.getGeneralView().getOrigin());
 
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
@@ -117,6 +122,9 @@ class BizEventToViewServiceImplTest {
     @Test
     void mapBizEventToViewNewLineRemittanceInformationSuccess() throws AppException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+    	
+    	Map<String, Object> properties = new HashMap<>(); 
+    	properties.put("serviceIdentifier", "NDP004IT");
         
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -141,17 +149,13 @@ class BizEventToViewServiceImplTest {
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
                         .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
-                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .transaction(Transaction.builder().origin("IO").rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
 
         BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
-        assertNotNull(result);
-        assertNotNull(result.getUserViewList());
-        assertNotNull(result.getGeneralView());
-        assertNotNull(result.getCartView());
-        assertEquals(2, result.getUserViewList().size());
+        this.checkGeneratedViewResult(result);
 
         if (result.getUserViewList().get(0).isPayer()) {
             assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
@@ -166,6 +170,8 @@ class BizEventToViewServiceImplTest {
         }
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+        assertEquals(false, result.getUserViewList().get(0).isHidden());
+        assertEquals(false, result.getUserViewList().get(1).isHidden());
 
         User user = bizEvent.getTransactionDetails().getUser();
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
@@ -173,6 +179,7 @@ class BizEventToViewServiceImplTest {
         assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
         assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
         assertEquals(1, result.getGeneralView().getTotalNotice());
+        assertEquals(ServiceIdentifierType.UNKNOWN, result.getGeneralView().getOrigin());
 
         assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
@@ -185,6 +192,8 @@ class BizEventToViewServiceImplTest {
         result = sut.mapBizEventToView(logger, bizEvent);
         assertEquals(REMITTANCE_INFORMATION_FORMATTED, result.getCartView().getSubject());
     }
+
+	
 
     @Test
     void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws AppException {
@@ -206,7 +215,7 @@ class BizEventToViewServiceImplTest {
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
                         .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
-                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .transaction(Transaction.builder().origin("Checkout").rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
 
@@ -221,6 +230,7 @@ class BizEventToViewServiceImplTest {
         assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
         assertTrue(result.getUserViewList().get(0).isPayer());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+        assertEquals(true, result.getUserViewList().get(0).isHidden());
 
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getGeneralView().getPayer().getName());
@@ -383,32 +393,33 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void getOriginFromTransactionSuccess() {
-        TransactionDetails transactionDetails = TransactionDetails.builder()
-                .transaction(Transaction.builder()
-                        .origin(OriginType.NDP001PROD.name())
-                        .build())
-                .build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.NDP001PROD, result);
+    void getServiceIdentifierForPMSuccess() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", ServiceIdentifierType.PM.name());
+        ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.PM, result);
     }
 
     @Test
-    void getOriginFromInfoSuccess() {
-        TransactionDetails transactionDetails = TransactionDetails.builder()
-                .info(InfoECommerce.builder()
-                        .clientId(OriginType.NDP001PROD.name())
-                        .build())
-                .build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.NDP001PROD, result);
+    void getServiceIdentifierSuccess() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+        ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.NDP001PROD, result);
     }
 
     @Test
-    void getOriginWithNullValuesReturnDefault() {
-        TransactionDetails transactionDetails = TransactionDetails.builder().build();
-        OriginType result = sut.getOrigin(transactionDetails);
-        assertEquals(OriginType.UNKNOWN, result);
+    void getServiceIdentifierWithUnknownValuePropertiesReturnDefault() {
+    	Map<String, Object> properties = new HashMap<>();
+    	properties.put("serviceIdentifier", "NDP004IT");
+    	ServiceIdentifierType result = sut.getServiceIdentifier(properties);
+        assertEquals(ServiceIdentifierType.UNKNOWN, result);
+    }
+    
+    @Test
+    void getServiceIdentifierWithEmptyPropertiesReturnDefault() {
+        ServiceIdentifierType result = sut.getServiceIdentifier(new HashMap<String, Object>());
+        assertEquals(ServiceIdentifierType.UNKNOWN, result);
     }
 
     @Test
@@ -881,4 +892,12 @@ class BizEventToViewServiceImplTest {
         int result = sut.getTotalNotice(paymentInfo);
         assertEquals(1, result);
     }
+    
+    private void checkGeneratedViewResult(BizEventToViewResult result) {
+		assertNotNull(result);
+        assertNotNull(result.getUserViewList());
+        assertNotNull(result.getGeneralView());
+        assertNotNull(result.getCartView());
+        assertEquals(2, result.getUserViewList().size());
+	}
 }

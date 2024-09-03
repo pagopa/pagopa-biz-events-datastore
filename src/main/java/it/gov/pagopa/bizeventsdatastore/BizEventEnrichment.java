@@ -112,7 +112,7 @@ public class BizEventEnrichment {
 	        	
 	        	String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s and numEnrichmentRetry %s", 
 		        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-		        logger.info(message);
+		        logger.fine(message);
 				
 	        	be.setEventStatus(StatusType.DONE);
 				
@@ -150,7 +150,7 @@ public class BizEventEnrichment {
 				if (be.getEventRetryEnrichmentCount() <= maxRetryAttempts) {
 					message = String.format("BizEventEnrichment COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s", 
 			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-			        logger.info(message);
+			        logger.fine(message);
 			        itemsToUpdate.add(be);
 				} else {
 					discarder++;
@@ -163,14 +163,14 @@ public class BizEventEnrichment {
 
 		// discarder
 		msg = String.format("BizEventEnrichment stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-		logger.info(msg);
+		logger.fine(msg);
 		// call the Event Hub
 		msg = String.format("BizEventEnrichment stat %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size());
-		logger.info(msg);
+		logger.fine(msg);
 		bizEvtMsg.setValue(itemsDone);
 		// call the Datastore
 		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
-		logger.info(msg);
+		logger.fine(msg);
 		documentdb.setValue(itemsToUpdate);
 
 
