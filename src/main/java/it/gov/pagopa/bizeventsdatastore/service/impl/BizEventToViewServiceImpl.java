@@ -400,11 +400,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return false;
     }
-
+    
     private String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
             Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
-            Matcher matcher = pattern.matcher(remittanceInformation);
+            // replaceAll with '\R' to remove any unicode linebreak sequence
+            Matcher matcher = pattern.matcher(remittanceInformation.replaceAll("\\R", ""));
             if (matcher.find()) {
                 return matcher.group(1);
             }

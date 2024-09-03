@@ -1,5 +1,22 @@
 package it.gov.pagopa.bizeventsdatastore.service.impl;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.logging.Logger;
+
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.Spy;
+import org.mockito.junit.jupiter.MockitoExtension;
+
 import com.microsoft.azure.functions.ExecutionContext;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
@@ -22,21 +39,6 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.Spy;
-import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.util.Collections;
-import java.util.logging.Logger;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToViewServiceImplTest {
@@ -45,6 +47,7 @@ class BizEventToViewServiceImplTest {
     private static final String VALID_USER_CF = "MNRTLE80D45E507N";
     private static final String INVALID_CF = "an invalid fiscal code";
     private static final String VALID_DEBTOR_CF = "JHNDOE80D05B157Y";
+    private static final String REMITTANCE_INFORMATION_FORMATTED = "CB617RP-Mag2022/Apr2023--EC Lorem-E. 261,92 (san 4,91 int 0,95)";
 
     @Spy
     private BizEventToViewServiceImpl sut;
@@ -109,6 +112,78 @@ class BizEventToViewServiceImplTest {
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
         assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+    }
+    
+    @Test
+    void mapBizEventToViewNewLineRemittanceInformationSuccess() throws AppException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
+                .debtor(Debtor.builder()
+                        .fullName("debtor")
+                        .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().amount("1000").build())
+                .transferList(Arrays.asList(Transfer.builder()
+                		.fiscalCodePA("00493410583")
+                		.companyName("ACI Automobile Club Italia")
+                		.amount("1000")
+                		.transferCategory("9/0301105TS/3/CB617RP")
+                		.remittanceInformation("/RFB/9600000000/TXT/CB617RP-Mag2022/Apr2023--EC Lorem-E. 261,92 (san 4,91 int 0,95)")
+                		.build()))
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .build())
+                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
+                        .build())
+                .build();
+
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+
+        assertNotNull(result);
+        assertNotNull(result.getUserViewList());
+        assertNotNull(result.getGeneralView());
+        assertNotNull(result.getCartView());
+        assertEquals(2, result.getUserViewList().size());
+
+        if (result.getUserViewList().get(0).isPayer()) {
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
+            assertTrue(result.getUserViewList().get(0).isPayer());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(1).getTaxCode());
+            assertFalse(result.getUserViewList().get(1).isPayer());
+        } else {
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(1).getTaxCode());
+            assertTrue(result.getUserViewList().get(1).isPayer());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
+            assertFalse(result.getUserViewList().get(0).isPayer());
+        }
+        assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+        assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+
+        User user = bizEvent.getTransactionDetails().getUser();
+        String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
+        assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+        assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
+        assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(1, result.getGeneralView().getTotalNotice());
+
+        assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+        assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+        assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+        assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+        assertEquals(REMITTANCE_INFORMATION_FORMATTED, result.getCartView().getSubject());
+        
+        // set remittance information with new line characters 
+        bizEvent.getTransferList().get(0).setRemittanceInformation("/RFB/9600000000/TXT/"+ System.lineSeparator() +"CB617RP-Mag2022/"+ System.lineSeparator() +"Apr2023--EC Lorem-E. 261,92 (san 4,91 int 0,95)");
+        result = sut.mapBizEventToView(logger, bizEvent);
+        assertEquals(REMITTANCE_INFORMATION_FORMATTED, result.getCartView().getSubject());
     }
 
     @Test
