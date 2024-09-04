@@ -230,7 +230,7 @@ class BizEventToViewServiceImplTest {
         assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
         assertTrue(result.getUserViewList().get(0).isPayer());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
-        assertEquals(true, result.getUserViewList().get(0).isHidden());
+        assertEquals(false, result.getUserViewList().get(0).isHidden());
 
         assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getGeneralView().getPayer().getName());
