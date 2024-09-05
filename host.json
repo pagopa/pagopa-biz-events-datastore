@@ -17,6 +17,7 @@
       "routePrefix": ""
     }
   },
+  "functions": [ "BizEventToViewDataStoreTimerTriggerProcessor" ],
   "logging": {
     "fileLoggingMode": "always",
     "logLevel": {
