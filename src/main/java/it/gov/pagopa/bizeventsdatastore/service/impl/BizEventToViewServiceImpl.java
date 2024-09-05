@@ -396,12 +396,15 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
+    	
+    	boolean isHidden = !isDebtor && !(isPayer && this.isValidChannelOrigin(bizEvent));
+    	
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
-                .hidden(!this.isValidChannelOrigin(bizEvent))
+                .hidden(isHidden)
                 .isPayer(isPayer)
                 .isDebtor(isDebtor)
                 .build();
