@@ -11,7 +11,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.logging.Logger;
 
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -41,10 +40,6 @@ class BizEventViewDataStoreUpdateTimerTriggerTest {
 	@SystemStub
     private EnvironmentVariables environment = new EnvironmentVariables("UPDATE_VIEW_TIMER_TRIGGER_ENABLE", "true");
 	
-	@BeforeEach
-    void setUp() {
-    }
-
 	@SuppressWarnings("unchecked")
 	@Test
 	void runOK() throws IOException {
