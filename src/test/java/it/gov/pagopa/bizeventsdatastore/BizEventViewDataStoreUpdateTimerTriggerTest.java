@@ -23,7 +23,6 @@ import com.microsoft.azure.functions.OutputBinding;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
@@ -48,7 +47,7 @@ class BizEventViewDataStoreUpdateTimerTriggerTest {
 
 	@SuppressWarnings("unchecked")
 	@Test
-	void runOK() throws IOException, AppException {
+	void runOK() throws IOException {
 
 		// precondition
 		Logger logger = Logger.getLogger("BizEventViewDataStoreUpdateTimerTrigger-test-logger");
@@ -68,6 +67,6 @@ class BizEventViewDataStoreUpdateTimerTriggerTest {
 		
 		// test assertion -> this line means the call was successful
 		assertTrue(true);	
-		verify(function, times(1)).bizEventsViewUpdate(logger, itemsToUpdate, bizEventsViewGeneralMsg);
+		verify(function, times(1)).bizEventsViewUpdate(itemsToUpdate, bizEventsViewGeneralMsg);
 	}
 }

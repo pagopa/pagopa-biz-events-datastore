@@ -4,7 +4,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
@@ -59,7 +58,7 @@ public class BizEventViewDataStoreUpdateTimerTrigger {
 			List<BizEventsViewGeneral> itemsToUpdate = Collections.synchronizedList(new ArrayList<>());
 
 			Stream.of(items).parallel().unordered().forEach(i -> 
-			this.bizEventsViewUpdate(logger, itemsToUpdate, i)
+			this.bizEventsViewUpdate(itemsToUpdate, i)
 					);
 
 			if (!itemsToUpdate.isEmpty()) {
@@ -77,7 +76,7 @@ public class BizEventViewDataStoreUpdateTimerTrigger {
 		}
 	}
 
-	public void bizEventsViewUpdate(Logger logger, List<BizEventsViewGeneral> itemsToUpdate, BizEventsViewGeneral bizEventsViewGeneral) {
+	public void bizEventsViewUpdate(List<BizEventsViewGeneral> itemsToUpdate, BizEventsViewGeneral bizEventsViewGeneral) {
 		if (bizEventsViewGeneral != null) {
 			bizEventsViewGeneral.setOrigin(Enum.valueOf(ServiceIdentifierType.class, originValue));
 			itemsToUpdate.add(bizEventsViewGeneral);
