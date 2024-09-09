@@ -27,7 +27,7 @@ public class BizEventViewDataStoreUpdateTimerTrigger {
 	 * This function will be invoked periodically according to the specified schedule.
 	 */
 	@FunctionName("BizEventViewDataStoreUpdateTimerTriggerProcessor")
-	public void processBizEventScheduledTrigger(
+	public void processBizEventViewScheduledTrigger(
 			@TimerTrigger(
 					name = "timerInfo", 
 					schedule = "%UPDATE_VIEW_TRIGGER_SCHEDULE%"
@@ -77,15 +77,10 @@ public class BizEventViewDataStoreUpdateTimerTrigger {
 		}
 	}
 
-	private void bizEventsViewUpdate(Logger logger, List<BizEventsViewGeneral> itemsToUpdate, BizEventsViewGeneral bizEventsViewGeneral) {
-		try {
-			if (bizEventsViewGeneral != null) {
-				bizEventsViewGeneral.setOrigin(Enum.valueOf(ServiceIdentifierType.class, originValue));
-				itemsToUpdate.add(bizEventsViewGeneral);
-			}
-		} catch (Exception e) {
-			String errMsg = String.format("BizEventToViewDataStoreTimerTriggerProcessor function error on updating biz-events-view-general with id %s", bizEventsViewGeneral.getId());
-			logger.log(Level.SEVERE, errMsg, e);
+	public void bizEventsViewUpdate(Logger logger, List<BizEventsViewGeneral> itemsToUpdate, BizEventsViewGeneral bizEventsViewGeneral) {
+		if (bizEventsViewGeneral != null) {
+			bizEventsViewGeneral.setOrigin(Enum.valueOf(ServiceIdentifierType.class, originValue));
+			itemsToUpdate.add(bizEventsViewGeneral);
 		}
 	}
 }
