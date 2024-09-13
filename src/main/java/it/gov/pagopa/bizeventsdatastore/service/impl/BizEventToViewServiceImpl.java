@@ -21,6 +21,7 @@ import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.NumberFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -397,7 +398,15 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
     	
-    	boolean isHidden = !isDebtor && !(isPayer && this.isValidChannelOrigin(bizEvent));
+    	
+    	/*
+    	 * enhancement of the hidden field:
+    	 * - case debtor = true → hidden = false
+    	 * - case debtor = false and (payer = true and isValidChannel = true) → hidden = false
+    	 * - case isNotCartMod1 = true → hidden = false
+    	 * - other cases → hidden = true
+    	 */
+    	boolean isHidden = (!isDebtor && !(isPayer && this.isValidChannelOrigin(bizEvent))) || !this.isNotCartMod1(bizEvent);
     	
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
@@ -438,5 +447,27 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         numberFormat.setMaximumFractionDigits(2);
         numberFormat.setMinimumFractionDigits(2);
         return numberFormat.format(valueToFormat);
+    }
+    
+    /**
+     * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
+     * @param bizEvent bizEvent to validate
+     * @return flag to determine if it is a manageable cart, or otherwise, will return false if
+     * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     */
+    public boolean isNotCartMod1(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
+            return bizEvent.getTransactionDetails() != null &&
+                    new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
+                                    formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
+                            .floatValue() == 0;
+        }
+        return true;
+    }
+    
+    public BigDecimal formatEuroCentAmount(long value) {
+        BigDecimal amount = new BigDecimal(value);
+        BigDecimal divider = new BigDecimal(100);
+        return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
     }
 }
