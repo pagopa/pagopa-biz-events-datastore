@@ -147,35 +147,66 @@ pagopa-biz-events-datastore:
   envConfig:
     !!merge <<: *envConfig
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
 # 2 - ingesstion instance
-pagopa-biz-events-ingestion:
+# pagopa-biz-events-ingestion:
+#   !!merge <<: *microservice-chart
+#   ingress:
+#     !!merge <<: *ingress
+#     path: /notused/(.*)
+#   resources:
+#     !!merge <<: *resources
+#     requests:
+#       memory: "512Mi"
+#       cpu: "0.3"
+#     limits:
+#       memory: "512Mi"
+#       cpu: "0.3"
+#     autoscaling:
+#       enable: true
+#       minReplica: 1
+#       maxReplica: 1
+#   envConfig:
+#     !!merge <<: *envConfig
+#     WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreingestion'
+#     VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+#     TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
+#     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
+#     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
+#     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
+#     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true" # To enable for Ingestion
+#     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+#   envSecret:
+#     !!merge <<: *envSecret
+#     VIEW_TRIGGER_SQL_QUERY: 'cosmos-d-biz-view-trigger-sql-query-string'
+# 3 - update instance view
+pagopa-biz-events-update-view:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /notused/(.*)
+    path: /notused-2/(.*)
   resources:
     !!merge <<: *resources
     requests:
       memory: "512Mi"
       cpu: "0.3"
     limits:
-      memory: "512Mi"
-      cpu: "0.3"
+      memory: "1024Mi"
+      cpu: "0.5"
     autoscaling:
       enable: true
       minReplica: 1
       maxReplica: 1
   envConfig:
     !!merge <<: *envConfig
-    WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreingestion'
-    VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
-    TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW: "false"
+    WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreupdateview'
+    UPDATE_VIEW_TIMER_TRIGGER_ENABLE: "false"
+    UPDATE_VIEW_ORIGIN_VALUE: "NDP003DEV" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
+    UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+    UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.origin = 'UNKNOWN'"
     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true" # To enable
-  envSecret:
-    !!merge <<: *envSecret
-    VIEW_TRIGGER_SQL_QUERY: 'cosmos-d-biz-view-trigger-sql-query-string'
+    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"

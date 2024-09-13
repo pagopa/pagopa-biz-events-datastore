@@ -1,0 +1,22 @@
+{
+    "id": "tst2.881371788741790800-8540-3015-1790-156-0",
+    "transactionId": "tst2.881371788741790800-8540-3015-1790-156-0",
+    "authCode": "250863",
+    "paymentMethod": "PO",
+    "rrn": "223560110624",
+    "pspName": "Worldline Merchant Services Italia S.p.A.",
+    "transactionDate": "2024-08-06T11:32:56Z",
+    "walletInfo": {
+        "accountHolder": "ERNESTO HOLDER",
+        "brand": "MASTERCARD",
+        "blurredNumber": "0403"
+    },
+    "payer": {
+        "name": "ERNESTO PAYER",
+        "taxCode": "JHNDOE00A01F205N"
+    },
+    "isCart": false,
+    "fee": "0,49",
+    "origin": "UNKNOWN",
+    "totalNotice": 1
+}
