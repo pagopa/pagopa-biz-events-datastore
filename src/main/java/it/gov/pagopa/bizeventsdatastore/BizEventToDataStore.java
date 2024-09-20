@@ -89,7 +89,7 @@ public class BizEventToDataStore {
     	        	eventDetails.add("noticeNumber: " + Optional.ofNullable(bizEvtMsg.get(i).getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
     	        	eventDetails.add("iuv: " + Optional.ofNullable(bizEvtMsg.get(i).getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
 					
-					logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] working the biz-event [%s]",
+					logger.log(Level.FINE, () -> String.format("BizEventToDataStore function with invocationId [%s] working the biz-event [%s]",
 							context.getInvocationId(), eventDetails));
 					
 					// READ FROM THE CACHE: The cache is queried to find out if the event has already been queued --> if yes it is skipped
