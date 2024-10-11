@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
@@ -41,6 +42,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventToViewServiceImplTest {
@@ -452,6 +454,35 @@ class BizEventToViewServiceImplTest {
         assertEquals(bizEvent.getId(), result.getCartView().getEventId());
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
         assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+    }
+    
+    @Test
+    void mapBizEventToViewModCart1TrueByJSONFile() throws AppException, IOException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+
+    	Map<String, Object> properties = new HashMap<>(); 
+    	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+
+    	BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEventModCart1.json", BizEvent.class);
+
+    	BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+
+
+    	assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
+    	assertTrue(result.getUserViewList().get(0).isPayer());
+
+    	assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+    	assertEquals(true, result.getUserViewList().get(0).isHidden());
+
+    	assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+    	assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
+    	assertEquals(1, result.getGeneralView().getTotalNotice());
+    	assertEquals(ServiceIdentifierType.NDP003PROD, result.getGeneralView().getOrigin());
+
+    	assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+    	assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+    	assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+    	assertEquals(VALID_USER_CF, result.getCartView().getDebtor().getTaxCode());
     }
 
     @Test

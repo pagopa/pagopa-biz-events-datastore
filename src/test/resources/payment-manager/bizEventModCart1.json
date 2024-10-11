@@ -1,0 +1,95 @@
+{
+   "id":"81f19e07-e90b-48b4-9f4f-9c9a056e8825",
+   "version":"2",
+   "idPaymentManager":"afbdfa9c-ec1c-49c9-a261-562560e59595",
+   "complete":"true",
+   "missingInfo":[
+      
+   ],
+   "debtorPosition":{
+      "modelType":"1",
+      "iuv":"02820000832795753",
+      "iur":"2c978832648a4fec9646e5fa502333a8"
+   },
+   "creditor":{
+      "idPA":"01429410226",
+      "idBrokerPA":"00337460224",
+      "idStation":"00337460224_02",
+      "companyName":"Azienda Provinciale per i Servizi Sanitari"
+   },
+   "psp":{
+      "idPsp":"SATYLUL1",
+      "idBrokerPsp":"LU30726739",
+      "idChannel":"LU30726739_01",
+      "psp":"Satispay Europe SA"
+   },
+   "debtor":{
+      "fullName":"FULL NAME",
+      "entityUniqueIdentifierType":"F",
+      "entityUniqueIdentifierValue":"MNRTLE80D45E507N"
+   },
+   "payer":{
+      "fullName":"FULL NAME",
+      "entityUniqueIdentifierType":"F",
+      "entityUniqueIdentifierValue":"MNRTLE80D45E507N"
+   },
+   "paymentInfo":{
+      "paymentDateTime":"2024-08-29T13:38:46",
+      "paymentToken":"01429410226302820000832795753-00002",
+      "amount":"15.65",
+      "fee":"0",
+      "paymentMethod":"BBT",
+      "IUR":"2c978832648a4fec9646e5fa502333a8"
+   },
+   "transferList":[
+      {
+         "fiscalCodePA":"01429410226",
+         "companyName":"Azienda Provinciale per i Servizi Sanitari della Provincia Autonoma d",
+         "amount":"15.65",
+         "transferCategory":"9/0501100TS/02820000832795753",
+         "remittanceInformation":"/RFB/02820000832795753/15.65/TXT/PRENOTAZIONE",
+         "IUR":"2c978832648a4fec9646e5fa502333a8"
+      }
+   ],
+   "transactionDetails":{
+      "origin":"WISP",
+      "user":{
+         "userId":"117051854",
+         "userStatus":"0",
+         "userStatusDescription":"ANONYMOUS"
+      },
+      "transaction":{
+         "idTransaction":"227732822",
+         "transactionId":"227732822",
+         "grandTotal":3730,
+         "amount":3630,
+         "fee":100,
+         "transactionStatus":"Confermato mod1",
+         "accountingStatus":"-",
+         "creationDate":"2024-08-29T11:38:19Z",
+         "psp":{
+            "idChannel":"LU30726739_01",
+            "businessName":"Satispay Europe SA",
+            "serviceName":"Satispay"
+         },
+         "origin":"WISP"
+      },
+      "wallet":{
+         "idWallet":"198676627",
+         "enableableFunctions":[
+            "pagoPA"
+         ],
+         "pagoPa":true,
+         "onboardingChannel":"WISP",
+         "favourite":false,
+         "createDate":"2024-08-29T11:38:19Z"
+      }
+   },
+   "timestamp":1724931540797,
+   "properties":{
+      "serviceIdentifier":"NDP003PROD"
+   },
+   "eventStatus":"DONE",
+   "eventRetryEnrichmentCount":0,
+   "eventTriggeredBySchedule":false
+}
