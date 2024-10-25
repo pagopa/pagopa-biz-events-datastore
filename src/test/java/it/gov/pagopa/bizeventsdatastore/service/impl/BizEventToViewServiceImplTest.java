@@ -469,13 +469,12 @@ class BizEventToViewServiceImplTest {
 
 
     	assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
-    	assertTrue(result.getUserViewList().get(0).isPayer());
+    	assertFalse(result.getUserViewList().get(0).isPayer());
 
     	assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
     	assertEquals(true, result.getUserViewList().get(0).isHidden());
 
     	assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
-    	assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
     	assertEquals(1, result.getGeneralView().getTotalNotice());
     	assertEquals(ServiceIdentifierType.NDP003PROD, result.getGeneralView().getOrigin());
 
@@ -830,7 +829,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void getPayerFromPayerSuccess() {
+    void getPayerInfoNoTransactionDetailsSection() {
         BizEvent bizEvent = BizEvent.builder()
                 .payer(Payer.builder()
                         .fullName("payer-name")
@@ -838,9 +837,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
         UserDetail result = sut.getPayer(bizEvent);
-        assertNotNull(result);
-        assertEquals(bizEvent.getPayer().getFullName(), result.getName());
-        assertEquals(bizEvent.getPayer().getEntityUniqueIdentifierValue(), result.getTaxCode());
+        assertNull(result);
     }
 
     @Test
@@ -905,11 +902,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
         UserDetail result = sut.getPayer(bizEvent);
-        assertNotNull(result);
-        User user = bizEvent.getTransactionDetails().getUser();
-        String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
-        assertEquals(payerFullName, result.getName());
-        assertEquals(bizEvent.getPayer().getEntityUniqueIdentifierValue(), result.getTaxCode());
+        assertNull(result);
     }
 
     @Test

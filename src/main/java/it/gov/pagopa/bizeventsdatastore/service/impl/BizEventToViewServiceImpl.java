@@ -4,10 +4,10 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.Creditor;
 import it.gov.pagopa.bizeventsdatastore.entity.Debtor;
 import it.gov.pagopa.bizeventsdatastore.entity.DebtorPosition;
-import it.gov.pagopa.bizeventsdatastore.entity.Payer;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
+import it.gov.pagopa.bizeventsdatastore.entity.User;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
@@ -245,33 +245,27 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     UserDetail getPayer(BizEvent bizEvent) {
-        TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
-        Payer payer = bizEvent.getPayer();
+    	
+    	TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
 
+        // Verify that TransactionDetails and User are not null
         if (transactionDetails == null || transactionDetails.getUser() == null) {
-            if (payer != null && isValidFiscalCode(payer.getEntityUniqueIdentifierValue())) {
-                return UserDetail.builder()
-                        .name(payer.getFullName())
-                        .taxCode(payer.getEntityUniqueIdentifierValue())
-                        .build();
-            }
+            return null;
+        }
+
+        User user = transactionDetails.getUser();
+
+        // Check if the user's tax code is valid
+        if (!isValidFiscalCode(user.getFiscalCode())) {
             return null;
         }
 
         UserDetail userDetail = new UserDetail();
-        if (isValidFiscalCode(transactionDetails.getUser().getFiscalCode())) {
-            userDetail.setTaxCode(transactionDetails.getUser().getFiscalCode());
-        } else if (payer != null && isValidFiscalCode(payer.getEntityUniqueIdentifierValue())) {
-            userDetail.setTaxCode(payer.getEntityUniqueIdentifierValue());
-        } else {
-            return null;
-        }
+        userDetail.setTaxCode(user.getFiscalCode());
 
-        if (transactionDetails.getUser().getName() != null && transactionDetails.getUser().getSurname() != null) {
-            String fullName = String.format("%s %s", transactionDetails.getUser().getName(), transactionDetails.getUser().getSurname());
-            userDetail.setName(fullName);
-        } else if (payer != null && payer.getFullName() != null) {
-            userDetail.setName(payer.getFullName());
+        // Set the full name if both first and last names are available
+        if (user.getName() != null && user.getSurname() != null) {
+            userDetail.setName(user.getName() + " " + user.getSurname());
         }
 
         return userDetail;
