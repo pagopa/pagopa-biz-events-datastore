@@ -46,7 +46,7 @@ public class BizEventToDataStore {
 	private static final int EBR_MAX_RETRY_COUNT = 5;
 	
     @FunctionName("EventHubBizEventProcessor")
-    @ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "00:15:00", minimumInterval = "00:00:10")
+    @ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "01:00:00", minimumInterval = "00:02:00")
     public void processBizEvent (
             @EventHubTrigger(
                     name = "BizEvent",
