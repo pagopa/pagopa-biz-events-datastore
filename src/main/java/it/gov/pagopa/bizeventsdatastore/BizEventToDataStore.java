@@ -8,6 +8,7 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -184,6 +185,7 @@ public class BizEventToDataStore {
     }
     
     private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String prefix, List<BizEvent> bizEvtMsg) {
+		String containerName = "biz-events-dead-letter";
 		String connectionString = System.getenv("AzureWebJobsStorage");
 		BlobServiceClient blobServiceClient = new BlobServiceClientBuilder() // todo optimization: keep connection alive
 				.connectionString(connectionString)
@@ -195,9 +197,11 @@ public class BizEventToDataStore {
 		String hour = now.format(DateTimeFormatter.ofPattern("HH"));
 		String blobPath = String.format("biz-events-dead-letter/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
 				hour, id, prefix, now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
-		BlobClient blobClient = blobServiceClient
-				.getBlobContainerClient("biz-events-dead-letter")
-				.getBlobClient(blobPath);
+
+		blobServiceClient.createBlobContainerIfNotExists(containerName);
+		BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+		BlobClient blobClient = blobContainerClient.getBlobClient(blobPath);
+
 		blobClient.setMetadata(Map.of("invocationId", invocationId));
         try {
             blobClient.uploadFromFile(new ObjectMapper().writeValueAsString(bizEvtMsg));
