@@ -73,6 +73,9 @@ public class BizEventToDataStore {
 		String id = String.valueOf(UUID.randomUUID());
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
+		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] is called, retry index: %s",
+				context.getInvocationId(), retryIndex));
+
 		if (retryIndex == EBR_MAX_RETRY_COUNT) {
 			boolean deadLetterResult = uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "input", bizEvtMsg);
 			String deadLetterLog = deadLetterResult ?
