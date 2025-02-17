@@ -7,10 +7,12 @@ import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
@@ -180,13 +182,10 @@ public class BizEventToDataStore {
     		}
     	}
     }
-    
-    private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String prefix, List<BizEvent> bizEvtMsg) {
+
+	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String prefix, List<BizEvent> bizEvtMsg) {
 		String containerName = "biz-events-dead-letter";
 		String connectionString = System.getenv("AzureWebJobsStorage");
-		BlobServiceClient blobServiceClient = new BlobServiceClientBuilder() // todo optimization: keep connection alive
-				.connectionString(connectionString)
-				.buildClient();
 		// Create a directory structure (year/month/day)
 		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
 		String month = now.format(DateTimeFormatter.ofPattern("MM"));
@@ -195,16 +194,19 @@ public class BizEventToDataStore {
 		String blobPath = String.format("/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
 				hour, id, prefix, now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
 
-		blobServiceClient.createBlobContainerIfNotExists(containerName);
-		BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
-		BlobClient blobClient = blobContainerClient.getBlobClient(blobPath);
-
-		blobClient.setMetadata(Map.of("invocationId", invocationId));
-        try {
-            blobClient.uploadFromFile(new ObjectMapper().writeValueAsString(bizEvtMsg));
+		try {
+			BlobServiceClient blobServiceClient = new BlobServiceClientBuilder() // todo optimization: keep connection alive
+					.connectionString(connectionString)
+					.buildClient();
+			blobServiceClient.createBlobContainerIfNotExists(containerName);
+			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+			BlobClient blobClient = blobContainerClient.getBlobClient(blobPath);
+			BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
+			blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
+			blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg));
 			return true;
-        } catch (JsonProcessingException e) {
-            return false;
-        }
-    }
+		} catch (Exception e) {
+			return false;
+		}
+	}
 }
