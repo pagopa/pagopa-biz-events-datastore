@@ -186,12 +186,12 @@ public class BizEventToDataStore {
 	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String prefix, List<BizEvent> bizEvtMsg) {
 		String containerName = "biz-events-dead-letter";
 		String connectionString = System.getenv("AzureWebJobsStorage");
-		// Create a directory structure (year/month/day)
+		// Create a directory structure (year/month/day/hour/sessionByUUID)
 		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
 		String month = now.format(DateTimeFormatter.ofPattern("MM"));
 		String day = now.format(DateTimeFormatter.ofPattern("dd"));
 		String hour = now.format(DateTimeFormatter.ofPattern("HH"));
-		String blobPath = String.format("/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
+		String blobPath = String.format("%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
 				hour, id, prefix, now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
 
 		try {
@@ -200,10 +200,10 @@ public class BizEventToDataStore {
 					.buildClient();
 			blobServiceClient.createBlobContainerIfNotExists(containerName);
 			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
-			BlobClient blobClient = blobContainerClient.getBlobClient(blobPath);
-			BlockBlobClient blockBlobClient = blobClient.getBlockBlobClient();
+			BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
+			blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
 			blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
-			blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg));
+
 			return true;
 		} catch (Exception e) {
 			return false;
