@@ -74,15 +74,12 @@ public class BizEventToDataStore {
 		String id = String.valueOf(UUID.randomUUID());
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
-		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] is called, retry index: %s",
-				context.getInvocationId(), retryIndex));
-
-		if (retryIndex == (EBR_MAX_RETRY_COUNT-1)) {
+		if (retryIndex == 0) {
 			boolean deadLetterResult = uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "input", bizEvtMsg);
 			String deadLetterLog = deadLetterResult ?
 					"List<BizEvent> message was correctly saved in the dead letter." :
 					"There was an error when saving List<BizEvent> message in the dead letter.";
-			logger.log(Level.WARNING, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
+			logger.log(Level.INFO, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
 					deadLetterLog, context.getInvocationId()));
 		}
 
@@ -134,7 +131,7 @@ public class BizEventToDataStore {
 						logger.fine(msg);			  
 					}
     	        }
-				if (retryIndex == EBR_MAX_RETRY_COUNT) {
+				if (retryIndex == 0) {
 					uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
 				}
     	        documentdb.setValue(bizEvtMsgWithProperties);
@@ -195,7 +192,7 @@ public class BizEventToDataStore {
 		String month = now.format(DateTimeFormatter.ofPattern("MM"));
 		String day = now.format(DateTimeFormatter.ofPattern("dd"));
 		String hour = now.format(DateTimeFormatter.ofPattern("HH"));
-		String blobPath = String.format("biz-events-dead-letter/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
+		String blobPath = String.format("/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
 				hour, id, prefix, now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
 
 		blobServiceClient.createBlobContainerIfNotExists(containerName);
