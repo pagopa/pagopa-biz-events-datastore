@@ -2,14 +2,16 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.StringJoiner;
+import java.time.format.DateTimeFormatter;
+import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import com.azure.storage.blob.BlobClient;
+import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.base.Strings;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
@@ -28,6 +30,8 @@ import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
 import redis.clients.jedis.params.SetParams;
 
+import javax.swing.plaf.synth.SynthScrollBarUI;
+
 /**
  * Azure Functions with Azure Queue trigger.
  */
@@ -43,7 +47,7 @@ public class BizEventToDataStore {
 	
 	private static final String REDIS_ID_PREFIX = "biz_";
 	
-	private static final int EBR_MAX_RETRY_COUNT = 5;
+	private static final int EBR_MAX_RETRY_COUNT = 1;
 	
     @FunctionName("EventHubBizEventProcessor")
     @ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "01:00:00", minimumInterval = "00:02:00")
@@ -66,10 +70,16 @@ public class BizEventToDataStore {
 
         Logger logger = context.getLogger();
         int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
-        
-        if (retryIndex == EBR_MAX_RETRY_COUNT) {
-        	logger.log(Level.WARNING, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion", 
-        			context.getInvocationId()));
+		String id = String.valueOf(UUID.randomUUID());
+		LocalDateTime executionDateTime = LocalDateTime.now();
+
+		if (retryIndex == EBR_MAX_RETRY_COUNT) {
+			boolean deadLetterResult = uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "input", bizEvtMsg);
+			String deadLetterLog = deadLetterResult ?
+					"List<BizEvent> message was correctly saved in the dead letter." :
+					"There was an error when saving List<BizEvent> message in the dead letter.";
+			logger.log(Level.WARNING, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
+					deadLetterLog, context.getInvocationId()));
 		}
 
         logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] called at [%s] with events list size [%s] and properties size [%s]", 
@@ -120,6 +130,9 @@ public class BizEventToDataStore {
 						logger.fine(msg);			  
 					}
     	        }
+				if (retryIndex == EBR_MAX_RETRY_COUNT) {
+					uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
+				}
     	        documentdb.setValue(bizEvtMsgWithProperties);
             } else {
             	throw new AppException("BizEventToDataStore function with invocationId [%s] - Error during processing - "
@@ -133,7 +146,6 @@ public class BizEventToDataStore {
             logger.severe("BizEventToDataStore function with invocationId [%s] "
             		+ "- Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
         }
-
     }
     
     public String findByBizEventId(String id, Logger logger) {
@@ -168,5 +180,27 @@ public class BizEventToDataStore {
     	}
     }
     
-    
+    private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String prefix, List<BizEvent> bizEvtMsg) {
+		String connectionString = System.getenv("AzureWebJobsStorage");
+		BlobServiceClient blobServiceClient = new BlobServiceClientBuilder() // todo optimization: keep connection alive
+				.connectionString(connectionString)
+				.buildClient();
+		// Create a directory structure (year/month/day)
+		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
+		String month = now.format(DateTimeFormatter.ofPattern("MM"));
+		String day = now.format(DateTimeFormatter.ofPattern("dd"));
+		String hour = now.format(DateTimeFormatter.ofPattern("HH"));
+		String blobPath = String.format("biz-events-dead-letter/%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
+				hour, id, prefix, now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss")));
+		BlobClient blobClient = blobServiceClient
+				.getBlobContainerClient("biz-events-dead-letter")
+				.getBlobClient(blobPath);
+		blobClient.setMetadata(Map.of("invocationId", invocationId));
+        try {
+            blobClient.uploadFromFile(new ObjectMapper().writeValueAsString(bizEvtMsg));
+			return true;
+        } catch (JsonProcessingException e) {
+            return false;
+        }
+    }
 }

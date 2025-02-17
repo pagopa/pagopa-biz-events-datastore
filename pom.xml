@@ -16,6 +16,7 @@
 		<java.version>17</java.version>
 		<azure.functions.maven.plugin.version>1.27.0</azure.functions.maven.plugin.version>
 		<azure.functions.java.library.version>3.1.0</azure.functions.java.library.version>
+		<azure.storage.blob.library.version>12.29.0</azure.storage.blob.library.version>
 		<functionAppName>com.microsoft.azure-20220215182005862</functionAppName>
 		<resteasy.version>3.15.3.Final</resteasy.version>
 		<lombok.version>1.18.24</lombok.version>
@@ -58,6 +59,13 @@
 			<groupId>com.microsoft.azure.functions</groupId>
 			<artifactId>azure-functions-java-library</artifactId>
 			<version>${azure.functions.java.library.version}</version>
+		</dependency>
+
+		<!-- Azure Storage Blob SDK -->
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-blob</artifactId>
+			<version>${azure.storage.blob.library.version}</version>
 		</dependency>
 
 		<!-- End Azure -->
