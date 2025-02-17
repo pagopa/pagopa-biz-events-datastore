@@ -76,7 +76,7 @@ public class BizEventToDataStore {
 		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] is called, retry index: %s",
 				context.getInvocationId(), retryIndex));
 
-		if (retryIndex == EBR_MAX_RETRY_COUNT) {
+		if (retryIndex == (EBR_MAX_RETRY_COUNT-1)) {
 			boolean deadLetterResult = uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "input", bizEvtMsg);
 			String deadLetterLog = deadLetterResult ?
 					"List<BizEvent> message was correctly saved in the dead letter." :
