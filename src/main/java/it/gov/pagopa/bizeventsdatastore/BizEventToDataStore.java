@@ -11,7 +11,6 @@ import java.util.logging.Logger;
 import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.common.base.Strings;
 import com.microsoft.azure.functions.ExecutionContext;
@@ -26,6 +25,7 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 import it.gov.pagopa.bizeventsdatastore.client.RedisClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.util.BlobStorage;
 import lombok.NonNull;
 import redis.clients.jedis.Connection;
 import redis.clients.jedis.JedisPooled;
@@ -86,11 +86,11 @@ public class BizEventToDataStore {
 				context.getInvocationId(), LocalDateTime.now(), bizEvtMsg.size(), properties.length));
 
 		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
+		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
+
 		// persist the item
 		try {
 			if (bizEvtMsg.size() == properties.length) {
-
-				List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
 				for (int i=0; i<bizEvtMsg.size(); i++) {
 
 					eventDetails.add("id: " + bizEvtMsg.get(i).getId());
@@ -130,10 +130,6 @@ public class BizEventToDataStore {
 						logger.fine(msg);
 					}
 				}
-				logger.info(String.format("BizEventToDataStore function with invocationId [%s] performing the last retry %s saving output", retryIndex));
-				if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-					uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
-				}
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
 				throw new AppException("BizEventToDataStore function with invocationId [%s] - Error during processing - "
@@ -146,6 +142,8 @@ public class BizEventToDataStore {
 		} catch (Exception e) {
 			logger.severe("BizEventToDataStore function with invocationId [%s] "
 					+ "- Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
+		} finally {
+			uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
 		}
 	}
 
@@ -183,7 +181,6 @@ public class BizEventToDataStore {
 
 	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
 		String containerName = "biz-events-dead-letter";
-		String connectionString = System.getenv("AzureWebJobsStorage");
 		// Create a directory structure (year/month/day/hour/session/<>)
 		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
 		String month = now.format(DateTimeFormatter.ofPattern("MM"));
@@ -194,11 +191,8 @@ public class BizEventToDataStore {
 		String session = String.format("%s-%s-%s", dateTime, unixTime, id.substring(0,8));
 		String blobPath = String.format("%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
 				hour, session, session, type);
-
 		try {
-			BlobServiceClient blobServiceClient = new BlobServiceClientBuilder() // todo optimization: keep connection alive
-					.connectionString(connectionString)
-					.buildClient();
+			BlobServiceClient blobServiceClient = BlobStorage.getInstance().getBlobServiceClient();
 			blobServiceClient.createBlobContainerIfNotExists(containerName);
 			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
 			BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
