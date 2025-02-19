@@ -78,7 +78,7 @@ public class BizEventToDataStore {
 			String deadLetterLog = deadLetterResult ?
 					"List<BizEvent> message was correctly saved in the dead letter." :
 					"There was an error when saving List<BizEvent> message in the dead letter.";
-			logger.log(Level.INFO, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
+			logger.log(Level.SEVERE, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
 					deadLetterLog, context.getInvocationId()));
 		}
 
@@ -130,6 +130,7 @@ public class BizEventToDataStore {
 						logger.fine(msg);
 					}
 				}
+				logger.info(String.format("BizEventToDataStore function with invocationId [%s] performing the last retry %s saving output", retryIndex));
 				if (retryIndex >= EBR_MAX_RETRY_COUNT) {
 					uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
 				}
