@@ -13,6 +13,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.common.base.Strings;
+import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.annotation.BindingName;
@@ -47,7 +48,9 @@ public class BizEventToDataStore {
 
 	private static final String REDIS_ID_PREFIX = "biz_";
 
-	private static final int EBR_MAX_RETRY_COUNT = 1; // todo set to 10
+	private static final int EBR_MAX_RETRY_COUNT = 10;
+
+	private final TelemetryClient telemetryClient = new TelemetryClient();
 
 	@FunctionName("EventHubBizEventProcessor")
 	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "01:00:00", minimumInterval = "00:02:00")
@@ -66,7 +69,7 @@ public class BizEventToDataStore {
 					createIfNotExists = false,
 					connection = "COSMOS_CONN_STRING")
 			@NonNull OutputBinding<List<BizEvent>> documentdb,
-			final ExecutionContext context) {
+			final ExecutionContext context) throws AppException {
 
 		Logger logger = context.getLogger();
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
@@ -74,12 +77,7 @@ public class BizEventToDataStore {
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-			boolean deadLetterResult = uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "input", bizEvtMsg);
-			String deadLetterLog = deadLetterResult ?
-					"List<BizEvent> message was correctly saved in the dead letter." :
-					"There was an error when saving List<BizEvent> message in the dead letter.";
-			logger.log(Level.SEVERE, () -> String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
-					deadLetterLog, context.getInvocationId()));
+			this.handleLastRetry(context, id, executionDateTime, "input", bizEvtMsg);
 		}
 
 		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] called at [%s] with events list size [%s] and properties size [%s]",
@@ -139,11 +137,15 @@ public class BizEventToDataStore {
 		} catch (NullPointerException e) {
 			logger.severe("BizEventToDataStore function with invocationId [%s] "
 					+ "- NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
+			throw e; // it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 		} catch (Exception e) {
 			logger.severe("BizEventToDataStore function with invocationId [%s] "
 					+ "- Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
+			throw e; // it is important to trigger the retry mechanism
 		} finally {
-			uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "output", bizEvtMsgWithProperties);
+			if (retryIndex >= EBR_MAX_RETRY_COUNT) {
+				this.handleLastRetry(context, id, executionDateTime, "output", bizEvtMsgWithProperties);
+			}
 		}
 	}
 
@@ -177,6 +179,17 @@ public class BizEventToDataStore {
 				return null;
 			}
 		}
+	}
+
+	private void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
+		boolean deadLetterResult = uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
+		String deadLetterLog = deadLetterResult ?
+				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
+				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
+		String retryTrace = String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
+				deadLetterLog, context.getInvocationId());
+		context.getLogger().log(Level.SEVERE, () -> retryTrace);
+		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
 	}
 
 	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {

@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ class BizEventToDataStoreTest {
     
 
     @Test
-    void runOk() {
+    void runOk() throws AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -86,7 +87,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runECommerceOk() throws IOException {
+    void runECommerceOk() throws IOException, AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -110,7 +111,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runModelType1Ok() throws IOException {
+    void runModelType1Ok() throws IOException, AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -143,7 +144,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runKo_differentSize() {
+    void runKo_differentSize() throws AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -163,7 +164,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runBizEventAlreadyInCache() {
+    void runBizEventAlreadyInCache() throws AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -185,7 +186,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runBizEventRedisException() {
+    void runBizEventRedisException() throws AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
