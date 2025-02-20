@@ -130,9 +130,11 @@ public class BizEventToDataStore {
 				}
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
+				uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
 				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
 						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
 						context.getInvocationId(), bizEvtMsg.size(), properties.length);
+				logger.severe(event);
 				telemetryClient.trackEvent(event);
 			}
 
