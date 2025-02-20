@@ -69,7 +69,7 @@ public class BizEventToDataStore {
 					createIfNotExists = false,
 					connection = "COSMOS_CONN_STRING")
 			@NonNull OutputBinding<List<BizEvent>> documentdb,
-			final ExecutionContext context) throws AppException {
+			final ExecutionContext context) {
 
 		Logger logger = context.getLogger();
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
@@ -185,12 +185,12 @@ public class BizEventToDataStore {
 		}
 	}
 
-	private void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
+	public void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
 		boolean deadLetterResult = uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
 		String deadLetterLog = deadLetterResult ?
 				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
 				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
-		String retryTrace = String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion." +
+		String retryTrace = String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion. %s",
 				deadLetterLog, context.getInvocationId());
 		context.getLogger().log(Level.SEVERE, () -> retryTrace);
 		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));

@@ -3,20 +3,21 @@ package it.gov.pagopa.bizeventsdatastore;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import com.sun.jdi.InvalidTypeException;
 import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -206,5 +207,58 @@ class BizEventToDataStoreTest {
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
+    }
+
+    @Test
+    void handleLastRetryTest() throws AppException {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (BizEvent.builder().id("123").build());
+
+        function.handleLastRetry(context, "id-test-1", LocalDateTime.now(), "test", bizEvtMsg);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+
+    @Test
+    void runKo_nullPointerException() throws AppException {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (BizEvent.builder().id("123").build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        doReturn(null).when(function).findByBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        assertThrows(NullPointerException.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
+    }
+
+    @Test
+    void runKo_genericException() throws AppException {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        doThrow(new InvalidTypeException()).when(function).findByBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
     }
 }
