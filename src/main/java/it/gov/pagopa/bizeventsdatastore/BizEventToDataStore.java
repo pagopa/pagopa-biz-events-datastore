@@ -130,8 +130,10 @@ public class BizEventToDataStore {
 				}
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
-				throw new AppException("BizEventToDataStore function with invocationId [%s] - Error during processing - "
-						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size="+bizEvtMsg.size()+"; properties.length="+properties.length+"]");
+				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
+						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
+						context.getInvocationId(), bizEvtMsg.size(), properties.length);
+				telemetryClient.trackEvent(event);
 			}
 
 		} catch (NullPointerException e) {
