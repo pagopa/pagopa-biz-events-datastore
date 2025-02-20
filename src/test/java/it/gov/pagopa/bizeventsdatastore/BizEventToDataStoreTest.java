@@ -256,7 +256,7 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
 
-        doThrow(new InvalidTypeException()).when(function).findByBizEventId(anyString(), any(Logger.class));
+        doThrow(new ArithmeticException()).when(function).findByBizEventId(anyString(), any(Logger.class));
 
         // test execution
         assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
