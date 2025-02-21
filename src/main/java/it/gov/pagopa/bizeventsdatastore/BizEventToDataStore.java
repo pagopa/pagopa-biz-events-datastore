@@ -191,7 +191,7 @@ public class BizEventToDataStore {
 				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
 				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
 		String retryTrace = String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion. %s",
-				deadLetterLog, context.getInvocationId());
+				context.getInvocationId(), deadLetterLog);
 		context.getLogger().log(Level.SEVERE, () -> retryTrace);
 		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
 	}
