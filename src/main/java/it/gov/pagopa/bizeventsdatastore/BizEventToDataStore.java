@@ -25,7 +25,6 @@ import com.microsoft.azure.functions.annotation.FunctionName;
 
 import it.gov.pagopa.bizeventsdatastore.client.RedisClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.util.BlobStorage;
 import lombok.NonNull;
 import redis.clients.jedis.Connection;
@@ -47,6 +46,8 @@ public class BizEventToDataStore {
 			System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
 
 	private static final String REDIS_ID_PREFIX = "biz_";
+
+	private static final String CONTAINER_DEAD_LETTER_NAME = "biz-events-dead-letter";
 
 	private static final int EBR_MAX_RETRY_COUNT = 10;
 
@@ -72,21 +73,20 @@ public class BizEventToDataStore {
 			final ExecutionContext context) {
 
 		Logger logger = context.getLogger();
+		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] called at [%s] with events list size [%s] and properties size [%s]",
+				context.getInvocationId(), LocalDateTime.now(), bizEvtMsg.size(), properties.length));
+
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
 		String id = String.valueOf(UUID.randomUUID());
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-			this.handleLastRetry(context, id, executionDateTime, "input", bizEvtMsg);
+			this.handleLastRetry(context, id, executionDateTime, "last-retry-input", bizEvtMsg);
 		}
-
-		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] called at [%s] with events list size [%s] and properties size [%s]",
-				context.getInvocationId(), LocalDateTime.now(), bizEvtMsg.size(), properties.length));
 
 		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
 		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
 
-		// persist the item
 		try {
 			if (bizEvtMsg.size() == properties.length) {
 				for (int i=0; i<bizEvtMsg.size(); i++) {
@@ -128,6 +128,7 @@ public class BizEventToDataStore {
 						logger.fine(msg);
 					}
 				}
+				// persist the item
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
 				uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
@@ -137,19 +138,16 @@ public class BizEventToDataStore {
 				logger.severe(event);
 				telemetryClient.trackEvent(event);
 			}
-
-		} catch (NullPointerException e) {
-			logger.severe("BizEventToDataStore function with invocationId [%s] "
-					+ "- NullPointerException exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
-			throw e; // it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 		} catch (Exception e) {
-			logger.severe("BizEventToDataStore function with invocationId [%s] "
-					+ "- Generic exception on cosmos biz-events msg ingestion at "+ LocalDateTime.now()+ " ["+eventDetails+"]: " + e.getMessage());
-			throw e; // it is important to trigger the retry mechanism
-		} finally {
+			String exceptionMsg = String.format("BizEventToDataStore function with invocationId [%s] - %s on cosmos biz-events msg ingestion at %s" +
+					" [%s]: %s. Retry index: %s", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
+			logger.severe(exceptionMsg);
+			// retry check and dead-letter upload
 			if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-				this.handleLastRetry(context, id, executionDateTime, "output", bizEvtMsgWithProperties);
+				this.handleLastRetry(context, id, executionDateTime, "exception-output", bizEvtMsgWithProperties);
 			}
+			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
+			throw e;
 		}
 	}
 
@@ -197,7 +195,6 @@ public class BizEventToDataStore {
 	}
 
 	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
-		String containerName = "biz-events-dead-letter";
 		// Create a directory structure (year/month/day/hour/session/<>)
 		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
 		String month = now.format(DateTimeFormatter.ofPattern("MM"));
@@ -210,8 +207,8 @@ public class BizEventToDataStore {
 				hour, session, session, type);
 		try {
 			BlobServiceClient blobServiceClient = BlobStorage.getInstance().getBlobServiceClient();
-			blobServiceClient.createBlobContainerIfNotExists(containerName);
-			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(containerName);
+			blobServiceClient.createBlobContainerIfNotExists(CONTAINER_DEAD_LETTER_NAME);
+			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(CONTAINER_DEAD_LETTER_NAME);
 			BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
 			blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
 			blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
