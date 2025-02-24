@@ -46,7 +46,7 @@ public class BizEventToDataStore {
 	private final TelemetryClient telemetryClient = new TelemetryClient();
 
 	@FunctionName("EventHubBizEventProcessor")
-	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "02:00:00", minimumInterval = "00:15:00")
+	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "00:30:00", minimumInterval = "00:00:30")
 	public void processBizEvent (
 			@EventHubTrigger(
 					name = "BizEvent",
