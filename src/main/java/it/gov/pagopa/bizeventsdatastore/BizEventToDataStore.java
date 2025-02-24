@@ -123,7 +123,7 @@ public class BizEventToDataStore {
 				// persist the item
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
-				BlobStorage.getInstance().uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
+				this.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
 				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
 						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
 						context.getInvocationId(), bizEvtMsg.size(), properties.length);
@@ -176,7 +176,7 @@ public class BizEventToDataStore {
 	}
 
 	public void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
-		boolean deadLetterResult = BlobStorage.getInstance().uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
+		boolean deadLetterResult = this.uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
 		String deadLetterLog = deadLetterResult ?
 				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
 				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
@@ -184,5 +184,13 @@ public class BizEventToDataStore {
 				context.getInvocationId(), deadLetterLog);
 		context.getLogger().log(Level.SEVERE, () -> retryTrace);
 		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
+	}
+
+	public boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
+		try {
+			return BlobStorage.getInstance().uploadToDeadLetter(id, now, invocationId, type, bizEvtMsg);
+		} catch (Exception e) {
+			return false;
+		}
 	}
 }
