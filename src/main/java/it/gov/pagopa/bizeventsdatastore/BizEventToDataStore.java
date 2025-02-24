@@ -1,17 +1,11 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
-import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-import com.azure.core.util.BinaryData;
-import com.azure.storage.blob.BlobContainerClient;
-import com.azure.storage.blob.BlobServiceClient;
-import com.azure.storage.blob.specialized.BlockBlobClient;
 import com.google.common.base.Strings;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
@@ -46,8 +40,6 @@ public class BizEventToDataStore {
 			System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
 
 	private static final String REDIS_ID_PREFIX = "biz_";
-
-	private static final String CONTAINER_DEAD_LETTER_NAME = "biz-events-dead-letter";
 
 	private static final int EBR_MAX_RETRY_COUNT = 10;
 
@@ -131,7 +123,7 @@ public class BizEventToDataStore {
 				// persist the item
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
-				uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
+				BlobStorage.getInstance().uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
 				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
 						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
 						context.getInvocationId(), bizEvtMsg.size(), properties.length);
@@ -184,7 +176,7 @@ public class BizEventToDataStore {
 	}
 
 	public void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
-		boolean deadLetterResult = uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
+		boolean deadLetterResult = BlobStorage.getInstance().uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
 		String deadLetterLog = deadLetterResult ?
 				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
 				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
@@ -192,30 +184,5 @@ public class BizEventToDataStore {
 				context.getInvocationId(), deadLetterLog);
 		context.getLogger().log(Level.SEVERE, () -> retryTrace);
 		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
-	}
-
-	private boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
-		// Create a directory structure (year/month/day/hour/session/<>)
-		String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
-		String month = now.format(DateTimeFormatter.ofPattern("MM"));
-		String day = now.format(DateTimeFormatter.ofPattern("dd"));
-		String hour = now.format(DateTimeFormatter.ofPattern("HH"));
-		String dateTime = now.format(DateTimeFormatter.ofPattern("yyyyMMdd-HHmmss"));
-		String unixTime = String.valueOf(now.toEpochSecond(ZoneOffset.UTC));
-		String session = String.format("%s-%s-%s", dateTime, unixTime, id.substring(0,8));
-		String blobPath = String.format("%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
-				hour, session, session, type);
-		try {
-			BlobServiceClient blobServiceClient = BlobStorage.getInstance().getBlobServiceClient();
-			blobServiceClient.createBlobContainerIfNotExists(CONTAINER_DEAD_LETTER_NAME);
-			BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(CONTAINER_DEAD_LETTER_NAME);
-			BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
-			blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
-			blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
-
-			return true;
-		} catch (Exception e) {
-			return false;
-		}
 	}
 }
