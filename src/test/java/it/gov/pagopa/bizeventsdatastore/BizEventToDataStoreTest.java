@@ -3,20 +3,21 @@ package it.gov.pagopa.bizeventsdatastore;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,7 +51,7 @@ class BizEventToDataStoreTest {
     
 
     @Test
-    void runOk() {
+    void runOk()  {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -84,9 +85,9 @@ class BizEventToDataStoreTest {
         // test assertion -> this line means the call was successful
         assertTrue(true);
     }
-    
+
     @Test
-    void runECommerceOk() throws IOException {
+    void runECommerceOk() throws IOException, AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -110,7 +111,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runModelType1Ok() throws IOException {
+    void runModelType1Ok() throws IOException, AppException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -143,7 +144,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runKo_differentSize() {
+    void runKo_differentSize()  {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -163,7 +164,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runBizEventAlreadyInCache() {
+    void runBizEventAlreadyInCache()  {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -185,7 +186,7 @@ class BizEventToDataStoreTest {
     }
     
     @Test
-    void runBizEventRedisException() {
+    void runBizEventRedisException()  {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -200,6 +201,97 @@ class BizEventToDataStoreTest {
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         
+        // test execution
+        function.processBizEvent(bizEvtMsg, properties, document, context);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+
+    @Test
+    void handleLastRetryTest()  {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (BizEvent.builder().id("123").build());
+
+        function.handleLastRetry(context, "id-test-1", LocalDateTime.now(), "test", bizEvtMsg);
+
+        // test assertion -> this line means the call was successful
+        assertTrue(true);
+    }
+
+    @Test
+    void runKo_genericException()  {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        doThrow(new ArithmeticException()).when(function).findByBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
+    }
+
+    @Test
+    void runKo_genericExceptionLastRetry() {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(10);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        doThrow(new ArithmeticException()).when(function).findByBizEventId(anyString(), any(Logger.class));
+
+        // test execution
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
+    }
+
+    @Test
+    void runLastRetry() {
+        // test precondition
+        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
+        when(context.getLogger()).thenReturn(logger);
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(10);
+
+        PaymentInfo pi = PaymentInfo.builder().IUR("iur").build();
+        DebtorPosition dp = DebtorPosition.builder().iuv("iuv").build();
+        InfoECommerce iec = InfoECommerce.builder()
+                .brand("VISA")
+                .brandLogo("https://dev.checkout.pagopa.it/assets/creditcard/carta_visa.png")
+                .clientId("CHECKOUT")
+                .paymentMethodName("Carte")
+                .type("CP")
+                .build();
+        TransactionDetails td = TransactionDetails.builder().info(iec).build();
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add (BizEvent.builder().id("123").paymentInfo(pi).debtorPosition(dp).transactionDetails(td).build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+
+        doReturn(null).when(function).findByBizEventId(anyString(), any(Logger.class));
+        doReturn("OK").when(function).saveBizEventId(anyString(), any(Logger.class));
+
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, context);
 
