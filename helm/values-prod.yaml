@@ -108,6 +108,7 @@ microservice-chart: &microservice-chart
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-p-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-p-biz-connection-string'
     PDND_EVENTHUB_CONN_STRING: 'ehub-p-biz-enrich-connection-string'
+    VIEWS_EVENTHUB_CONN_STRING: 'ehub-views-p-biz-connection-string'
     COSMOS_CONN_STRING: 'cosmos-p-biz-connection-string'
     EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-p-biz-key'
     COSMOS_DB_PRIMARY_KEY: 'cosmos-p-biz-key'

@@ -18,8 +18,6 @@ public class BlobStorage {
 
     private final BlobServiceClient blobServiceClient;
 
-    private static final String CONTAINER_DEAD_LETTER_NAME = "biz-events-dead-letter";
-
     private static volatile BlobStorage instance;
 
     public static BlobStorage getInstance() {
@@ -40,7 +38,8 @@ public class BlobStorage {
                 .buildClient();
     }
 
-    public boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
+    public boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg,
+                                      String deadLetterContainerName) {
         // Create a directory structure (year/month/day/hour/session/<>)
         String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
         String month = now.format(DateTimeFormatter.ofPattern("MM"));
@@ -52,8 +51,8 @@ public class BlobStorage {
         String blobPath = String.format("%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
                 hour, session, session, type);
         try {
-            blobServiceClient.createBlobContainerIfNotExists(CONTAINER_DEAD_LETTER_NAME);
-            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(CONTAINER_DEAD_LETTER_NAME);
+            blobServiceClient.createBlobContainerIfNotExists(deadLetterContainerName);
+            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(deadLetterContainerName);
             BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
             blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
             blockBlobClient.setMetadata(Map.of("invocationId", invocationId));

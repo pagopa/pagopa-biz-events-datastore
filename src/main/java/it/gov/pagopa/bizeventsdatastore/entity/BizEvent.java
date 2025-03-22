@@ -35,7 +35,7 @@ public class BizEvent {
 	
 	// internal management field
 	@Builder.Default
-	private StatusType eventStatus = StatusType.NA;
+	private StatusType eventStatus = StatusType.DONE;
 	@Builder.Default
 	private Integer eventRetryEnrichmentCount = 0;
 	@Builder.Default

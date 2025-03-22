@@ -1,178 +1,183 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import com.google.common.base.Strings;
+import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
-import com.microsoft.azure.functions.annotation.EventHubOutput;
-import com.microsoft.azure.functions.annotation.FunctionName;
-import it.gov.pagopa.bizeventsdatastore.client.PaymentManagerClient;
+import com.microsoft.azure.functions.annotation.*;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.PM4XXException;
-import it.gov.pagopa.bizeventsdatastore.exception.PM5XXException;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
-import it.gov.pagopa.bizeventsdatastore.model.pm.TransactionDetails;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
+import it.gov.pagopa.bizeventsdatastore.service.RedisCacheService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
-import it.gov.pagopa.bizeventsdatastore.util.ObjectMapperUtils;
-
-import java.io.IOException;
+import it.gov.pagopa.bizeventsdatastore.service.impl.RedisCacheServiceImpl;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.logging.Level;
+import java.time.ZonedDateTime;
+import java.util.*;
 import java.util.logging.Logger;
 
-
 public class BizEventEnrichment {
+	
+	private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
-    private final int maxRetryAttempts =
-            System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS") != null ? Integer.parseInt(System.getenv("MAX_RETRY_ON_TRIGGER_ATTEMPTS")) : 3;
-    private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
+	private static final String REDIS_ID_VIEW_PREFIX = "bizView_";
 
-    private static final String BPAY_PAYMENT_TYPE = "BPAY";
+	private static final int EBR_MAX_RETRY_COUNT = 10;
 
-    private static final String PPAL_PAYMENT_TYPE = "PPAL";
+	private final TelemetryClient telemetryClient = new TelemetryClient();
+
+	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
 
 	private final BizEventToViewService bizEventToViewService;
 
+	private final RedisCacheService redisCacheService;
+
+	private final BizEventDeadLetterService bizEventDeadLetterService;
+
 	public BizEventEnrichment() {
+
 		this.bizEventToViewService = new BizEventToViewServiceImpl();
+		this.redisCacheService = new RedisCacheServiceImpl();
+		this.bizEventDeadLetterService = new BizEventDeadLetterServiceImpl();
 	}
 
-	BizEventEnrichment(BizEventToViewService bizEventToViewService) {
+	BizEventEnrichment(BizEventToViewService bizEventToViewService,
+					   RedisCacheService redisCacheService, BizEventDeadLetterService bizEventDeadLetterService) {
+
 		this.bizEventToViewService = bizEventToViewService;
+		this.redisCacheService = redisCacheService;
+		this.bizEventDeadLetterService = bizEventDeadLetterService;
 	}
 
 	@FunctionName("BizEventEnrichmentProcessor")
-    public void processBizEventEnrichment(
-            @CosmosDBTrigger(
-                    name = "BizEventDatastore",
-                    databaseName = "db",
-                    containerName = "biz-events",
-                    leaseContainerName = "biz-events-leases",
-                    createLeaseContainerIfNotExists = true,
-                    maxItemsPerInvocation = 100,
-                    connection = "COSMOS_CONN_STRING")
-            List<BizEvent> items,
-            @EventHubOutput(
-                    name = "PdndBizEventHub",
-                    eventHubName = "", // blank because the value is included in the connection string
-                    connection = "PDND_EVENTHUB_CONN_STRING")
-            OutputBinding<List<BizEvent>> bizEvtMsg,
-            @CosmosDBOutput(
-                    name = "EnrichedBizEventDatastore",
-                    databaseName = "db",
-                    containerName = "biz-events",
-                    createIfNotExists = false,
-                    connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEvent>> documentdb,
-            @CosmosDBOutput(
-                    name = "BizEventUserView",
-                    databaseName = "db",
-                    containerName = "biz-events-view-user",
-                    createIfNotExists = false,
-                    connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEventsViewUser>> bizEventUserView,
-            @CosmosDBOutput(
-                    name = "BizEventGeneralView",
-                    databaseName = "db",
-                    containerName = "biz-events-view-general",
-                    createIfNotExists = false,
-                    connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
-            @CosmosDBOutput(
-                    name = "BizEventCartView",
-                    databaseName = "db",
-                    containerName = "biz-events-view-cart",
-                    createIfNotExists = false,
-                    connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEventsViewCart>> bizEventCartView,
-            final ExecutionContext context
-    ) {
+	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "00:30:00", minimumInterval = "00:00:30")
+	public void processBizEventEnrichment(
+			@EventHubTrigger(
+					name = "BizEvent",
+					eventHubName = "", // blank because the value is included in the connection string
+					connection = "VIEWS_EVENTHUB_CONN_STRING",
+					cardinality = Cardinality.MANY)
+			List<BizEvent> items,
+			@BindingName(value = "PropertiesArray") Map<String, Object>[] properties,
+			@EventHubOutput(
+					name = "PdndBizEventHub",
+					eventHubName = "", // blank because the value is included in the connection string
+					connection = "PDND_EVENTHUB_CONN_STRING")
+			OutputBinding<List<BizEvent>> bizPdndEvtMsg,
+			@CosmosDBOutput(
+					name = "BizEventUserView",
+					databaseName = "db",
+					containerName = "biz-events-view-user",
+					createIfNotExists = false,
+					connection = "COSMOS_CONN_STRING")
+			OutputBinding<List<BizEventsViewUser>> bizEventUserView,
+			@CosmosDBOutput(
+					name = "BizEventGeneralView",
+					databaseName = "db",
+					containerName = "biz-events-view-general",
+					createIfNotExists = false,
+					connection = "COSMOS_CONN_STRING")
+			OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
+			@CosmosDBOutput(
+					name = "BizEventCartView",
+					databaseName = "db",
+					containerName = "biz-events-view-cart",
+					createIfNotExists = false,
+					connection = "COSMOS_CONN_STRING")
+			OutputBinding<List<BizEventsViewCart>> bizEventCartView,
+			final ExecutionContext context
+	) throws AppException {
 
-        List<BizEvent> itemsDone = new ArrayList<>();
-        List<BizEvent> itemsToUpdate = new ArrayList<>();
-        List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-        List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
-        List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
-        Logger logger = context.getLogger();
+		List<BizEvent> itemsDone = new ArrayList<>();
+		List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+		List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
+		List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
+		Logger logger = context.getLogger();
 
 		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
 		logger.info(msg);
-		int discarder = 0;
-		for (BizEvent be: items) {
-			
-	        if (be.getEventStatus().equals(StatusType.NA) || 
-	        		(be.getEventStatus().equals(StatusType.RETRY) && be.getEventRetryEnrichmentCount() <= maxRetryAttempts)) {
-	        	
-	        	String message = String.format("BizEventEnrichment function called at %s for event with id %s and status %s and numEnrichmentRetry %s", 
-		        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-		        logger.fine(message);
-				
-	        	be.setEventStatus(StatusType.DONE);
-				
-				// check if the event is to enrich -> field 'idPaymentManager' valued but section 'transactionDetails' not present
-				if (null != be.getIdPaymentManager() && null == be.getTransactionDetails()) {
-					this.enrichBizEvent(be, logger, context.getInvocationId());
-				}
 
-				// if status is DONE put the event on the Event Hub
-                if (be.getEventStatus()==StatusType.DONE) {
-                    // items in DONE status good for the Event Hub
-					try {
-						if (enableTransactionListView) {
-							BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
-							if (bizEventToViewResult != null) {
-								userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
-								generalViewToInsert.add(bizEventToViewResult.getGeneralView());
-								cartViewToInsert.add(bizEventToViewResult.getCartView());
-							}
-						}
+		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
+		String id = String.valueOf(UUID.randomUUID());
+		LocalDateTime executionDateTime = LocalDateTime.now();
+		
+		// This retry check is needed because setValue in OutputBinding doesn’t throw exceptions, 
+		// requiring an additional check to send the message to the dead letter queue after multiple failed attempts (e.g., 429 Too Many Requests).
+		handleLastRetry(items, context, retryIndex, id, "last-retry-input", executionDateTime);
+
+		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
+		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
+
+		try {
+			if (items.size() == properties.length) {
+				for (int i=0; i<items.size(); i++) {
+
+					BizEvent be = items.get(i);
+					eventDetails.add("id: " + be.getId());
+					eventDetails.add("idPA: " + Optional.ofNullable(be.getCreditor()).map(o -> o.getIdPA()).orElse("N/A"));
+					eventDetails.add("modelType: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getModelType()).orElse("N/A"));
+					eventDetails.add("noticeNumber: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
+					eventDetails.add("iuv: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
+
+					String message = String.format("BizEventEnrichment function with invocationId %s called at %s for event with id %s and status %s and numEnrichmentRetry %s , enriching biz-event %s",
+							context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
+					logger.fine(message);
+
+					// Cache lookup: The cache is queried to find out if the event has already been queued --> if yes it is skipped
+					String cachedValue = redisCacheService.findByBizEventId(be.getId(),REDIS_ID_VIEW_PREFIX, logger);
+
+					if (Strings.isNullOrEmpty(cachedValue)) {
+
+						// set the IUR also on Debtor Position
+						be.getDebtorPosition().setIur(be.getPaymentInfo().getIUR());
+						// set the event creation date
+						be.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
+						// set the event associated properties
+						be.setProperties(properties[i]);
+
+						generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, logger, be);
+
+						// Cache write: The result of the insertion in the cache is logged to verify the correct functioning
+						String result = redisCacheService.saveBizEventId(be.getId(),REDIS_ID_VIEW_PREFIX, logger);
+
+						String cachedMsg = String.format("BizEventEnrichment function with invocationId [%s] cached biz-event view with id [%s] and result: [%s]",
+								context.getInvocationId(), be.getId(), result);
+						logger.fine(cachedMsg);
+
+						//the event is propagated only if it is not a duplicate
 						itemsDone.add(be);
-					} catch (Exception e) {
-						String errMsg = String.format("Error on mapping biz-event with id %s to its views", be.getId());
-						logger.log(Level.SEVERE, errMsg, e);
-						be.setEventErrorMessage(e.getMessage());
-						be.setEventStatus(StatusType.RETRY);
-						be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount() + 1);
+					}
+					else {
+						// just to track duplicate events
+						String duplicateMsg = String.format("BizEventEnrichment function with invocationId [%s] has already processed and cached biz-event view with id [%s]: it is discarded",
+								context.getInvocationId(), be.getId());
+						logger.fine(duplicateMsg);
 					}
 				}
-				
-				/*
-				 * Populates the list with events to update.
-				 * If the number of attempts has reached the maxRetryAttempts, the update is stopped to avoid triggering again
-				 */
-				if (be.getEventRetryEnrichmentCount() <= maxRetryAttempts) {
-					message = String.format("BizEventEnrichment COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s", 
-			        		LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount());
-			        logger.fine(message);
-			        itemsToUpdate.add(be);
-				} else {
-					discarder++;
-				}
-			} else {
-				discarder++;
 			}
-
+			else {
+				handleSizeMismatch(items, properties, context, logger, id, executionDateTime);
+			}
+		} catch (Exception e) {
+			String exceptionMsg = String.format("BizEventEnrichmentProcessor function with invocationId [%s] - %s on cosmos biz-events msg ingestion at %s" +
+					" [%s]: %s. Retry index: %s", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
+			logger.severe(exceptionMsg);
+			// retry check and dead-letter upload
+			handleLastRetry(bizEvtMsgWithProperties, context, retryIndex, id, "exception-output", executionDateTime);
+			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
+			throw e;
 		}
 
-		// discarder
-		msg = String.format("BizEventEnrichment stat %s function - %d number of events in discarder  ", context.getInvocationId(), discarder);
-		logger.fine(msg);
 		// call the Event Hub
 		msg = String.format("BizEventEnrichment stat %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size());
 		logger.fine(msg);
-		bizEvtMsg.setValue(itemsDone);
-		// call the Datastore
-		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the datastore %d", context.getInvocationId(), itemsToUpdate.size());
-		logger.fine(msg);
-		documentdb.setValue(itemsToUpdate);
-
+		bizPdndEvtMsg.setValue(itemsDone);
 
 		// Insert in Biz-event views
 		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the Biz-event views: user - %d, general - %d, cart - %d ",
@@ -189,37 +194,36 @@ public class BizEventEnrichment {
 		}
 	}
 
-	// the return of the BizEvent has the purpose of testing the correct execution of the method
-	public BizEvent enrichBizEvent(BizEvent be, Logger logger, String invocationId) {
-		// call the Payment Manager
-		PaymentManagerClient pmClient = PaymentManagerClient.getInstance();
-		try {
-			String pMethod = be.getPaymentInfo().getPaymentMethod();
-			String method = ((pMethod.equalsIgnoreCase(BPAY_PAYMENT_TYPE) || pMethod.equalsIgnoreCase(PPAL_PAYMENT_TYPE)) ? pMethod : "");
-			TransactionDetails td = pmClient.getPMEventDetails(be.getIdPaymentManager(), method);
-			be.setTransactionDetails(ObjectMapperUtils.map(td, it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails.class));
-			//Task PAGOPA-1193: adding mapping transactionId to align the PM with NDP, remove when ready
-			be.getTransactionDetails().getTransaction().setTransactionId(String.valueOf(td.getTransaction().getIdTransaction()));
-			//Task PAGOPA-1505: set transactionDetails.origin with the same value of transactionDetails.transaction.origin
-			be.getTransactionDetails().setOrigin(td.getTransaction().getOrigin());
-		} catch (PM5XXException | IOException e) {
-			logger.warning("BizEventEnrichment "+ invocationId +" function - non-blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage());
-			be.setEventStatus(StatusType.RETRY);
-			// retry count increment
-			be.setEventRetryEnrichmentCount(be.getEventRetryEnrichmentCount()+1);
-			be.setEventErrorMessage(e.getMessage());
-		} catch (PM4XXException | IllegalArgumentException e) {
-			String errorMsg = "BizEventEnrichment "+ invocationId +" function - blocking exception occurred for event with id "+be.getId()+" : " + e.getMessage();
-			logger.log(Level.SEVERE, errorMsg, e);
-			be.setEventStatus(StatusType.FAILED);
-			be.setEventErrorMessage(e.getMessage());
-		} catch (Exception e) {
-			String errorMsg = "BizEventEnrichment "+ invocationId +" function - blocking unexpected exception occurred for event with id "+be.getId()+" : " + e.getMessage();
-			logger.log(Level.SEVERE, errorMsg, e);
-			be.setEventStatus(StatusType.FAILED);
-			be.setEventErrorMessage(e.getMessage());
+	private void handleLastRetry(List<BizEvent> items, final ExecutionContext context, int retryIndex, String id, String type,
+			LocalDateTime executionDateTime) {
+		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
+			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, type, items,
+					CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, telemetryClient);
 		}
-		
-		return be;
 	}
+
+	private void handleSizeMismatch(List<BizEvent> items, Map<String, Object>[] properties,
+			final ExecutionContext context, Logger logger, String id, LocalDateTime executionDateTime) {
+		bizEventDeadLetterService.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", items,CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME);
+		String event = String.format("BizEventEnrichmentProcessor function with invocationId [%s] - Error during processing - "
+						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
+				context.getInvocationId(), items.size(), properties.length);
+		logger.severe(event);
+		telemetryClient.trackEvent(event);
+	}
+
+	private void generateBizEventViews(List<BizEventsViewUser> userViewToInsert,
+			List<BizEventsViewGeneral> generalViewToInsert, List<BizEventsViewCart> cartViewToInsert, Logger logger,
+			BizEvent be) throws AppException {
+		if (enableTransactionListView) {
+			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
+			if (bizEventToViewResult != null) {
+				userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
+				generalViewToInsert.add(bizEventToViewResult.getGeneralView());
+				cartViewToInsert.add(bizEventToViewResult.getCartView());
+
+			}
+		}
+	}
+
 }
