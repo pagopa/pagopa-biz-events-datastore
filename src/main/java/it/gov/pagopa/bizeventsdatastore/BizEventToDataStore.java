@@ -1,30 +1,22 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import com.google.common.base.Strings;
+import com.microsoft.applicationinsights.TelemetryClient;
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.OutputBinding;
+import com.microsoft.azure.functions.annotation.*;
+import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
+import it.gov.pagopa.bizeventsdatastore.service.RedisCacheService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
+import it.gov.pagopa.bizeventsdatastore.service.impl.RedisCacheServiceImpl;
 import java.time.LocalDateTime;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
-import com.google.common.base.Strings;
-import com.microsoft.applicationinsights.TelemetryClient;
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.BindingName;
-import com.microsoft.azure.functions.annotation.Cardinality;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.EventHubTrigger;
-import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
-import com.microsoft.azure.functions.annotation.FunctionName;
-
-import it.gov.pagopa.bizeventsdatastore.client.RedisClient;
-import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.util.BlobStorage;
 import lombok.NonNull;
-import redis.clients.jedis.Connection;
-import redis.clients.jedis.JedisPooled;
-import redis.clients.jedis.params.SetParams;
-
 
 /**
  * Azure Functions with Azure Queue trigger.
@@ -34,16 +26,28 @@ public class BizEventToDataStore {
 	 * This function will be invoked when an Event Hub trigger occurs
 	 */
 
-	public static final JedisPooled jedis = RedisClient.getInstance().redisConnectionFactory();
-
-	private static final int EXPIRE_TIME_IN_MS =
-			System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
-
 	private static final String REDIS_ID_PREFIX = "biz_";
 
 	private static final int EBR_MAX_RETRY_COUNT = 10;
 
+	private static final String CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME = "biz-events-dead-letter";
+
 	private final TelemetryClient telemetryClient = new TelemetryClient();
+
+	private final RedisCacheService redisCacheService;
+
+	private final BizEventDeadLetterService bizEventDeadLetterService;
+
+	public BizEventToDataStore() {
+
+		this.redisCacheService = new RedisCacheServiceImpl();
+		this.bizEventDeadLetterService = new BizEventDeadLetterServiceImpl();
+	}
+
+	public BizEventToDataStore(RedisCacheService redisCacheService, BizEventDeadLetterService bizEventDeadLetterService) {
+		this.redisCacheService = redisCacheService;
+		this.bizEventDeadLetterService = bizEventDeadLetterService;
+	}
 
 	@FunctionName("EventHubBizEventProcessor")
 	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "00:30:00", minimumInterval = "00:00:30")
@@ -73,27 +77,27 @@ public class BizEventToDataStore {
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-			this.handleLastRetry(context, id, executionDateTime, "last-retry-input", bizEvtMsg);
+			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, "last-retry-input", bizEvtMsg, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, telemetryClient);
 		}
 
-		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
+		StringJoiner eventDetails = null;
 		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
 
 		try {
 			if (bizEvtMsg.size() == properties.length) {
 				for (int i=0; i<bizEvtMsg.size(); i++) {
-
+					eventDetails = new StringJoiner(", ", "{", "}");
 					eventDetails.add("id: " + bizEvtMsg.get(i).getId());
 					eventDetails.add("idPA: " + Optional.ofNullable(bizEvtMsg.get(i).getCreditor()).map(o -> o.getIdPA()).orElse("N/A"));
 					eventDetails.add("modelType: " + Optional.ofNullable(bizEvtMsg.get(i).getDebtorPosition()).map(o -> o.getModelType()).orElse("N/A"));
 					eventDetails.add("noticeNumber: " + Optional.ofNullable(bizEvtMsg.get(i).getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
 					eventDetails.add("iuv: " + Optional.ofNullable(bizEvtMsg.get(i).getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
 
-					logger.log(Level.FINE, () -> String.format("BizEventToDataStore function with invocationId [%s] working the biz-event [%s]",
+					logger.fine( String.format("BizEventToDataStore function with invocationId [%s] working the biz-event [%s]",
 							context.getInvocationId(), eventDetails));
 
 					// READ FROM THE CACHE: The cache is queried to find out if the event has already been queued --> if yes it is skipped
-					String value = this.findByBizEventId(bizEvtMsg.get(i).getId(), logger);
+					String value = redisCacheService.findByBizEventId(bizEvtMsg.get(i).getId(), REDIS_ID_PREFIX, logger);
 
 					if (Strings.isNullOrEmpty(value)) {
 						BizEvent bz = bizEvtMsg.get(i);
@@ -103,9 +107,11 @@ public class BizEventToDataStore {
 						bz.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
 						// set the event associated properties
 						bz.setProperties(properties[i]);
+						//TODO set here DONE status rather than as default property value?
+						bz.setEventStatus(StatusType.DONE);
 
 						// WRITE IN THE CACHE: The result of the insertion in the cache is logged to verify the correct functioning
-						String result = this.saveBizEventId(bizEvtMsg.get(i).getId(), logger);
+						String result = redisCacheService.saveBizEventId(bizEvtMsg.get(i).getId(), REDIS_ID_PREFIX, logger);
 
 						String msg = String.format("BizEventToDataStore function with invocationId [%s] cached biz-event message with id [%s] and result: [%s]",
 								context.getInvocationId(), bizEvtMsg.get(i).getId(), result);
@@ -123,9 +129,9 @@ public class BizEventToDataStore {
 				// persist the item
 				documentdb.setValue(bizEvtMsgWithProperties);
 			} else {
-				this.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg);
+				bizEventDeadLetterService.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
 				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
-						+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
+								+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
 						context.getInvocationId(), bizEvtMsg.size(), properties.length);
 				logger.severe(event);
 				telemetryClient.trackEvent(event);
@@ -136,61 +142,11 @@ public class BizEventToDataStore {
 			logger.severe(exceptionMsg);
 			// retry check and dead-letter upload
 			if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-				this.handleLastRetry(context, id, executionDateTime, "exception-output", bizEvtMsgWithProperties);
+				bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, "exception-output", bizEvtMsgWithProperties, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, telemetryClient);
 			}
 			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 			throw e;
 		}
 	}
 
-	public String findByBizEventId(String id, Logger logger) {
-		try (Connection j = jedis.getPool().getResource()){
-			return jedis.get(REDIS_ID_PREFIX+id);
-		} catch (Exception e) {
-			String msg = String.format("Error getting existing connection to Redis. A new one is created to GET the BizEvent message with id %s. [error message = %s]",
-					REDIS_ID_PREFIX+id, e.getMessage());
-			logger.warning(msg);
-			// It try to acquire the connection again. If it fails, a null value is returned so that the data is not discarded
-			try (JedisPooled j = RedisClient.getInstance().redisConnectionFactory()){
-				return j.get(REDIS_ID_PREFIX+id);
-			} catch (Exception ex) {
-				return null;
-			}
-		}
-	}
-
-	public String saveBizEventId(String id, Logger logger) {
-		try (Connection j = jedis.getPool().getResource()){
-			return jedis.set(REDIS_ID_PREFIX+id, id, new SetParams().px(EXPIRE_TIME_IN_MS));
-		} catch (Exception e) {
-			String msg = String.format("Error getting existing connection to Redis. A new one is created to SET the BizEvent message with id %s. [error message = %s]",
-					REDIS_ID_PREFIX+id, e.getMessage());
-			logger.warning(msg);
-			// It try to acquire the connection again. If it fails, a null value is returned so that the data is not discarded
-			try (JedisPooled j = RedisClient.getInstance().redisConnectionFactory()){
-				return j.set(REDIS_ID_PREFIX+id, id, new SetParams().px(EXPIRE_TIME_IN_MS));
-			} catch (Exception ex) {
-				return null;
-			}
-		}
-	}
-
-	public void handleLastRetry(ExecutionContext context, String id, LocalDateTime now, String type, List<BizEvent> bizEvtMsg) {
-		boolean deadLetterResult = this.uploadToDeadLetter(id, now, context.getInvocationId(), type, bizEvtMsg);
-		String deadLetterLog = deadLetterResult ?
-				"List<BizEvent> " + type + " message was correctly saved in the dead letter." :
-				"There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
-		String retryTrace = String.format("[LAST RETRY] BizEventToDataStore function with invocationId [%s] performing the last retry for events ingestion. %s",
-				context.getInvocationId(), deadLetterLog);
-		context.getLogger().log(Level.SEVERE, () -> retryTrace);
-		telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
-	}
-
-	public boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg) {
-		try {
-			return BlobStorage.getInstance().uploadToDeadLetter(id, now, invocationId, type, bizEvtMsg);
-		} catch (Exception e) {
-			return false;
-		}
-	}
 }
