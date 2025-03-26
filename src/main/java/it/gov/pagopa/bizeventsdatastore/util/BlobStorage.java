@@ -5,6 +5,7 @@ import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
 import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.specialized.BlockBlobClient;
+import com.microsoft.applicationinsights.TelemetryClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 
 import java.time.LocalDateTime;
