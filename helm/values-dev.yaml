@@ -108,6 +108,7 @@ microservice-chart: &microservice-chart
     APPLICATIONINSIGHTS_CONNECTION_STRING: 'ai-d-connection-string'
     EVENTHUB_CONN_STRING: 'ehub-d-biz-connection-string'
     PDND_EVENTHUB_CONN_STRING: 'ehub-d-biz-enrich-connection-string'
+    VIEWS_EVENTHUB_CONN_STRING: 'ehub-views-d-biz-connection-string'
     COSMOS_CONN_STRING: 'cosmos-d-biz-connection-string'
     EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-d-biz-key'
     COSMOS_DB_PRIMARY_KEY: 'cosmos-d-biz-key'
@@ -148,6 +149,7 @@ pagopa-biz-events-datastore:
     !!merge <<: *envConfig
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
 # 2 - ingesstion instance
@@ -182,31 +184,31 @@ pagopa-biz-events-datastore:
 #     !!merge <<: *envSecret
 #     VIEW_TRIGGER_SQL_QUERY: 'cosmos-d-biz-view-trigger-sql-query-string'
 # 3 - update instance view
-pagopa-biz-events-update-view:
-  !!merge <<: *microservice-chart
-  ingress:
-    !!merge <<: *ingress
-    path: /notused-2/(.*)
-  resources:
-    !!merge <<: *resources
-    requests:
-      memory: "512Mi"
-      cpu: "0.3"
-    limits:
-      memory: "1024Mi"
-      cpu: "0.5"
-    autoscaling:
-      enable: true
-      minReplica: 1
-      maxReplica: 1
-  envConfig:
-    !!merge <<: *envConfig
-    WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreupdateview'
-    UPDATE_VIEW_TIMER_TRIGGER_ENABLE: "false"
-    UPDATE_VIEW_ORIGIN_VALUE: "NDP003DEV" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
-    UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
-    UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.origin = 'UNKNOWN'"
-    AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
-    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
+# pagopa-biz-events-update-view:
+#   !!merge <<: *microservice-chart
+#   ingress:
+#     !!merge <<: *ingress
+#     path: /notused-2/(.*)
+#   resources:
+#     !!merge <<: *resources
+#     requests:
+#       memory: "512Mi"
+#       cpu: "0.3"
+#     limits:
+#       memory: "1024Mi"
+#       cpu: "0.5"
+#     autoscaling:
+#       enable: true
+#       minReplica: 1
+#       maxReplica: 1
+#   envConfig:
+#     !!merge <<: *envConfig
+#     WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreupdateview'
+#     UPDATE_VIEW_TIMER_TRIGGER_ENABLE: "false"
+#     UPDATE_VIEW_ORIGIN_VALUE: "NDP003DEV" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
+#     UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+#     UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.origin = 'UNKNOWN'"
+#     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
+#     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
+#     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
+#     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"

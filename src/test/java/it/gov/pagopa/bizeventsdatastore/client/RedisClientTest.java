@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 
 import java.io.IOException;
+import java.util.logging.Logger;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import it.gov.pagopa.bizeventsdatastore.service.impl.RedisCacheServiceImpl;
 
 import ai.grakn.redismock.RedisServer;
 import redis.clients.jedis.HostAndPort;
@@ -29,8 +31,7 @@ class RedisClientTest {
 	RedisServer server;
 
 	@BeforeAll
-	void setup() throws IOException, NoSuchFieldException, SecurityException, IllegalArgumentException,
-			IllegalAccessException, InterruptedException {
+	void setup() throws IOException  {
 		server = RedisServer.newRedisServer();
 		server.start();
 	}
@@ -54,6 +55,32 @@ class RedisClientTest {
 
 		jedis.close();
 
+	}
+	
+	@Test
+	void findByBizEventId() {
+		
+		Logger logger = Logger.getLogger("RedisClient-test-logger");
+		
+		// Connection error -> null return
+		RedisCacheServiceImpl redisCacheServiceImpl = new RedisCacheServiceImpl();
+		String result = redisCacheServiceImpl.findByBizEventId("id", "prefix", logger);
+		
+		assertEquals(null, result);
+		
+	}
+	
+	@Test
+	void saveBizEventId() {
+		
+		Logger logger = Logger.getLogger("RedisClient-test-logger");
+		
+		// Connection error -> null return
+		RedisCacheServiceImpl redisCacheServiceImpl = new RedisCacheServiceImpl();
+		String result = redisCacheServiceImpl.saveBizEventId("id", "prefix", logger);
+		
+		assertEquals(null, result);
+		
 	}
 
 	@AfterAll
