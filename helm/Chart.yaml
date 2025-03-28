@@ -2,18 +2,18 @@ apiVersion: v2
 name: pagopa-biz-events-datastore
 description: Microservice to store biz events to CosmosDB
 type: application
-version: 0.104.0
-appVersion: 0.11.37
+version: 0.106.0
+appVersion: 0.11.37-2-new-wl
 dependencies:
   - name: microservice-chart
-    version: 2.8.0
+    version: 7.1.1
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
     alias: pagopa-biz-events-datastore
-  # - name: microservice-chart
-  #   version: 2.8.0
-  #   repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
-  #   alias: pagopa-biz-events-ingestion
-  - name: microservice-chart
-    version: 2.8.0
-    repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
-    alias: pagopa-biz-events-update-view
+# - name: microservice-chart
+#   version: 2.8.0
+#   repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
+#   alias: pagopa-biz-events-ingestion
+# - name: microservice-chart
+#   version: 2.8.0
+#   repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
+#   alias: pagopa-biz-events-update-view
