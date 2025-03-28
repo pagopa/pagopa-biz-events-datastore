@@ -7,33 +7,10 @@ on:
         required: true
         description: The name of the environment where to deploy
         type: string
-      helm_options:
-        default: ''
-        required: false
-        type: string
-        description: 'helm upgrade options'
-      terraform_options:
-        default: ''
-        required: false
-        type: string
-        description: 'terraform upgrade options'
       branch:
         required: false
         default: ${{ github.ref_name }}
         type: string
-      suffix_name:
-        required: false
-        default: ''
-        type: string
-      pr_number:
-        required: false
-        default: ''
-        type: string
-      uninstall:
-        description: 'true if you want to uninstall instead of install'
-        required: false
-        type: boolean
-        default: false
 
 env:
   APP_NAME: pagopabizeventsdatastore
@@ -53,8 +30,8 @@ jobs:
         if: ${{ inputs.uninstall  == 'false' ||  inputs.uninstall  == false }}
         uses: pagopa/github-actions-template/aks-deploy@main
         with:
-          branch: ${{ inputs.branch }}
-          client_id: ${{ secrets.CD_CLIENT_ID }}
+          branch: ${{ github.ref_name }}
+          client_id: ${{ secrets.CLIENT_ID }}
           subscription_id: ${{ secrets.SUBSCRIPTION_ID }}
           tenant_id: ${{ secrets.TENANT_ID }}
           env: ${{ inputs.environment }}
@@ -63,13 +40,6 @@ jobs:
           resource_group: ${{ vars.CLUSTER_RESOURCE_GROUP }}
           app_name: ${{ env.APP_NAME }}
           helm_upgrade_options: '--debug --set microservice-chart.azure.workloadIdentityClientId=${{vars.WORKLOAD_IDENTITY_ID}}'
-          timeout: '10m0s'
-
-      - name: Remove deployment
-        if: ${{ inputs.uninstall == 'true' ||  inputs.uninstall  == true}}
-        shell: bash
-        run: |
-          helm uninstall ${{ env.APP_NAME }}${{inputs.suffix_name}} -n ${{ vars.NAMESPACE }}
 
 
   #update_openapi:
