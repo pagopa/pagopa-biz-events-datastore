@@ -4,20 +4,20 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.11.39"
+    tag: "0.11.39-1-fix-deploy"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
     httpGet:
       path: /info
-      port: 80
+      port: 8080
     initialDelaySeconds: 60
     failureThreshold: 6
     periodSeconds: 10
   readinessProbe:
     httpGet:
       path: /info
-      port: 80
+      port: 8080
     initialDelaySeconds: 60
     failureThreshold: 6
     periodSeconds: 10
@@ -30,18 +30,18 @@ microservice-chart: &microservice-chart
         targetPort: 12345
         path: /metrics
   ports:
-    - 80 #http
     - 12345 #jmx-exporter
+    - 8080
   service:
     type: ClusterIP
     ports:
-      - 80 #http
+      - 8080
       - 12345 #jmx-exporter
   ingress: &ingress
     create: true
     host: "weuprod.bizevents.internal.platform.pagopa.it"
     path: /pagopa-biz-events-datastore-service/(.*)
-    servicePort: 80
+    servicePort: 8080
   serviceAccount:
     name: "bizevents-workload-identity"
   azure:
@@ -78,6 +78,8 @@ microservice-chart: &microservice-chart
           value: "80"
   fileConfig: {}
   envConfig: &envConfig
+    ASPNETCORE_URLS: "http://*:8080"
+    FUNCTIONS_SECRETS_PATH: "/tmp/secrets"
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
     FUNCTIONS_WORKER_RUNTIME: "java"
     COSMOS_DB_NAME: "db"
@@ -142,11 +144,6 @@ microservice-chart: &microservice-chart
             topologyKey: topology.kubernetes.io/zone
   canaryDelivery:
     create: false
-    deployment:
-      create: false
-      image:
-        tag: 0.5.6
-  create: false
 # 1 - datastore instance
 pagopa-biz-events-datastore:
   !!merge <<: *microservice-chart
