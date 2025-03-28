@@ -133,11 +133,6 @@ microservice-chart: &microservice-chart
                   - "user"
   canaryDelivery:
     create: false
-    deployment:
-      create: false
-      image:
-        tag: 0.5.6
-  create: false
 # 1 - datastore instance
 pagopa-biz-events-datastore:
   !!merge <<: *microservice-chart
