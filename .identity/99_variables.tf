@@ -9,6 +9,9 @@ locals {
   location_short = "weu"
   product        = "${var.prefix}-${var.env_short}"
 
+  pagopa_apim_name = "${local.product}-apim"
+  pagopa_apim_rg   = "${local.product}-api-rg"
+
   app_name = "github-${local.github.org}-${local.github.repository}-${var.prefix}-${local.domain}-${var.env}-aks"
 
   aks_cluster = {

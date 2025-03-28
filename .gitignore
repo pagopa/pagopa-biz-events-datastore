@@ -52,3 +52,4 @@ obj/
 *.env
 /.identity/.terraform.lock.hcl
 /helm/Chart.lock
+**/.terraform

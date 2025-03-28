@@ -43,9 +43,9 @@ microservice-chart: &microservice-chart
     path: /pagopa-biz-events-datastore-service/(.*)
     servicePort: 80
   serviceAccount:
-    create: false
-    annotations: {}
-    name: ""
+    name: "bizevents-workload-identity"
+  azure:
+    workloadIdentityClientId: <workload-identity-client-id-set-automatically-by-gha>
   podAnnotations: {}
   podSecurityContext:
     seccompProfile:
