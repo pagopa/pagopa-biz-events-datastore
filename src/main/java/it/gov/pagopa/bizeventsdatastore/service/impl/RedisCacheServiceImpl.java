@@ -12,7 +12,7 @@ import redis.clients.jedis.params.SetParams;
  */
 public class RedisCacheServiceImpl implements RedisCacheService {
 
-    public static final JedisPooled jedis = RedisClient.getInstance().redisConnectionFactory();
+    public static final JedisPooled jedis = RedisClient.getInstance().getConnection();
 
     private static final int EXPIRE_TIME_IN_MS =
             System.getenv("REDIS_EXPIRE_TIME_MS") != null ? Integer.parseInt(System.getenv("REDIS_EXPIRE_TIME_MS")) : 3600000;
@@ -29,7 +29,7 @@ public class RedisCacheServiceImpl implements RedisCacheService {
                     cachePrefix+id, e.getMessage());
             logger.warning(msg);
             // It tries to acquire the connection again. If it fails, a null value is returned so that the data is not discarded
-            try (JedisPooled j = RedisClient.getInstance().redisConnectionFactory()){
+            try (JedisPooled j = RedisClient.getInstance().getConnection()){
                 return j.get(cachePrefix+id);
             } catch (Exception ex) {
                 return null;
@@ -48,7 +48,7 @@ public class RedisCacheServiceImpl implements RedisCacheService {
                     cachePrefix+id, e.getMessage());
             logger.warning(msg);
             // It tries to acquire the connection again. If it fails, a null value is returned so that the data is not discarded
-            try (JedisPooled j = RedisClient.getInstance().redisConnectionFactory()){
+            try (JedisPooled j = RedisClient.getInstance().getConnection()){
                 return j.set(cachePrefix+id, id, new SetParams().px(EXPIRE_TIME_IN_MS));
             } catch (Exception ex) {
                 return null;
