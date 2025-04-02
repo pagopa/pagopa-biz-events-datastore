@@ -15,11 +15,11 @@ import org.junit.jupiter.api.TestInstance.Lifecycle;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
-import it.gov.pagopa.bizeventsdatastore.service.impl.RedisCacheServiceImpl;
 
 import ai.grakn.redismock.RedisServer;
-import redis.clients.jedis.HostAndPort;
-import redis.clients.jedis.JedisPooled;
+import it.gov.pagopa.bizeventsdatastore.service.impl.RedisCacheServiceImpl;
+import redis.clients.jedis.Jedis;
+import redis.clients.jedis.JedisPool;
 
 @ExtendWith(MockitoExtension.class)
 @TestInstance(Lifecycle.PER_CLASS)
@@ -45,16 +45,14 @@ class RedisClientTest {
 	@Test
 	void redisClient() {
 
-		doReturn(new JedisPooled(new HostAndPort(server.getHost(), server.getBindPort()))).when(redisClient)
-				.getConnection();
+		doReturn(new JedisPool(server.getHost(), server.getBindPort())).when(redisClient).redisConnectionFactory();
 
-		JedisPooled jedis = redisClient.getConnection();
-		jedis.set("foo", "bar");
-
-		assertEquals("bar", jedis.get("foo"));
-
-		jedis.close();
-
+		JedisPool pool = redisClient.redisConnectionFactory();
+		
+		try (Jedis jedis = pool.getResource()) {
+	        jedis.set("foo", "bar");
+	        assertEquals("bar", jedis.get("foo"));
+	    }
 	}
 	
 	@Test

@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.11.40-1-fix-redis-error</version>
+	<version>0.11.41</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
@@ -22,7 +22,7 @@
 		<resteasy.version>3.15.3.Final</resteasy.version>
 		<lombok.version>1.18.30</lombok.version>
 		<google-api-client.version>2.0.1</google-api-client.version>
-		<jedis.version>5.0.0</jedis.version>
+		<jedis.version>5.2.0</jedis.version>
 	</properties>
 
 	<dependencies>
