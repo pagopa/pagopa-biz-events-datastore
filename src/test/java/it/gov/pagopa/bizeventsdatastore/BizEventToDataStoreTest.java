@@ -3,10 +3,17 @@ package it.gov.pagopa.bizeventsdatastore;
 import static org.hamcrest.CoreMatchers.hasItem;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -16,11 +23,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
-import com.microsoft.applicationinsights.TelemetryClient;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
-import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
-import it.gov.pagopa.bizeventsdatastore.service.RedisCacheService;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -29,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
 import com.microsoft.azure.functions.RetryContext;
@@ -39,6 +42,10 @@ import it.gov.pagopa.bizeventsdatastore.entity.InfoECommerce;
 import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
+import it.gov.pagopa.bizeventsdatastore.service.RedisCacheService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
 @ExtendWith(MockitoExtension.class)
@@ -89,16 +96,20 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
         
         doReturn(null).when(redisCacheService).findByBizEventId(anyString(), anyString(), any(Logger.class));
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(), anyString(), any(Logger.class));
 
         assertEquals(StatusType.DONE, bizEvtMsg.get(0).getEventStatus());
         // test execution
-        function.processBizEvent(bizEvtMsg, properties, document, context);
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
+        verify(bizPdndEvtMsg).setValue(argThat(events -> 
+		events.size() == 1 && events.get(0).getId().equals("123")
+				));
         assertEquals(StatusType.DONE, bizEvtMsg.get(0).getEventStatus());
     }
 
@@ -115,12 +126,13 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        function.processBizEvent(bizEvtMsgList, properties, document, context);
+        function.processBizEvent(bizEvtMsgList, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -148,12 +160,14 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
+        
 
         doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        function.processBizEvent(bizEvtMsgList, properties, document, context);
+        function.processBizEvent(bizEvtMsgList, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -171,9 +185,10 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[0];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         // test execution
-        function.processBizEvent(bizEvtMsg, properties, document, context);
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -191,11 +206,12 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         doReturn("123").when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        function.processBizEvent(bizEvtMsg, properties, document, context);
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -216,9 +232,10 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         // test execution
-        function.processBizEvent(bizEvtMsg, properties, document, context);
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
@@ -250,11 +267,12 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
     }
 
     @Test
@@ -271,11 +289,12 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, context));
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
     }
 
     @Test
@@ -303,12 +322,13 @@ class BizEventToDataStoreTest {
         Map<String, Object>[] properties = new HashMap[1];
         @SuppressWarnings("unchecked")
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
         doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
 
         // test execution
-        function.processBizEvent(bizEvtMsg, properties, document, context);
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
