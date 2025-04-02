@@ -46,9 +46,9 @@ class RedisClientTest {
 	void redisClient() {
 
 		doReturn(new JedisPooled(new HostAndPort(server.getHost(), server.getBindPort()))).when(redisClient)
-				.redisConnectionFactory();
+				.getConnection();
 
-		JedisPooled jedis = redisClient.redisConnectionFactory();
+		JedisPooled jedis = redisClient.getConnection();
 		jedis.set("foo", "bar");
 
 		assertEquals("bar", jedis.get("foo"));
