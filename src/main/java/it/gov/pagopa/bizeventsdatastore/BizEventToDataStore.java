@@ -65,11 +65,18 @@ public class BizEventToDataStore {
 					createIfNotExists = false,
 					connection = "COSMOS_CONN_STRING")
 			@NonNull OutputBinding<List<BizEvent>> documentdb,
+			@EventHubOutput(
+					name = "PdndBizEventHub",
+					eventHubName = "", // blank because the value is included in the connection string
+					connection = "PDND_EVENTHUB_CONN_STRING")
+			OutputBinding<List<BizEvent>> bizPdndEvtMsg,
 			final ExecutionContext context) {
 
 		Logger logger = context.getLogger();
 		logger.log(Level.INFO, () -> String.format("BizEventToDataStore function with invocationId [%s] called at [%s] with events list size [%s] and properties size [%s]",
 				context.getInvocationId(), LocalDateTime.now(), bizEvtMsg.size(), properties.length));
+		
+		List<BizEvent> itemsDone = new ArrayList<>();
 
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
 		String id = String.valueOf(UUID.randomUUID());
@@ -116,6 +123,7 @@ public class BizEventToDataStore {
 						logger.fine(msg);
 
 						bizEvtMsgWithProperties.add(bz);
+						itemsDone.add(bz);
 					}
 					else {
 						// just to track duplicate events
@@ -126,6 +134,10 @@ public class BizEventToDataStore {
 				}
 				// persist the item
 				documentdb.setValue(bizEvtMsgWithProperties);
+				
+				// call PDND the Event Hub
+				logger.fine( () ->String.format("BizEventToDataStore stat %s function - number of events in DONE sent to the event hub %d", context.getInvocationId(), itemsDone.size()));
+				bizPdndEvtMsg.setValue(itemsDone);
 			} else {
 				bizEventDeadLetterService.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", bizEvtMsg, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
 				String event = String.format("BizEventToDataStore function with invocationId [%s] - Error during processing - "
