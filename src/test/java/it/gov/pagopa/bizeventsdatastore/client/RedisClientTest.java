@@ -5,6 +5,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -111,9 +113,9 @@ class RedisClientTest {
             when(jedisPool.getResource()).thenReturn(jedis);
             when(jedis.set(eq("biz_test123"), eq("test123"), any(SetParams.class))).thenReturn("OK");
 
-            RedisClient redisClient = mock(RedisClient.class);
-            when(redisClient.redisConnectionFactory()).thenReturn(jedisPool);
-            mockedRedisClient.when(RedisClient::getInstance).thenReturn(redisClient);
+            RedisClient mockRedisClient = mock(RedisClient.class);
+            when(mockRedisClient.redisConnectionFactory()).thenReturn(jedisPool);
+            mockedRedisClient.when(RedisClient::getInstance).thenReturn(mockRedisClient);
 
             RedisCacheServiceImpl redisCacheService = new RedisCacheServiceImpl();
             String result = redisCacheService.saveBizEventId("test123", "biz_", logger);
@@ -135,6 +137,27 @@ class RedisClientTest {
 		assertEquals(null, result);
 		
 	}
+	
+	@Test
+    void closeOK() {
+        RedisClient mockRedisClient = RedisClient.getInstance();
+        JedisPool mockJedisPool = mock(JedisPool.class);
+
+        try (MockedStatic<RedisClient> mockedStatic = mockStatic(RedisClient.class)) {
+            mockedStatic.when(RedisClient::getInstance).thenReturn(mockRedisClient);
+            when(mockJedisPool.isClosed()).thenReturn(false);
+
+            var field = RedisClient.class.getDeclaredField("jedisPool");
+            field.setAccessible(true);
+            field.set(mockRedisClient, mockJedisPool);
+
+            mockRedisClient.close();
+
+            verify(mockJedisPool, times(1)).close();
+        } catch (Exception e) {
+            throw new RuntimeException("JedisPool injection error", e);
+        }
+    }
 
 	@AfterAll
 	void teardown() {
