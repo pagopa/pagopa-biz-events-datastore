@@ -92,7 +92,6 @@ class BizEventEnrichmentTest {
 
 		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
-		//OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
@@ -103,10 +102,6 @@ class BizEventEnrichmentTest {
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
-		/*verify(bizPdndEvtMsg).setValue(argThat(events -> 
-		events.size() == 1 && events.get(0).getId().equals("54b9fcee-26b1-48c6-81f3-91ccfd67f380")
-				));*/
-
 		verify(bizEventUserView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
