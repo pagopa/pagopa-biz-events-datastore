@@ -9,11 +9,11 @@ dependencies:
     version: 7.1.1
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
     alias: pagopa-biz-events-datastore
+  - name: microservice-chart
+    version: 7.1.1
+    repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
+    alias: pagopa-biz-events-view
 # - name: microservice-chart
 #   version: 2.8.0
 #   repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
 #   alias: pagopa-biz-events-ingestion
-# - name: microservice-chart
-#   version: 2.8.0
-#   repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
-#   alias: pagopa-biz-events-update-view
