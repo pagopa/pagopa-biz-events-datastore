@@ -161,7 +161,7 @@ pagopa-biz-events-view:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /notused-2/(.*)
+    path: /notused-biz-view/(.*)
   resources:
     !!merge <<: *resources
   envConfig:
