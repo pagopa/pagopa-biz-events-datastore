@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.11.41"
+    tag: "0.11.41-5-new-fix-redis-error"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -103,6 +103,10 @@ microservice-chart: &microservice-chart
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
     ENABLE_TRANSACTION_LIST_VIEW: "true" # biz trx on-line
     AUTHENTICATED_CHANNELS: "IO,CHECKOUT,CHECKOUT_CART"
+    UPDATE_VIEW_TIMER_TRIGGER_ENABLE: "false"
+    UPDATE_VIEW_ORIGIN_VALUE: "NDP003DEV" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
+    UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
+    UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.origin = 'UNKNOWN'"
   envFieldRef: &envFieldRef
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -115,7 +119,7 @@ microservice-chart: &microservice-chart
     EVENT_HUB_TX_PRIMARY_KEY: 'ehub-tx-d-biz-key'
     COSMOS_DB_PRIMARY_KEY: 'cosmos-d-biz-key'
     PM_API_KEY: 'payment-manager-subscription-key' # Ocp-Apim-Subscription-Key
-    AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
+    # AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
     REDIS_PWD: 'redis-password'
     REDIS_HOST: 'redis-hostname'
     PDV_TOKENIZER_SUBSCRIPTION_KEY: "tokenizer-api-key"
@@ -135,7 +139,7 @@ microservice-chart: &microservice-chart
                   - "user"
   canaryDelivery:
     create: false
-# 1 - datastore instance
+# 1 - biz-datastore instance
 pagopa-biz-events-datastore:
   !!merge <<: *microservice-chart
   ingress:
@@ -144,11 +148,33 @@ pagopa-biz-events-datastore:
     !!merge <<: *resources
   envConfig:
     !!merge <<: *envConfig
+    AzureWebJobs.EventHubBizEventProcessor.Disabled: "false"
+    AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
+    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
+    AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
+# 2 - biz-view instance    
+pagopa-biz-events-view:
+  !!merge <<: *microservice-chart
+  ingress:
+    !!merge <<: *ingress
+    path: /notused-biz-view/(.*)
+  resources:
+    !!merge <<: *resources
+  envConfig:
+    !!merge <<: *envConfig
+    WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreview'
+    AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
+    AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "false"
+    AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+  envSecret:
+    !!merge <<: *envSecret
+    AzureWebJobsStorage: 'bizevent-view-d-azurewebjobsstorage'
     # 2 - ingesstion instance
     # pagopa-biz-events-ingestion:
     #   !!merge <<: *microservice-chart
