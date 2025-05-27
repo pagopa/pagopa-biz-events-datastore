@@ -24,9 +24,9 @@ locals {
     "CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd_01.client_id,
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id,
-    "COSMOS_DB_PRIMARY_KEY": data.azurerm_key_vault_secret.key_vault_integration_cosmos_biz_key[0].value,
-    "EVENT_HUB_TX_PRIMARY_KEY": data.azurerm_key_vault_secret.key_vault_integration_ehub_tx_biz_key[0].value,
-    "EVENTHUB_CONN_STRING": data.azurerm_key_vault_secret.key_vault_integration_ehub_biz_connection_string[0].value,
+    "COSMOS_DB_PRIMARY_KEY": (var.env_short != "p" ? data.azurerm_key_vault_secret.key_vault_integration_cosmos_biz_key[0].value : "not-used-only-test"),
+    "EVENT_HUB_TX_PRIMARY_KEY": (var.env_short != "p" ?  data.azurerm_key_vault_secret.key_vault_integration_ehub_tx_biz_key[0].value : "not-used-only-test"),
+    "EVENTHUB_CONN_STRING": (var.env_short != "p" ?  data.azurerm_key_vault_secret.key_vault_integration_ehub_biz_connection_string[0].value: "not-used-only-test"),
   }
   env_variables = {
     "CONTAINER_APP_ENVIRONMENT_NAME" : local.container_app_environment.name,

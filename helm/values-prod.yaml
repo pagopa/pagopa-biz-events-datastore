@@ -23,7 +23,6 @@ microservice-chart: &microservice-chart
     periodSeconds: 10
   deployment:
     create: true
-    replicas: 3
   serviceMonitor:
     create: true
     endpoints:
