@@ -14,7 +14,7 @@
       "url": "https://{host}{basePath}",
       "variables": {
         "basePath": {
-          "default": "/biz-events/datastore/v1"
+          "default": "/bizevents/datastore/helpdesk/v1"
         },
         "host": {
           "default": "api.dev.platform.pagopa.it",
