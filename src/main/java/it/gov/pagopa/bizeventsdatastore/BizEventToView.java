@@ -84,6 +84,17 @@ public class BizEventToView {
                 context.getFunctionName(), LocalDateTime.now(), bizEventId);
         logger.info(message);
 
+        if (bizEventId == null || bizEventId.isBlank()) {
+            return request
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.BAD_REQUEST.name())
+                            .detail("Please provide a valid biz-event id")
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
+                    .build();
+        }
+
         BizEvent bizEvent;
         try {
             bizEvent = this.bizEventCosmosClient.getBizEventDocument(bizEventId);
