@@ -152,6 +152,7 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "false"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
@@ -171,6 +172,7 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-view-d-azurewebjobsstorage'
