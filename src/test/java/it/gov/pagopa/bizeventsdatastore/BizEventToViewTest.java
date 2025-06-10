@@ -10,7 +10,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
@@ -88,7 +88,7 @@ class BizEventToViewTest {
     private BizEventToView sut;
 
     @Test
-    void bizEventToViewOK() throws IOException, BizEventNotFoundException, AppException {
+    void bizEventToViewOK() throws IOException, BizEventNotFoundException, BizEventToViewConstraintViolationException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
         doReturn(loggerMock).when(executionContextMock).getLogger();
@@ -177,12 +177,12 @@ class BizEventToViewTest {
     }
 
     @Test
-    void bizEventToViewKO_MapToViewError() throws BizEventNotFoundException, AppException, IOException {
+    void bizEventToViewKO_MapToViewError() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
         doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
-        doThrow(AppException.class).when(bizEventToViewService).mapBizEventToView(loggerMock, bizEvent);
+        doThrow(BizEventToViewConstraintViolationException.class).when(bizEventToViewService).mapBizEventToView(loggerMock, bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);

@@ -24,7 +24,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
@@ -88,7 +88,7 @@ public class BizEventEnrichment {
 					connection = "COSMOS_CONN_STRING")
 			OutputBinding<List<BizEventsViewCart>> bizEventCartView,
 			final ExecutionContext context
-			) throws AppException {
+			) throws BizEventToViewConstraintViolationException {
 
 		List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
 		List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
@@ -182,7 +182,7 @@ public class BizEventEnrichment {
 
 	private void generateBizEventViews(List<BizEventsViewUser> userViewToInsert,
 			List<BizEventsViewGeneral> generalViewToInsert, List<BizEventsViewCart> cartViewToInsert, Logger logger,
-			BizEvent be) throws AppException {
+			BizEvent be) throws BizEventToViewConstraintViolationException {
 		if (enableTransactionListView) {
 			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
 			if (bizEventToViewResult != null) {

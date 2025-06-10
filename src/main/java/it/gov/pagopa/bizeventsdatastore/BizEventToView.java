@@ -17,7 +17,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.model.ProblemJson;
@@ -113,8 +113,8 @@ public class BizEventToView {
         BizEventToViewResult bizEventToViewResult;
         try {
             bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, bizEvent);
-        } catch (AppException e) {
-            String msg = String.format("Unable to map the biz-event with id %s to the views", bizEventId);
+        } catch (BizEventToViewConstraintViolationException e) {
+            String msg = String.format("Unable to map the biz-event with id %s to the views: %s", bizEventId, e.getErrorMessages());
             logger.log(Level.SEVERE, msg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)

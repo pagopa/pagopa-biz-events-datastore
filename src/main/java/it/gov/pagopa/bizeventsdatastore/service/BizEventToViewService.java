@@ -6,7 +6,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 
 /**
@@ -23,7 +23,7 @@ public interface BizEventToViewService {
      *
      * @param bizEvent the event to process
      * @return a {@link BizEventToViewResult} that hold the biz-event views
-     * @throws AppException 
+     * @throws BizEventToViewConstraintViolationException when BizEventToView constraint validation fail
      */
-    BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws AppException;
+    BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException;
 }
