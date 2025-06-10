@@ -53,12 +53,12 @@ public class BizEventToView {
      */
     @FunctionName("BizEventToView")
     public HttpResponseMessage run(
-            @HttpTrigger(name = "BizEventToViewFunction",
+            @HttpTrigger(name = "BizEventToViewFunctionTrigger",
                     methods = {HttpMethod.POST},
-                    route = "biz-events/{biz-event-id}/create-view",
+                    route = "biz-events/{bizeventid}/create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("bi-event-id") String bizEventId,
+            @BindingName("bizeventid") String bizEventId,
             @CosmosDBOutput(
                     name = "BizEventUserView",
                     databaseName = "db",
