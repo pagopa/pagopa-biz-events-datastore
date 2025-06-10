@@ -108,7 +108,7 @@
       ]
     },
     "/biz-events/{biz-event-id}/create-view": {
-      "get": {
+      "post": {
         "tags": [
           "BizEvents"
         ],
