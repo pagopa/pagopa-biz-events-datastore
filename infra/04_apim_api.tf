@@ -1,6 +1,3 @@
-###############
-##  API FdR  ##
-###############
 locals {
   apim_biz_event_datastore_service_api = {
     display_name          = "Biz-Events Datastore Helpdesk API"
@@ -11,12 +8,8 @@ locals {
   }
 }
 
-##################
-##  API FdR PSP ##
-##################
-
 resource "azurerm_api_management_api_version_set" "api_biz_event_datastore_api" {
-  name                = "${var.env_short}-biz-event-datastore-service-api"
+  name                = "${var.env_short}-bizevents-datastore-api"
   resource_group_name = local.apim.rg
   api_management_name = local.apim.name
   display_name        = local.apim_biz_event_datastore_service_api.display_name
@@ -27,7 +20,7 @@ resource "azurerm_api_management_api_version_set" "api_biz_event_datastore_api" 
 module "apim_api_biz_event_datastore_api_v1" {
   source = "./.terraform/modules/__v3__/api_management_api"
 
-  name                  = "${local.project}-biz-event-datastore-service-api"
+  name                  = "${local.project}-datastore-api"
   api_management_name   = local.apim.name
   resource_group_name   = local.apim.rg
   product_ids           = [local.apim.bizevents_helpdesk_product_id]

@@ -55,7 +55,7 @@ public class BizEventToView {
     public HttpResponseMessage run(
             @HttpTrigger(name = "BizEventToViewFunction",
                     methods = {HttpMethod.POST},
-                    route = "biz-event/{biz-event-id}/create-view",
+                    route = "biz-events/{biz-event-id}/create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
             @BindingName("bi-event-id") String bizEventId,

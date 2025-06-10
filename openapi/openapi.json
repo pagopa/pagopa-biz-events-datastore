@@ -107,7 +107,7 @@
         }
       ]
     },
-    "biz-event/{biz-event-id}/create-view": {
+    "/biz-events/{biz-event-id}/create-view": {
       "get": {
         "tags": [
           "BizEvents"
@@ -227,7 +227,8 @@
           }
         }
       ]
-    }},
+    }
+  },
   "components": {
     "schemas": {
       "AppInfo": {
