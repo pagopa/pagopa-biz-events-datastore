@@ -24,6 +24,7 @@
       "Host.Results": "Error",
       "Function.BizEventEnrichmentProcessor": "Information",
       "Function.EventHubBizEventProcessor": "Information",
+      "Function.BizEventToView": "Information",
       "Host.Aggregator": "Error"
     },
     "applicationInsights": {
