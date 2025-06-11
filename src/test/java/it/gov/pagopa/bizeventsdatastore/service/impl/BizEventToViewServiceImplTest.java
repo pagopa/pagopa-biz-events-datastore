@@ -122,6 +122,69 @@ class BizEventToViewServiceImplTest {
     }
     
     @Test
+    void NDP004PROD_mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
+    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+        
+    	Map<String, Object> properties = new HashMap<>(); 
+    	properties.put("serviceIdentifier", ServiceIdentifierType.NDP004PROD.name());
+    	
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
+                .debtor(Debtor.builder()
+                        .fullName("debtor")
+                        .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("10.00").build())
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .build())
+                        .info(InfoECommerce.builder().clientId("IO").type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").amount(1000).build())
+                        .build())
+                .properties(properties)
+                .build();
+
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+
+        this.checkGeneratedViewResult(result);
+
+        if (result.getUserViewList().get(0).isPayer()) {
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
+            assertTrue(result.getUserViewList().get(0).isPayer());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(1).getTaxCode());
+            assertFalse(result.getUserViewList().get(1).isPayer());
+        } else {
+            assertEquals(VALID_USER_CF, result.getUserViewList().get(1).getTaxCode());
+            assertTrue(result.getUserViewList().get(1).isPayer());
+            assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
+            assertFalse(result.getUserViewList().get(0).isPayer());
+        }
+        assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+        assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+        assertEquals(false, result.getUserViewList().get(0).isHidden());
+        assertEquals(false, result.getUserViewList().get(1).isHidden());
+
+        User user = bizEvent.getTransactionDetails().getUser();
+        String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
+        assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+        assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
+        assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
+        assertEquals(1, result.getGeneralView().getTotalNotice());
+        assertEquals(ServiceIdentifierType.NDP004PROD, result.getGeneralView().getOrigin());
+
+        assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+        assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+        assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+        assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+        
+    }
+    
+    @Test
     void mapBizEventToViewNewLineRemittanceInformationSuccess() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
     	
