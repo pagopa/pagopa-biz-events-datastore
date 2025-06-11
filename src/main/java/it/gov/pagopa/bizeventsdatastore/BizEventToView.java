@@ -149,6 +149,20 @@ public class BizEventToView {
                     .build();
         }
 
+        if (bizEventToViewResult == null) {
+            String msg = String.format("Unable to create the biz-event view for biz-event with id %s: bot debtor and user section are invalid",
+                    bizEventId);
+            logger.log(Level.SEVERE, msg);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                            .detail(msg)
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build())
+                    .build();
+        }
+
         bizEventUserView.setValue(bizEventToViewResult.getUserViewList());
         bizEventGeneralView.setValue(bizEventToViewResult.getGeneralView());
         bizEventCartView.setValue(bizEventToViewResult.getCartView());
@@ -156,7 +170,6 @@ public class BizEventToView {
         String responseMessage = String.format("View for Biz event with id %s successfully created", bizEventId);
         message = String.format("[%s] %s", context.getFunctionName(), responseMessage);
         logger.info(message);
-
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMessage)
                 .build();
