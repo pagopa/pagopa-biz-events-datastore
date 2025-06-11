@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.11.45-5-PIDM-656-add-biz-to-view-api</version>
+	<version>0.12.0</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
