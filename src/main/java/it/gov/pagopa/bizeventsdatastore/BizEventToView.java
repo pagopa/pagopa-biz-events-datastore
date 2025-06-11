@@ -55,10 +55,10 @@ public class BizEventToView {
     public HttpResponseMessage run(
             @HttpTrigger(name = "BizEventToViewFunctionTrigger",
                     methods = {HttpMethod.POST},
-                    route = "biz-events/{bizeventid}/create-view",
+                    route = "biz-events/{biz-event-id}/create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<String>> request,
-            @BindingName("bizeventid") String bizEventId,
+            @BindingName("biz-event-id") String bizEventId,
             @CosmosDBOutput(
                     name = "BizEventUserView",
                     databaseName = "db",
@@ -109,12 +109,35 @@ public class BizEventToView {
                             .status(HttpStatus.NOT_FOUND.value())
                             .build())
                     .build();
+        } catch (Exception e) {
+            String msg = String.format("Unable to retrieve the biz-event with id %s: unexpected error", bizEventId);
+            logger.log(Level.SEVERE, msg, e);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                            .detail(msg)
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build())
+                    .build();
         }
+
         BizEventToViewResult bizEventToViewResult;
         try {
             bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, bizEvent);
         } catch (BizEventToViewConstraintViolationException e) {
             String msg = String.format("Unable to map the biz-event with id %s to the views: %s", bizEventId, e.getErrorMessages());
+            logger.log(Level.SEVERE, msg, e);
+            return request
+                    .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.INTERNAL_SERVER_ERROR.name())
+                            .detail(msg)
+                            .status(HttpStatus.INTERNAL_SERVER_ERROR.value())
+                            .build())
+                    .build();
+        } catch (Exception e) {
+            String msg = String.format("Unable to map the biz-event with id %s to the views: unexpected error", bizEventId);
             logger.log(Level.SEVERE, msg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)

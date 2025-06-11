@@ -177,12 +177,65 @@ class BizEventToViewTest {
     }
 
     @Test
+    void bizEventToViewKO_CosmosException() throws BizEventNotFoundException {
+        doReturn(loggerMock).when(executionContextMock).getLogger();
+        doThrow(RuntimeException.class).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(
+                request,
+                BIZ_EVENT_ID,
+                viewUserOutputBinding,
+                viewGeneralOutputBinding,
+                viewCartOutputBinding,
+                executionContextMock
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+
+        verify(viewUserOutputBinding, never()).setValue(any());
+        verify(viewGeneralOutputBinding, never()).setValue(any());
+        verify(viewCartOutputBinding, never()).setValue(any());
+    }
+
+    @Test
     void bizEventToViewKO_MapToViewError() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
         doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
         doThrow(BizEventToViewConstraintViolationException.class).when(bizEventToViewService).mapBizEventToView(loggerMock, bizEvent);
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
+
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(
+                request,
+                BIZ_EVENT_ID,
+                viewUserOutputBinding,
+                viewGeneralOutputBinding,
+                viewCartOutputBinding,
+                executionContextMock
+        ));
+
+        assertEquals(HttpStatus.INTERNAL_SERVER_ERROR, response.getStatus());
+
+        verify(viewUserOutputBinding, never()).setValue(any());
+        verify(viewGeneralOutputBinding, never()).setValue(any());
+        verify(viewCartOutputBinding, never()).setValue(any());
+    }
+
+    @Test
+    void bizEventToViewKO_MapToViewGenericException() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
+        BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+
+        doReturn(loggerMock).when(executionContextMock).getLogger();
+        doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doThrow(RuntimeException.class).when(bizEventToViewService).mapBizEventToView(loggerMock, bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
