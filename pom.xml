@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.11.45</version>
+	<version>0.11.45-5-PIDM-656-add-biz-to-view-api</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
@@ -17,6 +17,7 @@
 		<azure.functions.maven.plugin.version>1.27.0</azure.functions.maven.plugin.version>
 		<azure.functions.java.library.version>3.1.0</azure.functions.java.library.version>
 		<azure.storage.blob.library.version>12.29.0</azure.storage.blob.library.version>
+		<azure.cosmos.version>4.58.0</azure.cosmos.version>
 		<azure.application.insights.library.version>3.7.0</azure.application.insights.library.version>
 		<functionAppName>com.microsoft.azure-20220215182005862</functionAppName>
 		<resteasy.version>3.15.3.Final</resteasy.version>
@@ -60,6 +61,12 @@
 			<groupId>com.microsoft.azure.functions</groupId>
 			<artifactId>azure-functions-java-library</artifactId>
 			<version>${azure.functions.java.library.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-cosmos</artifactId>
+			<version>${azure.cosmos.version}</version>
 		</dependency>
 
 		<!-- Azure Storage Blob SDK -->

@@ -10,5 +10,8 @@
       "TRIGGER_SCHEDULE": "*/5 * * * * *",
       "TRIGGER_SQL_QUERY": "select TOP 5 * from Items r where (r.eventStatus = 'FAILED' and r.version = '2' and (NOT IS_DEFINED(r.eventTriggeredBySchedule) or r.eventTriggeredBySchedule = false)) or (r.eventStatus = 'NA' and r.version = '2') or (r.eventStatus = 'RETRY' and r.version = '2' and r.eventRetryEnrichmentCount >= 0) order by r.paymentInfo.paymentDateTime ASC",
       "TRIGGER_CUSTOM_ERROR_MESSAGE": "-"
-    }
+    },
+      "Host": {
+        "LocalHttpPort": 7071,
+      },
   }

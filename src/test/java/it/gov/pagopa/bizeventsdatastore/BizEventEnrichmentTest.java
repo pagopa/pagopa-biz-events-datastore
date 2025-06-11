@@ -38,7 +38,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
@@ -77,7 +77,7 @@ class BizEventEnrichmentTest {
 
 
 	@Test
-	void runOk() throws AppException, IOException  {
+	void runOk() throws BizEventToViewConstraintViolationException, IOException  {
 		// test precondition
 		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
 		when(context.getLogger()).thenReturn(logger);
@@ -109,7 +109,7 @@ class BizEventEnrichmentTest {
 
 	
 	@Test
-	void runKo_differentSize() throws AppException, IOException  {
+	void runKo_differentSize() throws BizEventToViewConstraintViolationException, IOException  {
 		// test precondition
 		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
 		when(context.getLogger()).thenReturn(logger);

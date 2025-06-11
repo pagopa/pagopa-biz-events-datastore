@@ -40,7 +40,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.WalletItem;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 
@@ -60,7 +60,7 @@ class BizEventToViewServiceImplTest {
     private ExecutionContext context;
 
     @Test
-    void mapBizEventToViewSuccess() throws AppException {
+    void mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
     	Map<String, Object> properties = new HashMap<>(); 
@@ -122,7 +122,7 @@ class BizEventToViewServiceImplTest {
     }
     
     @Test
-    void mapBizEventToViewNewLineRemittanceInformationSuccess() throws AppException {
+    void mapBizEventToViewNewLineRemittanceInformationSuccess() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
     	
     	Map<String, Object> properties = new HashMap<>(); 
@@ -198,7 +198,7 @@ class BizEventToViewServiceImplTest {
 	
 
     @Test
-    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws AppException {
+    void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -246,7 +246,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyDebtor() throws AppException {
+    void mapBizEventToViewSuccessOnlyDebtor() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -286,7 +286,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewSuccessOnlyPayer() throws AppException {
+    void mapBizEventToViewSuccessOnlyPayer() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -333,7 +333,7 @@ class BizEventToViewServiceImplTest {
     }
     
     @Test
-    void mapBizEventToViewModCart1False() throws AppException {
+    void mapBizEventToViewModCart1False() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
     	Map<String, Object> properties = new HashMap<>(); 
@@ -395,7 +395,7 @@ class BizEventToViewServiceImplTest {
     }
     
     @Test
-    void mapBizEventToViewModCart1True() throws AppException {
+    void mapBizEventToViewModCart1True() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
     	Map<String, Object> properties = new HashMap<>(); 
@@ -457,7 +457,7 @@ class BizEventToViewServiceImplTest {
     }
     
     @Test
-    void mapBizEventToViewModCart1TrueByJSONFile() throws AppException, IOException {
+    void mapBizEventToViewModCart1TrueByJSONFile() throws BizEventToViewConstraintViolationException, IOException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
 
     	Map<String, Object> properties = new HashMap<>(); 
@@ -485,7 +485,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void mapBizEventToViewFailNoDebtorAndUser() throws AppException {
+    void mapBizEventToViewFailNoDebtorAndUser() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -522,7 +522,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        assertThrows(AppException.class, () -> sut.mapBizEventToView(logger,bizEvent));  
+        assertThrows(BizEventToViewConstraintViolationException.class, () -> sut.mapBizEventToView(logger,bizEvent));
     }
 
     @Test

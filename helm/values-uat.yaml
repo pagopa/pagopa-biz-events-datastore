@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.11.45"
+    tag: "0.11.45-5-PIDM-656-add-biz-to-view-api"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -152,6 +152,7 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "false"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-u-azurewebjobsstorage'
@@ -171,6 +172,7 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-view-u-azurewebjobsstorage'

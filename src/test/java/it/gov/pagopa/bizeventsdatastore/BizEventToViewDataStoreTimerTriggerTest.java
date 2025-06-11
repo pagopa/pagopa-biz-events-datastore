@@ -2,7 +2,6 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
@@ -26,7 +25,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
@@ -34,8 +33,7 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 import uk.org.webcompere.systemstubs.jupiter.SystemStub;
 import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-@ExtendWith(MockitoExtension.class)
-@ExtendWith(SystemStubsExtension.class)
+@ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class BizEventToViewDataStoreTimerTriggerTest {
 
 	@Spy
@@ -46,6 +44,18 @@ class BizEventToViewDataStoreTimerTriggerTest {
 	
 	@Mock
     private BizEventToViewService bizEventToViewService;
+
+	@Mock
+	private OutputBinding<List<BizEvent>> bizEventToCosmosOutputBinding;
+
+	@Mock
+	private OutputBinding<List<BizEventsViewUser>> viewUserOutputBinding;
+
+	@Mock
+	private OutputBinding<List<BizEventsViewGeneral>> viewGeneralOutputBinding;
+
+	@Mock
+	private OutputBinding<List<BizEventsViewCart>> viewCartOutputBinding;
 	
 	@SystemStub
     private EnvironmentVariables environment = new EnvironmentVariables("TIMER_TRIGGER_ENABLE_TRANSACTION_LIST_VIEW", "true");
@@ -56,7 +66,7 @@ class BizEventToViewDataStoreTimerTriggerTest {
     }
 
 	@Test
-	void runOK() throws IOException, AppException {
+	void runOK() throws IOException, BizEventToViewConstraintViolationException {
 
 		// precondition
 		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
@@ -68,45 +78,29 @@ class BizEventToViewDataStoreTimerTriggerTest {
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 		bizEvtMsgList.add (bizEventMsg);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> BizEventToUserView = (OutputBinding<List<BizEventsViewUser>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewGeneral>> BizEventToGeneralView = (OutputBinding<List<BizEventsViewGeneral>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewCart>> BizEventToCartView = (OutputBinding<List<BizEventsViewCart>>)mock(OutputBinding.class);
 
-		function.processBizEventScheduledTrigger("timer info", bizEvtMsgList.toArray(new BizEvent[bizEvtMsgList.size()]), BizEventToCosmos, 
-				BizEventToUserView, BizEventToGeneralView, BizEventToCartView, context);
+		function.processBizEventScheduledTrigger("timer info", bizEvtMsgList.toArray(new BizEvent[bizEvtMsgList.size()]), bizEventToCosmosOutputBinding,
+				viewUserOutputBinding, viewGeneralOutputBinding, viewCartOutputBinding, context);
 		
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
 	}
 	
 	@Test
-	void runKO() throws IOException, AppException {
+	void runKO() throws IOException, BizEventToViewConstraintViolationException {
 
 		// precondition
 		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
 		when(context.getLogger()).thenReturn(logger);
 		
-        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenThrow(AppException.class);
+        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenThrow(BizEventToViewConstraintViolationException.class);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 		bizEvtMsgList.add (bizEventMsg);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEvent>> BizEventToCosmos = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> BizEventToUserView = (OutputBinding<List<BizEventsViewUser>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewGeneral>> BizEventToGeneralView = (OutputBinding<List<BizEventsViewGeneral>>)mock(OutputBinding.class);
-		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewCart>> BizEventToCartView = (OutputBinding<List<BizEventsViewCart>>)mock(OutputBinding.class);
 
-		function.processBizEventScheduledTrigger("timer info", bizEvtMsgList.toArray(new BizEvent[bizEvtMsgList.size()]), BizEventToCosmos, 
-				BizEventToUserView, BizEventToGeneralView, BizEventToCartView, context);
+		function.processBizEventScheduledTrigger("timer info", bizEvtMsgList.toArray(new BizEvent[bizEvtMsgList.size()]), bizEventToCosmosOutputBinding,
+				viewUserOutputBinding, viewGeneralOutputBinding, viewCartOutputBinding, context);
 		
 		// test assertion -> this line means the call was successful
 		assertTrue(true);

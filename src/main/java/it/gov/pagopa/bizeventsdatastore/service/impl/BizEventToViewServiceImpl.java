@@ -15,7 +15,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.entity.view.WalletInfo;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
+import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
@@ -49,10 +49,10 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     /**
      * {@inheritDoc}
-     * @throws AppException 
+     * @throws BizEventToViewConstraintViolationException
      */
     @Override
-    public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws AppException {
+    public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException {
     	UserDetail debtor = getDebtor(bizEvent.getDebtor());
     	UserDetail payer = getPayer(bizEvent);
     	boolean sameDebtorAndPayer = false;

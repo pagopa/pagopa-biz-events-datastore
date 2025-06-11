@@ -43,7 +43,6 @@ import it.gov.pagopa.bizeventsdatastore.entity.PaymentInfo;
 import it.gov.pagopa.bizeventsdatastore.entity.TransactionDetails;
 import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
-import it.gov.pagopa.bizeventsdatastore.exception.AppException;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.RedisCacheService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
@@ -114,7 +113,7 @@ class BizEventToDataStoreTest {
     }
 
     @Test
-    void runECommerceOk() throws IOException, AppException {
+    void runECommerceOk() throws IOException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
@@ -139,7 +138,7 @@ class BizEventToDataStoreTest {
     }
 
     @Test
-    void runModelType1Ok() throws IOException, AppException {
+    void runModelType1Ok() throws IOException {
         // test precondition
         Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
         when(context.getLogger()).thenReturn(logger);
