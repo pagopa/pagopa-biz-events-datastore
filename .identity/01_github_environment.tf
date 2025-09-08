@@ -21,7 +21,7 @@ resource "github_repository_environment" "github_repository_environment" {
 
 locals {
   env_secrets = {
-    "CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd_01.client_id,
+    "CD_CLIENT_ID" : data.azurerm_user_assigned_identity.identity_cd.client_id,
     "TENANT_ID" : data.azurerm_client_config.current.tenant_id,
     "SUBSCRIPTION_ID" : data.azurerm_subscription.current.subscription_id,
     "COSMOS_DB_PRIMARY_KEY": (var.env_short != "p" ? data.azurerm_key_vault_secret.key_vault_integration_cosmos_biz_key[0].value : "not-used-only-test"),
@@ -34,13 +34,13 @@ locals {
     "CLUSTER_NAME" : local.aks_cluster.name,
     "CLUSTER_RESOURCE_GROUP" : local.aks_cluster.resource_group_name,
     "NAMESPACE" : local.domain,
-    "WORKLOAD_IDENTITY_ID": data.azurerm_user_assigned_identity.workload_identity_clientid.client_id
+    "WORKLOAD_IDENTITY_ID" : data.azurerm_user_assigned_identity.workload_identity_clientid.client_id
   }
   repo_secrets = {
     "SONAR_TOKEN" : data.azurerm_key_vault_secret.key_vault_sonar.value,
-    "BOT_TOKEN_GITHUB" : data.azurerm_key_vault_secret.key_vault_bot_cd_token.value,
+    "BOT_TOKEN_GITHUB" : data.azurerm_key_vault_secret.key_vault_bot_token.value,
     "CUCUMBER_PUBLISH_TOKEN" : data.azurerm_key_vault_secret.key_vault_cucumber_token.value,
-    # "SLACK_WEBHOOK_URL" : data.azurerm_key_vault_secret.key_vault_slack_webhook_url.value,
+    "SLACK_WEBHOOK_URL_DEPLOY": data.azurerm_key_vault_secret.key_vault_deploy_slack_webhook.value
   }
   special_repo_secrets = {
   }
@@ -61,7 +61,6 @@ resource "github_actions_environment_secret" "github_environment_runner_secrets"
 #################
 # ENV Variables #
 #################
-
 
 resource "github_actions_environment_variable" "github_environment_runner_variables" {
   for_each      = local.env_variables
