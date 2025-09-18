@@ -41,6 +41,7 @@ locals {
     "BOT_TOKEN_GITHUB" : data.azurerm_key_vault_secret.key_vault_bot_token.value,
     "CUCUMBER_PUBLISH_TOKEN" : data.azurerm_key_vault_secret.key_vault_cucumber_token.value,
     "SLACK_WEBHOOK_URL_DEPLOY": data.azurerm_key_vault_secret.key_vault_deploy_slack_webhook.value
+    "SLACK_WEBHOOK_URL_INTEGRATION_TEST": data.azurerm_key_vault_secret.key_vault_integration_test_slack_webhook.value
   }
   special_repo_secrets = {
   }
