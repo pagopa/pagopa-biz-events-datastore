@@ -6,11 +6,11 @@ version: 0.128.0
 appVersion: 0.12.1
 dependencies:
   - name: microservice-chart
-    version: 7.5.0
+    version: 8.0.2
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
     alias: pagopa-biz-events-datastore
   - name: microservice-chart
-    version: 7.5.0
+    version: 8.0.2
     repository: "https://pagopa.github.io/aks-microservice-chart-blueprint"
     alias: pagopa-biz-events-view
 # - name: microservice-chart
