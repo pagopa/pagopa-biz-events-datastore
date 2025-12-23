@@ -4,7 +4,7 @@
     "title": "Biz-Events Datastore API",
     "description": "Biz-Events Datastore utils API.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.12.1"
+    "version": "0.12.1-1-webhost-id-test"
   },
   "servers": [
     {
