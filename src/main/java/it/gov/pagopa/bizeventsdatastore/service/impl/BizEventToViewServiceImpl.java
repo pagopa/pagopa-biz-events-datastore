@@ -408,8 +408,9 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
          *     (the user is NOT a payer OR the channel is NOT valid)
          */
         boolean isValidChannel = isValidChannelOrigin(bizEvent);
+        boolean isCartMod1 = isCartMod1(bizEvent);
 
-        boolean isHidden = isCartMod1(bizEvent) || (!isDebtor && !(isPayer && isValidChannel));
+        boolean isHidden = isCartMod1 || (!isDebtor && !(isPayer && isValidChannel));
 
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
