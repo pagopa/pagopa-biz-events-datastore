@@ -10,6 +10,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.entity.User;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.UserType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
@@ -39,6 +40,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     private final String[] unwantedRemittanceInfo = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
     private final List<String> authenticatedChannels = Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
 
+    private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final String MODEL_TYPE_IUV = "1";
     private static final String MODEL_TYPE_NOTICE = "2";
@@ -107,25 +109,34 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return PaymentMethodType.UNKNOWN;
     }
-    
+
     boolean isValidChannelOrigin(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null) {
-            if (
-                    bizEvent.getTransactionDetails().getTransaction() != null &&
-                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin().toUpperCase())
-            ) {
-                return true;
-            }
-            if (
-                    bizEvent.getTransactionDetails().getInfo() != null &&
-                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getInfo().getClientId().toUpperCase())
-            ) {
-                return true;
-            }
+        var details = bizEvent.getTransactionDetails();
+        if (details == null) {
+            return false;
         }
-        return false;
+
+        String origin = details.getTransaction() != null
+                ? details.getTransaction().getOrigin()
+                : null;
+
+        String clientId = details.getInfo() != null
+                ? details.getInfo().getClientId()
+                : null;
+
+        UserType userType = details.getUser() != null
+                ? details.getUser().getType()
+                : null;
+
+        boolean isAuthenticated = authenticatedChannels.contains(origin) || authenticatedChannels.contains(clientId);
+        boolean isCheckout = ECOMMERCE.contains(origin) || ECOMMERCE.contains(clientId);
+        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
+
+        if (isCheckout && !isRegisteredUser) {
+            return false;
+        }
+
+        return isAuthenticated;
     }
     
     ServiceIdentifierType getServiceIdentifier(Map<String, Object> properties) {
