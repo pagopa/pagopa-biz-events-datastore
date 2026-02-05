@@ -102,7 +102,7 @@ microservice-chart: &microservice-chart
     REDIS_PORT: "6380"
     REDIS_EXPIRE_TIME_MS: "3600000" # an hour
     ENABLE_TRANSACTION_LIST_VIEW: "true" # biz trx on-line
-    AUTHENTICATED_CHANNELS: "IO,CHECKOUT,CHECKOUT_CART"
+    AUTHENTICATED_CHANNELS: "IO,CHECKOUT,CHECKOUT_CART, WISP"
     UPDATE_VIEW_TIMER_TRIGGER_ENABLE: "false"
     UPDATE_VIEW_ORIGIN_VALUE: "NDP003UAT" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
     UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
