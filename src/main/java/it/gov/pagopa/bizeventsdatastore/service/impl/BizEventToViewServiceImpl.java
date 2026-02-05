@@ -400,26 +400,23 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
-    	/*
-    	 * enhancement of the hidden field:
-    	 * - case debtor = true → hidden = false
-    	 * - case debtor = false and (payer = true and isValidChannel = true) → hidden = false
-    	 * - case isNotCartMod1 = true → hidden = false
-    	 * - other cases → hidden = true
-    	 */
+        /*
+         * The view user is hidden if:
+         * - the event IS CartMod1
+         *   OR
+         * - the user is NOT a debtor AND
+         *     (the user is NOT a payer OR the channel is NOT valid)
+         */
         boolean isValidChannel = isValidChannelOrigin(bizEvent);
-        boolean isNotCartMod1 = isNotCartMod1(bizEvent);
 
-        boolean isVisible = isDebtor
-                || (isPayer && isValidChannel)
-                || isNotCartMod1;
+        boolean isHidden = isCartMod1(bizEvent) || (!isDebtor && !(isPayer && isValidChannel));
 
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
-                .hidden(!isVisible)
+                .hidden(isHidden)
                 .isPayer(isPayer)
                 .isDebtor(isDebtor)
                 .build();
@@ -458,20 +455,35 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     /**
      * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
      * @param bizEvent bizEvent to validate
-     * @return flag to determine if it is a manageable cart, or otherwise, will return false if
-     * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     * @return true if it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     * false otherwise
+     *
      */
-    public boolean isNotCartMod1(BizEvent bizEvent) {
-        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
-            return bizEvent.getTransactionDetails() != null &&
-                    new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
-                                    formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
-                            .floatValue() == 0;
+    private boolean isCartMod1(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo() != null
+                && bizEvent.getPaymentInfo().getTotalNotice() == null) {
+
+            if (bizEvent.getTransactionDetails() == null) {
+                return true;
+            }
+
+            BigDecimal paymentAmount =
+                    new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+
+            BigDecimal transactionAmount =
+                    formatEuroCentAmount(
+                            bizEvent.getTransactionDetails()
+                                    .getTransaction()
+                                    .getAmount());
+
+            return paymentAmount.subtract(transactionAmount)
+                    .compareTo(BigDecimal.ZERO) != 0;
         }
-        return true;
+
+        return false;
     }
     
-    public BigDecimal formatEuroCentAmount(long value) {
+    private BigDecimal formatEuroCentAmount(long value) {
         BigDecimal amount = new BigDecimal(value);
         BigDecimal divider = new BigDecimal(100);
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
