@@ -400,8 +400,6 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
-    	
-    	
     	/*
     	 * enhancement of the hidden field:
     	 * - case debtor = true → hidden = false
@@ -409,14 +407,19 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     	 * - case isNotCartMod1 = true → hidden = false
     	 * - other cases → hidden = true
     	 */
-    	boolean isHidden = (!isDebtor && !(isPayer && this.isValidChannelOrigin(bizEvent))) || !this.isNotCartMod1(bizEvent);
-    	
+        boolean isValidChannel = isValidChannelOrigin(bizEvent);
+        boolean isNotCartMod1 = isNotCartMod1(bizEvent);
+
+        boolean isVisible = isDebtor
+                || (isPayer && isValidChannel)
+                || isNotCartMod1;
+
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
-                .hidden(isHidden)
+                .hidden(!isVisible)
                 .isPayer(isPayer)
                 .isDebtor(isDebtor)
                 .build();
