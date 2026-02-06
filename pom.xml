@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.12.1</version>
+	<version>0.12.1-1-PIDM-1484-fix-biz-view-generation</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
