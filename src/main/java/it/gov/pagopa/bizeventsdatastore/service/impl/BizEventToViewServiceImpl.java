@@ -56,7 +56,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     @Override
     public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException {
     	UserDetail debtor = getDebtor(bizEvent.getDebtor());
-    	UserDetail payer = getPayer(bizEvent);
+    	UserDetail payer = getPayer(bizEvent.getTransactionDetails());
     	boolean sameDebtorAndPayer = false;
     	
     	if (debtor == null && payer == null) {
@@ -110,8 +110,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return PaymentMethodType.UNKNOWN;
     }
 
-    boolean isValidChannelOrigin(BizEvent bizEvent) {
-        var details = bizEvent.getTransactionDetails();
+    boolean isValidChannelOrigin(TransactionDetails details) {
         if (details == null) {
             return false;
         }
@@ -253,17 +252,18 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return null;
     }
 
-    UserDetail getPayer(BizEvent bizEvent) {
-    	
-    	TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
-
+    UserDetail getPayer(TransactionDetails transactionDetails) {
         // Verify that TransactionDetails and User are not null
         if (transactionDetails == null || transactionDetails.getUser() == null) {
             return null;
         }
 
-        User user = transactionDetails.getUser();
+        // exclude not authenticated payers
+        if (!isValidChannelOrigin(transactionDetails)) {
+            return null;
+        }
 
+        User user = transactionDetails.getUser();
         // Check if the user's tax code is valid
         if (!isValidFiscalCode(user.getFiscalCode())) {
             return null;
@@ -274,7 +274,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
         // Set the full name if both first and last names are available
         if (user.getName() != null && user.getSurname() != null) {
-            userDetail.setName(user.getName() + " " + user.getSurname());
+            userDetail.setName(String.format("%s %s", user.getName(), user.getSurname()));
         }
 
         return userDetail;
@@ -404,13 +404,9 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
          * The view user is hidden if:
          * - the event IS CartMod1
          *   OR
-         * - the user is NOT a debtor AND
-         *     (the user is NOT a payer OR the channel is NOT valid)
+         * - the user is NOT a debtor AND NOT a payer
          */
-        boolean isValidChannel = isValidChannelOrigin(bizEvent);
-        boolean isCartMod1 = isCartMod1(bizEvent);
-
-        boolean isHidden = isCartMod1 || (!isDebtor && !(isPayer && isValidChannel));
+        boolean isHidden = isCartMod1(bizEvent) || (!isDebtor && !isPayer);
 
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))

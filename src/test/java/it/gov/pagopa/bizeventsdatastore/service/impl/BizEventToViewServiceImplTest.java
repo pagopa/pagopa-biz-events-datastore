@@ -15,8 +15,11 @@ import java.util.Map;
 import java.util.logging.Logger;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.UserType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -44,8 +47,11 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.UserDetail;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class BizEventToViewServiceImplTest {
 
     private static final String VALID_PAYER_CF = "JHNDOE80D45E507N";
@@ -59,6 +65,10 @@ class BizEventToViewServiceImplTest {
     
     @Mock
     private ExecutionContext context;
+
+    @SystemStub
+    private EnvironmentVariables environmentVariables = new EnvironmentVariables(
+            "AUTHENTICATED_CHANNELS", "IO,CHECKOUT,CHECKOUT_CART,WISP");
 
     @Test
     void mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
@@ -259,8 +269,6 @@ class BizEventToViewServiceImplTest {
         assertEquals(REMITTANCE_INFORMATION_FORMATTED, result.getCartView().getSubject());
     }
 
-	
-
     @Test
     void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws BizEventToViewConstraintViolationException {
     	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
@@ -281,7 +289,7 @@ class BizEventToViewServiceImplTest {
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
                         .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
-                        .transaction(Transaction.builder().origin("CHECKOUT").rrn("rrn").creationDate("21-03-2024").amount(1000).build())
+                        .transaction(Transaction.builder().origin("IO").rrn("rrn").creationDate("21-03-2024").amount(1000).build())
                         .build())
                 .build();
 
@@ -368,7 +376,7 @@ class BizEventToViewServiceImplTest {
                                 .surname("user-surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
-                        .info(InfoECommerce.builder().type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .info(InfoECommerce.builder().type("PPAL").clientId("IO").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").build())
                         .build())
                 .build();
@@ -548,9 +556,9 @@ class BizEventToViewServiceImplTest {
     	assertEquals(VALID_USER_CF, result.getCartView().getDebtor().getTaxCode());
     }
 
-
-    @Test
-    void mapBizEventToViewCheckoutUserNotRegisteredShouldBeHidden() throws BizEventToViewConstraintViolationException {
+    @ParameterizedTest
+    @ValueSource(strings = {"CHECKOUT", "CHECKOUT_CART"})
+    void mapBizEventToView_CheckoutUserNotRegistered_PayerViewShouldNotBeCreated(String clientId) throws BizEventToViewConstraintViolationException {
         Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
 
         Map<String, Object> properties = new HashMap<>();
@@ -572,7 +580,7 @@ class BizEventToViewServiceImplTest {
                                 .fiscalCode(VALID_USER_CF)
                                 .type(UserType.GUEST)
                                 .build())
-                        .info(InfoECommerce.builder().clientId("CHECKOUT").type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .info(InfoECommerce.builder().clientId(clientId).type("PPAL").maskedEmail("xxx@xxx.it").build())
                         .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").amount(10000).build())
                         .build())
                 .properties(properties)
@@ -580,25 +588,83 @@ class BizEventToViewServiceImplTest {
 
         BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
 
-        this.checkGeneratedViewResult(result);
+        assertNotNull(result);
+        assertNotNull(result.getUserViewList());
+        assertNotNull(result.getGeneralView());
+        assertNotNull(result.getCartView());
+        assertEquals(1, result.getUserViewList().size());
+
+        BizEventsViewUser viewUser = result.getUserViewList().get(0);
+        assertEquals(VALID_DEBTOR_CF, viewUser.getTaxCode());
+        assertFalse(viewUser.isPayer());
+        assertTrue(viewUser.isDebtor());
+        assertFalse(viewUser.isHidden());
+        assertEquals(bizEvent.getId(), viewUser.getTransactionId());
+
+        assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+        assertNull(result.getGeneralView().getPayer());
+        assertEquals(1, result.getGeneralView().getTotalNotice());
+        assertEquals(ServiceIdentifierType.NDP001PROD, result.getGeneralView().getOrigin());
+
+        assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+        assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+        assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+        assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"CHECKOUT", "CHECKOUT_CART"})
+    void mapBizEventToView_CheckoutUserRegistered_PayerViewShouldBeCreated(String clientId) throws BizEventToViewConstraintViolationException {
+        Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
+
+        Map<String, Object> properties = new HashMap<>();
+        properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+
+        BizEvent bizEvent = BizEvent.builder()
+                .id("biz-id")
+                .psp(Psp.builder().psp("psp value").build())
+                .debtor(Debtor.builder()
+                        .fullName("debtor")
+                        .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .build())
+                .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+                .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").totalNotice("1").amount("10.0").build())
+                .transactionDetails(TransactionDetails.builder()
+                        .user(User.builder()
+                                .name("user-name")
+                                .surname("user-surname")
+                                .fiscalCode(VALID_USER_CF)
+                                .type(UserType.REGISTERED)
+                                .build())
+                        .info(InfoECommerce.builder().clientId(clientId).type("PPAL").maskedEmail("xxx@xxx.it").build())
+                        .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").amount(10000).build())
+                        .build())
+                .properties(properties)
+                .build();
+
+        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+
+        assertNotNull(result);
+        assertNotNull(result.getUserViewList());
+        assertNotNull(result.getGeneralView());
+        assertNotNull(result.getCartView());
+        assertEquals(2, result.getUserViewList().size());
 
         if (result.getUserViewList().get(0).isPayer()) {
             assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
             assertTrue(result.getUserViewList().get(0).isPayer());
             assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(1).getTaxCode());
             assertFalse(result.getUserViewList().get(1).isPayer());
-            assertEquals(true, result.getUserViewList().get(0).isHidden());
-            assertEquals(false, result.getUserViewList().get(1).isHidden());
         } else {
             assertEquals(VALID_USER_CF, result.getUserViewList().get(1).getTaxCode());
             assertTrue(result.getUserViewList().get(1).isPayer());
             assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
             assertFalse(result.getUserViewList().get(0).isPayer());
-            assertEquals(false, result.getUserViewList().get(0).isHidden());
-            assertEquals(true, result.getUserViewList().get(1).isHidden());
         }
         assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
         assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+        assertFalse(result.getUserViewList().get(0).isHidden());
+        assertFalse(result.getUserViewList().get(1).isHidden());
 
         User user = bizEvent.getTransactionDetails().getUser();
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
@@ -966,24 +1032,29 @@ class BizEventToViewServiceImplTest {
                         .entityUniqueIdentifierValue(VALID_PAYER_CF)
                         .build())
                 .build();
-        UserDetail result = sut.getPayer(bizEvent);
+
+        UserDetail result = sut.getPayer(bizEvent.getTransactionDetails());
+
         assertNull(result);
     }
 
     @Test
-    void getPayerFromPayerFailInvalidTaxCode() {
+    void getPayerInfoNoUserSection() {
         BizEvent bizEvent = BizEvent.builder()
                 .payer(Payer.builder()
                         .fullName("payer-name")
-                        .entityUniqueIdentifierValue(INVALID_CF)
+                        .entityUniqueIdentifierValue(VALID_PAYER_CF)
                         .build())
+                .transactionDetails(new TransactionDetails())
                 .build();
-        UserDetail result = sut.getPayer(bizEvent);
+
+        UserDetail result = sut.getPayer(bizEvent.getTransactionDetails());
+
         assertNull(result);
     }
 
     @Test
-    void getPayerFromTransactionDetailsWithoutPayerSectionSuccess() {
+    void getPayerFromTransactionDetailsSuccess() {
         BizEvent bizEvent = BizEvent.builder()
                 .transactionDetails(TransactionDetails.builder()
                         .user(User.builder()
@@ -991,9 +1062,12 @@ class BizEventToViewServiceImplTest {
                                 .surname("surname")
                                 .fiscalCode(VALID_USER_CF)
                                 .build())
+                        .info(InfoECommerce.builder().clientId("IO").build())
                         .build())
                 .build();
-        UserDetail result = sut.getPayer(bizEvent);
+
+        UserDetail result = sut.getPayer(bizEvent.getTransactionDetails());
+
         assertNotNull(result);
         User user = bizEvent.getTransactionDetails().getUser();
         String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
@@ -1002,7 +1076,7 @@ class BizEventToViewServiceImplTest {
     }
 
     @Test
-    void getPayerFromTransactionDetailsWithoutPayerSectionFailInvalidTaxCode() {
+    void getPayerFromTransactionDetailsSectionFailInvalidTaxCode() {
         BizEvent bizEvent = BizEvent.builder()
                 .transactionDetails(TransactionDetails.builder()
                         .user(User.builder()
@@ -1010,28 +1084,12 @@ class BizEventToViewServiceImplTest {
                                 .surname("surname")
                                 .fiscalCode(INVALID_CF)
                                 .build())
+                        .info(InfoECommerce.builder().clientId("IO").build())
                         .build())
                 .build();
-        UserDetail result = sut.getPayer(bizEvent);
-        assertNull(result);
-    }
 
-    @Test
-    void getPayerFromTransactionDetailsWithPayerSectionAndInvalidUserTaxCodeSuccess() {
-        BizEvent bizEvent = BizEvent.builder()
-                .payer(Payer.builder()
-                        .fullName("payer-name")
-                        .entityUniqueIdentifierValue(VALID_PAYER_CF)
-                        .build())
-                .transactionDetails(TransactionDetails.builder()
-                        .user(User.builder()
-                                .name("name")
-                                .surname("surname")
-                                .fiscalCode(INVALID_CF)
-                                .build())
-                        .build())
-                .build();
-        UserDetail result = sut.getPayer(bizEvent);
+        UserDetail result = sut.getPayer(bizEvent.getTransactionDetails());
+
         assertNull(result);
     }
 
