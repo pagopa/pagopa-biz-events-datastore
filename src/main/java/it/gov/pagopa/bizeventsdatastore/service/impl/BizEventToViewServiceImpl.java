@@ -10,6 +10,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.Transfer;
 import it.gov.pagopa.bizeventsdatastore.entity.User;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.PaymentMethodType;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.ServiceIdentifierType;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.UserType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
@@ -39,6 +40,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     private final String[] unwantedRemittanceInfo = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
     private final List<String> authenticatedChannels = Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
 
+    private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
     private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final String MODEL_TYPE_IUV = "1";
     private static final String MODEL_TYPE_NOTICE = "2";
@@ -54,7 +56,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     @Override
     public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException {
     	UserDetail debtor = getDebtor(bizEvent.getDebtor());
-    	UserDetail payer = getPayer(bizEvent);
+    	UserDetail payer = getPayer(bizEvent.getTransactionDetails());
     	boolean sameDebtorAndPayer = false;
     	
     	if (debtor == null && payer == null) {
@@ -107,25 +109,33 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return PaymentMethodType.UNKNOWN;
     }
-    
-    boolean isValidChannelOrigin(BizEvent bizEvent) {
-        if (bizEvent.getTransactionDetails() != null) {
-            if (
-                    bizEvent.getTransactionDetails().getTransaction() != null &&
-                            bizEvent.getTransactionDetails().getTransaction().getOrigin() != null &&
-                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getTransaction().getOrigin().toUpperCase())
-            ) {
-                return true;
-            }
-            if (
-                    bizEvent.getTransactionDetails().getInfo() != null &&
-                            bizEvent.getTransactionDetails().getInfo().getClientId() != null &&
-                            		authenticatedChannels.contains(bizEvent.getTransactionDetails().getInfo().getClientId().toUpperCase())
-            ) {
-                return true;
-            }
+
+    boolean isValidChannelOrigin(TransactionDetails details) {
+        if (details == null) {
+            return false;
         }
-        return false;
+
+        String origin = details.getTransaction() != null
+                ? details.getTransaction().getOrigin()
+                : null;
+
+        String clientId = details.getInfo() != null
+                ? details.getInfo().getClientId()
+                : null;
+
+        UserType userType = details.getUser() != null
+                ? details.getUser().getType()
+                : null;
+
+        boolean isAuthenticated = authenticatedChannels.contains(origin) || authenticatedChannels.contains(clientId);
+        boolean isCheckout = ECOMMERCE.contains(origin) || ECOMMERCE.contains(clientId);
+        boolean isRegisteredUser = UserType.REGISTERED.equals(userType);
+
+        if (isCheckout && !isRegisteredUser) {
+            return false;
+        }
+
+        return isAuthenticated;
     }
     
     ServiceIdentifierType getServiceIdentifier(Map<String, Object> properties) {
@@ -242,17 +252,18 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         return null;
     }
 
-    UserDetail getPayer(BizEvent bizEvent) {
-    	
-    	TransactionDetails transactionDetails = bizEvent.getTransactionDetails();
-
+    UserDetail getPayer(TransactionDetails transactionDetails) {
         // Verify that TransactionDetails and User are not null
         if (transactionDetails == null || transactionDetails.getUser() == null) {
             return null;
         }
 
-        User user = transactionDetails.getUser();
+        // exclude not authenticated payers
+        if (!isValidChannelOrigin(transactionDetails)) {
+            return null;
+        }
 
+        User user = transactionDetails.getUser();
         // Check if the user's tax code is valid
         if (!isValidFiscalCode(user.getFiscalCode())) {
             return null;
@@ -263,7 +274,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
         // Set the full name if both first and last names are available
         if (user.getName() != null && user.getSurname() != null) {
-            userDetail.setName(user.getName() + " " + user.getSurname());
+            userDetail.setName(String.format("%s %s", user.getName(), user.getSurname()));
         }
 
         return userDetail;
@@ -389,17 +400,14 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
-    	
-    	
-    	/*
-    	 * enhancement of the hidden field:
-    	 * - case debtor = true → hidden = false
-    	 * - case debtor = false and (payer = true and isValidChannel = true) → hidden = false
-    	 * - case isNotCartMod1 = true → hidden = false
-    	 * - other cases → hidden = true
-    	 */
-    	boolean isHidden = (!isDebtor && !(isPayer && this.isValidChannelOrigin(bizEvent))) || !this.isNotCartMod1(bizEvent);
-    	
+        /*
+         * The view user is hidden if:
+         * - the event IS CartMod1
+         *   OR
+         * - the user is NOT a debtor AND NOT a payer
+         */
+        boolean isHidden = isCartMod1(bizEvent) || (!isDebtor && !isPayer);
+
         return BizEventsViewUser.builder()
         		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
                 .taxCode(userDetail.getTaxCode())
@@ -444,20 +452,35 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     /**
      * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
      * @param bizEvent bizEvent to validate
-     * @return flag to determine if it is a manageable cart, or otherwise, will return false if
-     * it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     * @return true if it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
+     * false otherwise
+     *
      */
-    public boolean isNotCartMod1(BizEvent bizEvent) {
-        if (bizEvent.getPaymentInfo() != null && bizEvent.getPaymentInfo().getTotalNotice() == null) {
-            return bizEvent.getTransactionDetails() != null &&
-                    new BigDecimal(bizEvent.getPaymentInfo().getAmount()).subtract(
-                                    formatEuroCentAmount(bizEvent.getTransactionDetails().getTransaction().getAmount()))
-                            .floatValue() == 0;
+    private boolean isCartMod1(BizEvent bizEvent) {
+        if (bizEvent.getPaymentInfo() != null
+                && bizEvent.getPaymentInfo().getTotalNotice() == null) {
+
+            if (bizEvent.getTransactionDetails() == null) {
+                return true;
+            }
+
+            BigDecimal paymentAmount =
+                    new BigDecimal(bizEvent.getPaymentInfo().getAmount());
+
+            BigDecimal transactionAmount =
+                    formatEuroCentAmount(
+                            bizEvent.getTransactionDetails()
+                                    .getTransaction()
+                                    .getAmount());
+
+            return paymentAmount.subtract(transactionAmount)
+                    .compareTo(BigDecimal.ZERO) != 0;
         }
-        return true;
+
+        return false;
     }
     
-    public BigDecimal formatEuroCentAmount(long value) {
+    private BigDecimal formatEuroCentAmount(long value) {
         BigDecimal amount = new BigDecimal(value);
         BigDecimal divider = new BigDecimal(100);
         return amount.divide(divider, 2, RoundingMode.UNNECESSARY);
