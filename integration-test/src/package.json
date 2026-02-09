@@ -10,6 +10,7 @@
     "cucumber": "npx cucumber-js --publish -r step_definitions"
   },
   "dependencies": {
+    "@azure/cosmos": "^4.9.1",
     "@cucumber/cucumber": "^8.4.0",
     "axios": "^1.0.0",
     "crypto-js": "^4.0.0",
