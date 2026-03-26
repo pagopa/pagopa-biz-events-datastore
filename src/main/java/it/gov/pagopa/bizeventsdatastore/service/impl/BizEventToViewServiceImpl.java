@@ -37,11 +37,21 @@ import java.util.regex.Pattern;
  */
 public class BizEventToViewServiceImpl implements BizEventToViewService {
 
-    private final String[] unwantedRemittanceInfo = System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
-    private final List<String> authenticatedChannels = Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
+    private final String[] unwantedRemittanceInfo =
+            System.getenv().getOrDefault("UNWANTED_REMITTANCE_INFO", "pagamento multibeneficiario").split(",");
+    private final List<String> authenticatedChannels =
+            Arrays.asList(System.getenv().getOrDefault("AUTHENTICATED_CHANNELS", "IO").split(","));
+
+
+    private static final String CF_REGEX = "^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$";
+    private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
+
+    private static final Pattern PATTERN_NEW_LINE = Pattern.compile("\\R");
+    private static final Pattern PATTERN_PIVA = Pattern.compile("^\\d{11}$");
+    private static final Pattern PATTERN_CF = Pattern.compile(CF_REGEX, Pattern.CASE_INSENSITIVE);
+    private static final Pattern PATTERN_REMITTANCE_INFO = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
 
     private static final List<String> ECOMMERCE = Arrays.asList("CHECKOUT", "CHECKOUT_CART");
-    private static final String REMITTANCE_INFORMATION_REGEX = "/TXT/(.*)";
     private static final String MODEL_TYPE_IUV = "1";
     private static final String MODEL_TYPE_NOTICE = "2";
     private static final String REF_TYPE_NOTICE = "codiceAvviso";
@@ -58,7 +68,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     	UserDetail debtor = getDebtor(bizEvent.getDebtor());
     	UserDetail payer = getPayer(bizEvent.getTransactionDetails());
     	boolean sameDebtorAndPayer = false;
-    	
+
     	if (debtor == null && payer == null) {
     		return null;
     	}
@@ -67,10 +77,10 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     		sameDebtorAndPayer = true;
     		// only the payer user is created when payer and debtor are the same
     		debtor = null;
-    	} 
+    	}
 
     	List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
-    	
+
     	if (debtor != null) {
     		BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false, true);
     		userViewToInsert.add(debtorUserView);
@@ -137,17 +147,17 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
         return isAuthenticated;
     }
-    
+
     ServiceIdentifierType getServiceIdentifier(Map<String, Object> properties) {
-        if (properties != null && 
-        		properties.get(SERVICE_IDENTIFIER_KEY) != null &&  
+        if (properties != null &&
+        		properties.get(SERVICE_IDENTIFIER_KEY) != null &&
         		ServiceIdentifierType.isValidServiceIdentifier(properties.get(SERVICE_IDENTIFIER_KEY).toString())) {
         		return ServiceIdentifierType.valueOf(properties.get(SERVICE_IDENTIFIER_KEY).toString());
         }
         return ServiceIdentifierType.UNKNOWN;
     }
-    
-    
+
+
 
     String getTransactionId(BizEvent bizEvent) {
         PaymentInfo paymentInfo = bizEvent.getPaymentInfo();
@@ -244,7 +254,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return null;
     }
-    
+
     String getMaskedEmail(TransactionDetails transactionDetails) {
         if (transactionDetails != null && transactionDetails.getInfo() != null) {
             return transactionDetails.getInfo().getMaskedEmail();
@@ -281,10 +291,9 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     String getItemSubject(BizEvent bizEvent) {
-        if (
-                bizEvent.getPaymentInfo() != null &&
-                        bizEvent.getPaymentInfo().getRemittanceInformation() != null &&
-                        !Arrays.asList(unwantedRemittanceInfo).contains(bizEvent.getPaymentInfo().getRemittanceInformation())
+        if (bizEvent.getPaymentInfo() != null &&
+                bizEvent.getPaymentInfo().getRemittanceInformation() != null &&
+                !Arrays.asList(unwantedRemittanceInfo).contains(bizEvent.getPaymentInfo().getRemittanceInformation())
         ) {
             return bizEvent.getPaymentInfo().getRemittanceInformation();
         }
@@ -356,7 +365,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
         return Integer.parseInt(paymentInfo.getTotalNotice());
     }
-    
+
     boolean getIsCart(PaymentInfo paymentInfo) {
     	return paymentInfo != null && paymentInfo.getTotalNotice() != null && Integer.parseInt(paymentInfo.getTotalNotice()) > 1;
     }
@@ -419,21 +428,18 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
-    private boolean isValidFiscalCode(String taxCode) {
-        if (taxCode != null && !taxCode.isEmpty()) {
-            Pattern patternCF = Pattern.compile("^[A-Z]{6}[0-9LMNPQRSTUV]{2}[ABCDEHLMPRST][0-9LMNPQRSTUV]{2}[A-Z][0-9LMNPQRSTUV]{3}[A-Z]$");
-            Pattern patternPIVA = Pattern.compile("^\\d{11}");
-
-            return patternCF.matcher(taxCode.toUpperCase()).find() || patternPIVA.matcher(taxCode).find();
+    private boolean isValidFiscalCode(String fiscalCode) {
+        if (fiscalCode != null && !fiscalCode.isEmpty()) {
+            return PATTERN_CF.matcher(fiscalCode).matches() || PATTERN_PIVA.matcher(fiscalCode).matches();
         }
         return false;
     }
-    
+
     private String formatRemittanceInformation(String remittanceInformation) {
         if (remittanceInformation != null) {
-            Pattern pattern = Pattern.compile(REMITTANCE_INFORMATION_REGEX);
             // replaceAll with '\R' to remove any unicode linebreak sequence
-            Matcher matcher = pattern.matcher(remittanceInformation.replaceAll("\\R", ""));
+            String sanitizedRemittance = PATTERN_NEW_LINE.matcher(remittanceInformation).replaceAll("");
+            Matcher matcher = PATTERN_REMITTANCE_INFO.matcher(sanitizedRemittance);
             if (matcher.find()) {
                 return matcher.group(1);
             }
@@ -448,7 +454,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         numberFormat.setMinimumFractionDigits(2);
         return numberFormat.format(valueToFormat);
     }
-    
+
     /**
      * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
      * @param bizEvent bizEvent to validate
@@ -479,7 +485,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
         return false;
     }
-    
+
     private BigDecimal formatEuroCentAmount(long value) {
         BigDecimal amount = new BigDecimal(value);
         BigDecimal divider = new BigDecimal(100);
