@@ -25,26 +25,22 @@ FILE=.env
 if test -f "$FILE"; then
     rm .env
 fi
-config=$(yq  -r '."microservice-chart".envConfig' ../helm/values-$ENV.yaml)
-# set word splitting
-IFS=$'\n'
-for line in $(echo $config | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
-    echo $line >> .env
-done
+yq -r '."microservice-chart".envConfig' "../helm/values-$ENV.yaml" \
+  | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"' \
+  | while IFS= read -r line; do
+      echo "$line" >> .env
+    done
 
 keyvault=$(yq  -r '."microservice-chart".keyvault.name' ../helm/values-$ENV.yaml)
 secret=$(yq  -r '."microservice-chart".envSecret' ../helm/values-$ENV.yaml)
 for line in $(echo $secret | jq -r '. | to_entries[] | select(.key) | "\(.key)=\(.value)"'); do
   IFS='=' read -r -a array <<< "$line"
-  response=$(az keyvault secret show --vault-name $keyvault --name "${array[1]}")
+  name=$(printf '%s' "${array[1]}" | tr -d '\r')
+  response=$(az keyvault secret show --vault-name $keyvault --name "$name")
   value=$(echo $response | jq -r '.value')
   echo "${array[0]}=$value" >> .env
 done
-
-
-stack_name=$(cd .. && basename "$PWD")
-docker compose -p "${stack_name}" up -d --remove-orphans --force-recreate --build
-
+printf 'Environment variables retrieved'
 
 # waiting the containers
 printf 'Waiting for the service'
