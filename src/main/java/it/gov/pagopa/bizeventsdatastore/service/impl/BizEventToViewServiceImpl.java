@@ -97,7 +97,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         if (debtor != null && isValidFiscalCode(debtor.getEntityUniqueIdentifierValue())) {
             return UserDetail.builder()
                     .name(debtor.getFullName())
-                    .taxCode(debtor.getEntityUniqueIdentifierValue())
+                    .taxCode(debtor.getEntityUniqueIdentifierValue().toUpperCase())
                     .build();
         }
         return null;
@@ -270,7 +270,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         }
 
         UserDetail userDetail = new UserDetail();
-        userDetail.setTaxCode(user.getFiscalCode());
+        userDetail.setTaxCode(user.getFiscalCode().toUpperCase());
 
         // Set the full name if both first and last names are available
         if (user.getName() != null && user.getSurname() != null) {
