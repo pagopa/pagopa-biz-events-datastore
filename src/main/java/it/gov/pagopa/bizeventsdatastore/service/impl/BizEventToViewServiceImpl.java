@@ -20,6 +20,7 @@ import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolat
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.BizEventsViewValidator;
+
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.NumberFormat;
@@ -61,46 +62,50 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     /**
      * {@inheritDoc}
+     *
      * @throws BizEventToViewConstraintViolationException
      */
     @Override
-    public BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException {
-    	UserDetail debtor = getDebtor(bizEvent.getDebtor());
-    	UserDetail payer = getPayer(bizEvent.getTransactionDetails());
-    	boolean sameDebtorAndPayer = false;
+    public BizEventToViewResult mapBizEventToView(
+            Logger logger,
+            BizEvent bizEvent
+    ) throws BizEventToViewConstraintViolationException {
+        UserDetail debtor = getDebtor(bizEvent.getDebtor());
+        UserDetail payer = getPayer(bizEvent.getTransactionDetails());
+        boolean sameDebtorAndPayer = false;
 
-    	if (debtor == null && payer == null) {
-    		return null;
-    	}
+        if (debtor == null && payer == null) {
+            return null;
+        }
 
-    	if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
-    		sameDebtorAndPayer = true;
-    		// only the payer user is created when payer and debtor are the same
-    		debtor = null;
-    	}
+        if (debtor != null && payer != null && debtor.getTaxCode() != null && debtor.getTaxCode().equals(payer.getTaxCode())) {
+            sameDebtorAndPayer = true;
+            // only the payer user is created when payer and debtor are the same
+            debtor = null;
+        }
 
-    	List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
+        List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
 
-    	if (debtor != null) {
-    		BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false, true);
-    		userViewToInsert.add(debtorUserView);
-    	}
+        if (debtor != null) {
+            BizEventsViewUser debtorUserView = buildUserView(bizEvent, debtor, false, true);
+            userViewToInsert.add(debtorUserView);
+        }
 
-    	if (payer != null) {
-    		BizEventsViewUser payerUserView = buildUserView(bizEvent, payer, true, sameDebtorAndPayer);
-    		userViewToInsert.add(payerUserView);
-    	}
+        if (payer != null) {
+            BizEventsViewUser payerUserView = buildUserView(bizEvent, payer, true, sameDebtorAndPayer);
+            userViewToInsert.add(payerUserView);
+        }
 
-    	BizEventToViewResult result = BizEventToViewResult.builder()
-    			.userViewList(userViewToInsert)
-    			.generalView(buildGeneralView(bizEvent, payer))
-    			.cartView(buildCartView(bizEvent, sameDebtorAndPayer ? payer : debtor))
-    			.build();
+        BizEventToViewResult result = BizEventToViewResult.builder()
+                .userViewList(userViewToInsert)
+                .generalView(buildGeneralView(bizEvent, payer))
+                .cartView(buildCartView(bizEvent, sameDebtorAndPayer ? payer : debtor))
+                .build();
 
 
-    	BizEventsViewValidator.validate(logger, result, bizEvent);
+        BizEventsViewValidator.validate(logger, result, bizEvent);
 
-    	return result;
+        return result;
     }
 
     UserDetail getDebtor(Debtor debtor) {
@@ -150,13 +155,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     ServiceIdentifierType getServiceIdentifier(Map<String, Object> properties) {
         if (properties != null &&
-        		properties.get(SERVICE_IDENTIFIER_KEY) != null &&
-        		ServiceIdentifierType.isValidServiceIdentifier(properties.get(SERVICE_IDENTIFIER_KEY).toString())) {
-        		return ServiceIdentifierType.valueOf(properties.get(SERVICE_IDENTIFIER_KEY).toString());
+                properties.get(SERVICE_IDENTIFIER_KEY) != null &&
+                ServiceIdentifierType.isValidServiceIdentifier(properties.get(SERVICE_IDENTIFIER_KEY).toString())) {
+            return ServiceIdentifierType.valueOf(properties.get(SERVICE_IDENTIFIER_KEY).toString());
         }
         return ServiceIdentifierType.UNKNOWN;
     }
-
 
 
     String getTransactionId(BizEvent bizEvent) {
@@ -367,12 +371,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     boolean getIsCart(PaymentInfo paymentInfo) {
-    	return paymentInfo != null && paymentInfo.getTotalNotice() != null && Integer.parseInt(paymentInfo.getTotalNotice()) > 1;
+        return paymentInfo != null && paymentInfo.getTotalNotice() != null && Integer.parseInt(paymentInfo.getTotalNotice()) > 1;
     }
 
     private BizEventsViewCart buildCartView(BizEvent bizEvent, UserDetail debtor) {
         return BizEventsViewCart.builder()
-        		.id(bizEvent.getId())
+                .id(bizEvent.getId())
                 .transactionId(getTransactionId(bizEvent))
                 .eventId(bizEvent.getId())
                 .subject(getItemSubject(bizEvent))
@@ -386,7 +390,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
 
     private BizEventsViewGeneral buildGeneralView(BizEvent bizEvent, UserDetail payer) {
         return BizEventsViewGeneral.builder()
-        		.id(bizEvent.getId())
+                .id(bizEvent.getId())
                 .transactionId(getTransactionId(bizEvent))
                 .authCode(getAuthCode(bizEvent.getTransactionDetails()))
                 .rrn(getRrn(bizEvent))
@@ -408,7 +412,12 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
     }
 
-    private BizEventsViewUser buildUserView(BizEvent bizEvent, UserDetail userDetail, boolean isPayer, boolean isDebtor) {
+    private BizEventsViewUser buildUserView(
+            BizEvent bizEvent,
+            UserDetail userDetail,
+            boolean isPayer,
+            boolean isDebtor
+    ) {
         /*
          * The view user is hidden if:
          * - the event IS CartMod1
@@ -418,7 +427,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
         boolean isHidden = isCartMod1(bizEvent) || (!isDebtor && !isPayer);
 
         return BizEventsViewUser.builder()
-        		.id(bizEvent.getId()+(isPayer?"-p":"-d"))
+                .id(bizEvent.getId() + (isPayer ? "-p" : "-d"))
                 .taxCode(userDetail.getTaxCode())
                 .transactionId(getTransactionId(bizEvent))
                 .transactionDate(getTransactionDate(bizEvent))
@@ -456,11 +465,11 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
     }
 
     /**
-     * Method to check if the content comes from a legacy cart model (see https://pagopa.atlassian.net/browse/VAS-1167)
+     * Method to check if the content comes from a legacy cart model (see <a href="https://pagopa.atlassian.net/browse/VAS-1167">VAS-1167</a>)
+     *
      * @param bizEvent bizEvent to validate
      * @return true if it is considered a legacy cart content (not having a totalNotice field and having amount values != 0)
      * false otherwise
-     *
      */
     private boolean isCartMod1(BizEvent bizEvent) {
         if (bizEvent.getPaymentInfo() != null
