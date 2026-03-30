@@ -24,6 +24,8 @@ jobs:
     name: Test ${{(github.event.inputs == null && 'uat') || inputs.environment }}
     runs-on: [ self-hosted-job, "${{(github.event.inputs == null && 'uat') || inputs.environment }}" ]
     environment: ${{(github.event.inputs == null && 'uat') || inputs.environment }}
+    permissions:
+      id-token: write
     steps:
 
       - name: Checkout
