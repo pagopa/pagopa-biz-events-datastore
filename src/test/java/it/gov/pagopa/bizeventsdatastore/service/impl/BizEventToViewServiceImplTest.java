@@ -72,9 +72,7 @@ class BizEventToViewServiceImplTest {
 
     @Test
     void mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
     	
         BizEvent bizEvent = BizEvent.builder()
@@ -98,7 +96,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         this.checkGeneratedViewResult(result);
 
@@ -134,9 +132,7 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void NDP004PROD_mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", ServiceIdentifierType.NDP004PROD.name());
     	
         BizEvent bizEvent = BizEvent.builder()
@@ -160,7 +156,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         this.checkGeneratedViewResult(result);
 
@@ -197,9 +193,7 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void mapBizEventToViewNewLineRemittanceInformationSuccess() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-    	
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", "NDP004IT");
         
         BizEvent bizEvent = BizEvent.builder()
@@ -229,7 +223,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         this.checkGeneratedViewResult(result);
 
@@ -265,14 +259,12 @@ class BizEventToViewServiceImplTest {
         
         // set remittance information with new line characters 
         bizEvent.getTransferList().get(0).setRemittanceInformation("/RFB/9600000000/TXT/"+ System.lineSeparator() +"CB617RP-Mag2022/"+ System.lineSeparator() +"Apr2023--EC Lorem-E. 261,92 (san 4,91 int 0,95)");
-        result = sut.mapBizEventToView(logger, bizEvent);
+        result = sut.mapBizEventToView(bizEvent);
         assertEquals(REMITTANCE_INFORMATION_FORMATTED, result.getCartView().getSubject());
     }
 
     @Test
     void mapBizEventToViewSuccessEventWithSameDebtorAndPayer() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .psp(Psp.builder().psp("psp value").build())
@@ -293,7 +285,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -319,8 +311,6 @@ class BizEventToViewServiceImplTest {
 
     @Test
     void mapBizEventToViewSuccessOnlyDebtor() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .psp(Psp.builder().psp("psp value").build())
@@ -336,7 +326,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -359,8 +349,6 @@ class BizEventToViewServiceImplTest {
 
     @Test
     void mapBizEventToViewSuccessOnlyPayer() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .psp(Psp.builder().psp("psp value").build())
@@ -381,7 +369,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -406,9 +394,7 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void mapBizEventToViewModCart1False() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
     	
         BizEvent bizEvent = BizEvent.builder()
@@ -432,7 +418,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         this.checkGeneratedViewResult(result);
 
@@ -468,9 +454,7 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void mapBizEventToViewModCart1True() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
     	
         BizEvent bizEvent = BizEvent.builder()
@@ -494,7 +478,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         this.checkGeneratedViewResult(result);
 
@@ -530,14 +514,12 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void mapBizEventToViewModCart1TrueByJSONFile() throws BizEventToViewConstraintViolationException, IOException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-
-    	Map<String, Object> properties = new HashMap<>(); 
+    	Map<String, Object> properties = new HashMap<>();
     	properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
 
     	BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEventModCart1.json", BizEvent.class);
 
-    	BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+    	BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
 
     	assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
@@ -559,8 +541,6 @@ class BizEventToViewServiceImplTest {
     @ParameterizedTest
     @ValueSource(strings = {"CHECKOUT", "CHECKOUT_CART"})
     void mapBizEventToView_CheckoutUserNotRegistered_PayerViewShouldNotBeCreated(String clientId) throws BizEventToViewConstraintViolationException {
-        Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-
         Map<String, Object> properties = new HashMap<>();
         properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
 
@@ -586,7 +566,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -615,8 +595,6 @@ class BizEventToViewServiceImplTest {
     @ParameterizedTest
     @ValueSource(strings = {"CHECKOUT", "CHECKOUT_CART"})
     void mapBizEventToView_CheckoutUserRegistered_PayerViewShouldBeCreated(String clientId) throws BizEventToViewConstraintViolationException {
-        Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-
         Map<String, Object> properties = new HashMap<>();
         properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
 
@@ -642,7 +620,7 @@ class BizEventToViewServiceImplTest {
                 .properties(properties)
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNotNull(result);
         assertNotNull(result.getUserViewList());
@@ -682,13 +660,11 @@ class BizEventToViewServiceImplTest {
 
     @Test
     void mapBizEventToViewFailNoDebtorAndUser() throws BizEventToViewConstraintViolationException {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
                 .build();
 
-        BizEventToViewResult result = sut.mapBizEventToView(logger, bizEvent);
+        BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
 
         assertNull(result);
     }
@@ -696,8 +672,6 @@ class BizEventToViewServiceImplTest {
     
     @Test
     void mapBizEventToViewValidationFail() {
-    	Logger logger = Logger.getLogger("BizEventToViewService-test-logger");
-        
         // event without mandatory psp value
         BizEvent bizEvent = BizEvent.builder()
                 .id("biz-id")
@@ -718,7 +692,7 @@ class BizEventToViewServiceImplTest {
                         .build())
                 .build();
 
-        assertThrows(BizEventToViewConstraintViolationException.class, () -> sut.mapBizEventToView(logger,bizEvent));
+        assertThrows(BizEventToViewConstraintViolationException.class, () -> sut.mapBizEventToView(bizEvent));
     }
 
     @Test

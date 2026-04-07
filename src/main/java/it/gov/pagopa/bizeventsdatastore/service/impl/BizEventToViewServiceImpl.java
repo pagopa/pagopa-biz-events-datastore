@@ -29,7 +29,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.logging.Logger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -66,10 +65,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
      * @throws BizEventToViewConstraintViolationException
      */
     @Override
-    public BizEventToViewResult mapBizEventToView(
-            Logger logger,
-            BizEvent bizEvent
-    ) throws BizEventToViewConstraintViolationException {
+    public BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws BizEventToViewConstraintViolationException {
         UserDetail debtor = getDebtor(bizEvent.getDebtor());
         UserDetail payer = getPayer(bizEvent.getTransactionDetails());
         boolean sameDebtorAndPayer = false;
@@ -103,7 +99,7 @@ public class BizEventToViewServiceImpl implements BizEventToViewService {
                 .build();
 
 
-        BizEventsViewValidator.validate(logger, result, bizEvent);
+        BizEventsViewValidator.validate(result, bizEvent);
 
         return result;
     }

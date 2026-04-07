@@ -84,7 +84,7 @@ class BizEventEnrichmentTest {
 		when(context.getRetryContext()).thenReturn(retryContext);
 		when(retryContext.getRetrycount()).thenReturn(5);
 		BizEventToViewResult viewResult = buildBizEventToViewResult();
-		when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenReturn(viewResult);
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);

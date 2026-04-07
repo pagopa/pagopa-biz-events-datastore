@@ -73,7 +73,7 @@ class BizEventToViewDataStoreTimerTriggerTest {
 		when(context.getLogger()).thenReturn(logger);
 		
 		BizEventToViewResult viewResult = buildBizEventToViewResult();
-        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenReturn(viewResult);
+        when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
@@ -93,7 +93,7 @@ class BizEventToViewDataStoreTimerTriggerTest {
 		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
 		when(context.getLogger()).thenReturn(logger);
 		
-        when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenThrow(BizEventToViewConstraintViolationException.class);
+        when(bizEventToViewService.mapBizEventToView(any())).thenThrow(BizEventToViewConstraintViolationException.class);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);

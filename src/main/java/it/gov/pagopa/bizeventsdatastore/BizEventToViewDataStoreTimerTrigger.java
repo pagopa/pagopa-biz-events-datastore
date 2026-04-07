@@ -131,7 +131,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 			List<BizEventsViewUser> userViewToInsert, List<BizEventsViewGeneral> generalViewToInsert,
 			List<BizEventsViewCart> cartViewToInsert, BizEvent be) {
 		try {
-			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
+			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
 			if (bizEventToViewResult != null) {
 				be.setEventStatus(StatusType.INGESTED);
 				userViewToInsert.addAll(bizEventToViewResult.getUserViewList());

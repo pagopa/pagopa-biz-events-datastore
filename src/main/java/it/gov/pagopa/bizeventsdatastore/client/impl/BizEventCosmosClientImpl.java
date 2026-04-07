@@ -5,15 +5,19 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.CosmosQueryRequestOptions;
-import com.azure.cosmos.util.CosmosPagedIterable;
+import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.CosmosItemResponse;
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 
+
 /**
- * Client for the CosmosDB database
+ * {@inheritDoc}
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
 
@@ -21,6 +25,9 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
 
     private final String databaseId = System.getenv("COSMOS_DB_NAME");
     private final String containerId = System.getenv("COSMOS_DB_CONTAINER_NAME");
+    private final String viewUserContainerId = System.getenv("COSMOS_DB_VIEW_USER_CONTAINER_NAME");
+    private final String viewGeneralContainerId = System.getenv("COSMOS_DB_VIEW_GENERAL_CONTAINER_NAME");
+    private final String viewCartContainerId = System.getenv("COSMOS_DB_VIEW_CART_CONTAINER_NAME");
 
     private final CosmosClient cosmosClient;
 
@@ -53,16 +60,43 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        //Build query
-        String query = String.format("SELECT * FROM c WHERE c.eventStatus IN ('%s','%s') AND c.id = '%s'", StatusType.DONE, StatusType.INGESTED, eventId);
-
-        //Query the container
-        CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
-                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class);
-
-        if (queryResponse.iterator().hasNext()) {
-            return queryResponse.iterator().next();
+        try {
+            return cosmosContainer.readItem(eventId, new PartitionKey(eventId), BizEvent.class).getItem();
+        } catch (CosmosException e) {
+            throw new BizEventNotFoundException("Document not found in the defined container", e);
         }
-        throw new BizEventNotFoundException("Document not found in the defined container");
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CosmosItemResponse<BizEventsViewUser> upsertBizEventViewUser(BizEventsViewUser viewUser) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(viewUserContainerId);
+
+        return cosmosContainer.upsertItem(viewUser);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CosmosItemResponse<BizEventsViewGeneral> upsertBizEventViewGeneral(BizEventsViewGeneral viewGeneral) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(viewGeneralContainerId);
+
+        return cosmosContainer.upsertItem(viewGeneral);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public CosmosItemResponse<BizEventsViewCart> upsertBizEventViewCart(BizEventsViewCart viewCart) {
+        CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
+        CosmosContainer cosmosContainer = cosmosDatabase.getContainer(viewCartContainerId);
+
+        return cosmosContainer.upsertItem(viewCart);
     }
 }

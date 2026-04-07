@@ -11,8 +11,6 @@ import com.microsoft.azure.functions.annotation.BindingName;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.FunctionName;
 import com.microsoft.azure.functions.annotation.HttpTrigger;
-import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
-import it.gov.pagopa.bizeventsdatastore.client.impl.BizEventCosmosClientImpl;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
@@ -21,7 +19,9 @@ import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolat
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.model.ProblemJson;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventCosmosServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
 
 import java.time.LocalDateTime;
@@ -35,16 +35,16 @@ import java.util.logging.Logger;
  */
 public class BizEventToView {
 
-    private final BizEventCosmosClient bizEventCosmosClient;
+    private final BizEventCosmosService bizEventCosmosService;
     private final BizEventToViewService bizEventToViewService;
 
     public BizEventToView() {
-        this.bizEventCosmosClient = BizEventCosmosClientImpl.getInstance();
+        this.bizEventCosmosService = new BizEventCosmosServiceImpl();
         this.bizEventToViewService = new BizEventToViewServiceImpl();
     }
 
-    BizEventToView(BizEventCosmosClient bizEventCosmosClient, BizEventToViewService bizEventToViewService) {
-        this.bizEventCosmosClient = bizEventCosmosClient;
+    BizEventToView(BizEventCosmosService bizEventCosmosService, BizEventToViewService bizEventToViewService) {
+        this.bizEventCosmosService = bizEventCosmosService;
         this.bizEventToViewService = bizEventToViewService;
     }
 
@@ -97,7 +97,7 @@ public class BizEventToView {
 
         BizEvent bizEvent;
         try {
-            bizEvent = this.bizEventCosmosClient.getBizEventDocument(bizEventId);
+            bizEvent = this.bizEventCosmosService.getBizEvent(bizEventId);
         } catch (BizEventNotFoundException e) {
             String msg = String.format("Unable to retrieve the biz-event with id %s", bizEventId);
             logger.log(Level.SEVERE, msg, e);
@@ -124,7 +124,7 @@ public class BizEventToView {
 
         BizEventToViewResult bizEventToViewResult;
         try {
-            bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, bizEvent);
+            bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(bizEvent);
         } catch (BizEventToViewConstraintViolationException e) {
             String msg = String.format("Unable to map the biz-event with id %s to the views: %s", bizEventId, e.getErrorMessages());
             logger.log(Level.SEVERE, msg, e);

@@ -4,22 +4,24 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import it.gov.pagopa.bizeventsdatastore.BizEventToViewMassive;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BizEventsViewValidator {
 
-    private BizEventsViewValidator() {
-    }
+    private static final Logger logger = LoggerFactory.getLogger(BizEventsViewValidator.class);
+
+    private BizEventsViewValidator() {}
 
     public static void validate(
-            Logger logger,
             BizEventToViewResult bizEventToViewResult,
             BizEvent bizEvent
     ) throws BizEventToViewConstraintViolationException {
@@ -39,7 +41,7 @@ public class BizEventsViewValidator {
                         v.getMessageTemplate()
                 );
                 errMsgList.add(message);
-                logger.log(Level.SEVERE, message);
+                logger.error(message);
             }
 
             throw new BizEventToViewConstraintViolationException("Error during BizEventToView validation,  [BizEvent id=" + bizEvent.getId() + "]", errMsgList);

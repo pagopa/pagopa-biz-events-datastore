@@ -131,7 +131,7 @@ public class BizEventEnrichment {
 					// set the event associated properties
 					be.setProperties(properties[i]);
 
-					generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, logger, be);
+					generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
 				}
 			}
 			else {
@@ -180,11 +180,14 @@ public class BizEventEnrichment {
 		telemetryClient.trackEvent(event);
 	}
 
-	private void generateBizEventViews(List<BizEventsViewUser> userViewToInsert,
-			List<BizEventsViewGeneral> generalViewToInsert, List<BizEventsViewCart> cartViewToInsert, Logger logger,
-			BizEvent be) throws BizEventToViewConstraintViolationException {
+	private void generateBizEventViews(
+			List<BizEventsViewUser> userViewToInsert,
+			List<BizEventsViewGeneral> generalViewToInsert,
+			List<BizEventsViewCart> cartViewToInsert,
+			BizEvent be
+	) throws BizEventToViewConstraintViolationException {
 		if (enableTransactionListView) {
-			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
+			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
 			if (bizEventToViewResult != null) {
 				userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
 				generalViewToInsert.add(bizEventToViewResult.getGeneralView());
