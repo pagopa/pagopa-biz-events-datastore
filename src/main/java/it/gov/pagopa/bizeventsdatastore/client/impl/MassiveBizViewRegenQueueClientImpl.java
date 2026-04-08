@@ -16,13 +16,13 @@ public class MassiveBizViewRegenQueueClientImpl implements MassiveBizViewRegenQu
 
     private static MassiveBizViewRegenQueueClientImpl instance;
 
-    private final int queueDelay = Integer.parseInt(System.getenv().getOrDefault("MASSIVE_VIEW_RENG_QUEUE_DELAY", "1"));
+    private final int queueDelay = Integer.parseInt(System.getenv().getOrDefault("MASSIVE_VIEW_REGEN_QUEUE_DELAY", "1"));
 
     private final QueueClient queueClient;
 
     private MassiveBizViewRegenQueueClientImpl() {
-        String receiptQueueConnString = System.getenv("MASSIVE_VIEW_RENG_QUEUE_CONN_STRING");
-        String receiptQueueTopic = System.getenv("MASSIVE_VIEW_RENG_QUEUE_TOPIC");
+        String receiptQueueConnString = System.getenv("AzureWebJobsStorage");
+        String receiptQueueTopic = System.getenv("MASSIVE_VIEW_REGEN_QUEUE_TOPIC");
 
         this.queueClient = new QueueClientBuilder()
                 .connectionString(receiptQueueConnString)
