@@ -48,7 +48,7 @@ public class CSVIngestor {
     public HttpResponseMessage run(
             @HttpTrigger(name = "BizEventToViewMassiveFunctionTrigger",
                     methods = {HttpMethod.POST},
-                    route = "biz-events/create-views",
+                    route = "biz-events/massive-create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
             HttpRequestMessage<Optional<InputStream>> request,
             final ExecutionContext context
