@@ -69,6 +69,12 @@
 			<version>${azure.cosmos.version}</version>
 		</dependency>
 
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-queue</artifactId>
+			<version>12.17.1</version>
+		</dependency>
+
 		<!-- Azure Storage Blob SDK -->
 		<dependency>
 			<groupId>com.azure</groupId>
