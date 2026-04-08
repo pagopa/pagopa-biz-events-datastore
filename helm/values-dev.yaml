@@ -159,7 +159,9 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToView.Disabled: "false"
+    AzureWebJobs.BizEventToView.Disabled: "true"
+    AzureWebJobs.BizEventToViewMassive.Disabled: "true"
+    AzureWebJobs.CSVIngestor.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
@@ -168,7 +170,7 @@ pagopa-biz-events-view:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /notused-biz-view/(.*)
+    path: /pagopa-biz-events-datastore-view/(.*)
   resources:
     !!merge <<: *resources
   envConfig:
@@ -179,7 +181,9 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToView.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "false"
+    AzureWebJobs.BizEventToViewMassive.Disabled: "false"
+    AzureWebJobs.CSVIngestor.Disabled: "false"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-view-d-azurewebjobsstorage'

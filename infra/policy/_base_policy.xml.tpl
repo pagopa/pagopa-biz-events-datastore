@@ -1,7 +1,7 @@
 <policies>
   <inbound>
     <base/>
-    <set-backend-service base-url="https://${hostname}/pagopa-biz-events-datastore-service"/>
+    <set-backend-service base-url="https://${hostname}/pagopa-biz-events-datastore-view"/>
   </inbound>
   <outbound>
     <base/>
