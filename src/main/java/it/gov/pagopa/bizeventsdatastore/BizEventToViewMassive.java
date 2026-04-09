@@ -17,12 +17,10 @@ import it.gov.pagopa.bizeventsdatastore.service.impl.MassiveBizViewRegenQueueSer
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
+import java.io.StringReader;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Optional;
 
 /**
  * Azure Functions with Azure Http trigger.
@@ -50,12 +48,12 @@ public class BizEventToViewMassive {
                     methods = {HttpMethod.POST},
                     route = "biz-events/massive-create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
-            HttpRequestMessage<Optional<byte[]>> request,
+            HttpRequestMessage<String> request,
             final ExecutionContext context
     ) {
 
-        Optional<byte[]> body = request.getBody();
-        if (body.isEmpty()) {
+        String body = request.getBody();
+        if (body == null || body.isBlank()) {
             return request
                     .createResponseBuilder(HttpStatus.BAD_REQUEST)
                     .body(ProblemJson.builder()
@@ -70,7 +68,7 @@ public class BizEventToViewMassive {
         int skipped = 0;
         List<String> failedIds = new ArrayList<>();
 
-        try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(new ByteArrayInputStream(body.get()))).build()) {
+        try (CSVReader reader = new CSVReaderBuilder(new StringReader(body)).build()) {
             String[] line;
             while ((line = reader.readNext()) != null) {
                 processed++;

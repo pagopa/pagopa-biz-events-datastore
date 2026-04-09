@@ -53,6 +53,5 @@ public class MassiveBizViewRegenQueueClientImpl implements MassiveBizViewRegenQu
                 null,
                 null
         );
-
     }
 }

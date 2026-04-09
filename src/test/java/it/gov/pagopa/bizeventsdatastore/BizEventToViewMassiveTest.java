@@ -17,7 +17,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
 import java.io.IOException;
-import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,7 +36,7 @@ class BizEventToViewMassiveTest {
     private MassiveBizViewRegenQueueService queueServiceMock;
 
     @Mock
-    private HttpRequestMessage<Optional<byte[]>> request;
+    private HttpRequestMessage<String> request;
 
     @Mock
     private ExecutionContext executionContextMock;
@@ -56,7 +55,7 @@ class BizEventToViewMassiveTest {
     @Test
     @SneakyThrows
     void runOK() {
-        when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids.csv"));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true);
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
@@ -71,7 +70,7 @@ class BizEventToViewMassiveTest {
     @Test
     @SneakyThrows
     void runPartialOK_SomeErrorOnQueue() {
-        when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids.csv"));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true, false, true, false);
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
@@ -88,7 +87,7 @@ class BizEventToViewMassiveTest {
 
     @Test
     void runKO_NoBody() {
-        when(request.getBody()).thenReturn(Optional.empty());
+        when(request.getBody()).thenReturn(null);
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
 
@@ -105,7 +104,7 @@ class BizEventToViewMassiveTest {
     @Test
     @SneakyThrows
     void runKO_InvalidFile() {
-        when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/malformed.csv")));
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/malformed.csv"));
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
 
@@ -122,7 +121,7 @@ class BizEventToViewMassiveTest {
     @Test
     @SneakyThrows
     void runPartialOK_InvalidLines() {
-        when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids-with-invalid-line.csv")));
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids-with-invalid-line.csv"));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true);
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
@@ -140,7 +139,7 @@ class BizEventToViewMassiveTest {
     @Test
     @SneakyThrows
     void runKO_AllErrorOnQueue() {
-        when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids.csv"));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(false);
 
         HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
@@ -155,7 +154,7 @@ class BizEventToViewMassiveTest {
         verify(queueServiceMock, times(4)).sendBizEventIdToQueue(anyString());
     }
 
-    private static byte[] loadCsv(String fileName) throws IOException {
-        return BizEventToViewMassiveTest.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
+    private static String loadCsv(String fileName) throws IOException {
+        return new String(BizEventToViewMassiveTest.class.getClassLoader().getResourceAsStream(fileName).readAllBytes());
     }
 }
