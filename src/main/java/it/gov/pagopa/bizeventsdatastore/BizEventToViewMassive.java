@@ -17,8 +17,8 @@ import it.gov.pagopa.bizeventsdatastore.service.impl.MassiveBizViewRegenQueueSer
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.ByteArrayInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.List;
@@ -50,11 +50,11 @@ public class BizEventToViewMassive {
                     methods = {HttpMethod.POST},
                     route = "biz-events/massive-create-view",
                     authLevel = AuthorizationLevel.ANONYMOUS)
-            HttpRequestMessage<Optional<InputStream>> request,
+            HttpRequestMessage<Optional<byte[]>> request,
             final ExecutionContext context
     ) {
 
-        Optional<InputStream> body = request.getBody();
+        Optional<byte[]> body = request.getBody();
         if (body.isEmpty()) {
             return request
                     .createResponseBuilder(HttpStatus.BAD_REQUEST)
@@ -70,7 +70,7 @@ public class BizEventToViewMassive {
         int skipped = 0;
         List<String> failedIds = new ArrayList<>();
 
-        try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(body.get())).build()) {
+        try (CSVReader reader = new CSVReaderBuilder(new InputStreamReader(new ByteArrayInputStream(body.get()))).build()) {
             String[] line;
             while ((line = reader.readNext()) != null) {
                 processed++;

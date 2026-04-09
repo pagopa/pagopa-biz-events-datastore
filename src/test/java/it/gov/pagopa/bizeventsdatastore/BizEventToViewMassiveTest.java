@@ -7,6 +7,7 @@ import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.bizeventsdatastore.model.ProblemJson;
 import it.gov.pagopa.bizeventsdatastore.service.MassiveBizViewRegenQueueService;
 import it.gov.pagopa.bizeventsdatastore.utils.HttpResponseMessageMock;
+import lombok.SneakyThrows;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.stubbing.Answer;
 
-import java.io.InputStream;
+import java.io.IOException;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
@@ -36,7 +37,7 @@ class BizEventToViewMassiveTest {
     private MassiveBizViewRegenQueueService queueServiceMock;
 
     @Mock
-    private HttpRequestMessage<Optional<InputStream>> request;
+    private HttpRequestMessage<Optional<byte[]>> request;
 
     @Mock
     private ExecutionContext executionContextMock;
@@ -53,6 +54,7 @@ class BizEventToViewMassiveTest {
     }
 
     @Test
+    @SneakyThrows
     void runOK() {
         when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true);
@@ -67,6 +69,7 @@ class BizEventToViewMassiveTest {
     }
 
     @Test
+    @SneakyThrows
     void runPartialOK_SomeErrorOnQueue() {
         when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true, false, true, false);
@@ -100,6 +103,7 @@ class BizEventToViewMassiveTest {
     }
 
     @Test
+    @SneakyThrows
     void runKO_InvalidFile() {
         when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/malformed.csv")));
 
@@ -116,6 +120,7 @@ class BizEventToViewMassiveTest {
     }
 
     @Test
+    @SneakyThrows
     void runPartialOK_InvalidLines() {
         when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids-with-invalid-line.csv")));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(true);
@@ -133,6 +138,7 @@ class BizEventToViewMassiveTest {
     }
 
     @Test
+    @SneakyThrows
     void runKO_AllErrorOnQueue() {
         when(request.getBody()).thenReturn(Optional.of(loadCsv("massive-create-view/biz-event-ids.csv")));
         when(queueServiceMock.sendBizEventIdToQueue(anyString())).thenReturn(false);
@@ -149,7 +155,7 @@ class BizEventToViewMassiveTest {
         verify(queueServiceMock, times(4)).sendBizEventIdToQueue(anyString());
     }
 
-    private static InputStream loadCsv(String fileName) {
-        return BizEventToViewMassiveTest.class.getClassLoader().getResourceAsStream(fileName);
+    private static byte[] loadCsv(String fileName) throws IOException {
+        return BizEventToViewMassiveTest.class.getClassLoader().getResourceAsStream(fileName).readAllBytes();
     }
 }
