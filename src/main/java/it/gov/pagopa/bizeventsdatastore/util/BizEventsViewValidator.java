@@ -3,9 +3,7 @@ package it.gov.pagopa.bizeventsdatastore.util;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.logging.Level;
 
-import it.gov.pagopa.bizeventsdatastore.BizEventToViewMassive;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
