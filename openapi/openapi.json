@@ -4,7 +4,7 @@
     "title": "Biz-Events Datastore API",
     "description": "Biz-Events Datastore utils API.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.12.4-3-PIDM-1752-massive-biz-event-to-view-recovery"
+    "version": "0.12.4-4-PIDM-1752-massive-biz-event-to-view-recovery"
   },
   "servers": [
     {
