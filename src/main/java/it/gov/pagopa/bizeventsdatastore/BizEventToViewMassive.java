@@ -68,7 +68,7 @@ public class BizEventToViewMassive {
         int skipped = 0;
         List<String> failedIds = new ArrayList<>();
 
-        try (CSVReader reader = new CSVReaderBuilder(new StringReader(body)).build()) {
+        try (CSVReader reader = new CSVReaderBuilder(new StringReader(body)).withSkipLines(1).build()) {
             String[] line;
             while ((line = reader.readNext()) != null) {
                 processed++;
