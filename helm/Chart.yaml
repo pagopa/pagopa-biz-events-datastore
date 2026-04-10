@@ -2,8 +2,8 @@ apiVersion: v2
 name: pagopa-biz-events-datastore
 description: Microservice to store biz events to CosmosDB
 type: application
-version: 0.139.0
-appVersion: 0.12.4-4-PIDM-1752-massive-biz-event-to-view-recovery
+version: 0.140.0
+appVersion: 0.12.4-5-PIDM-1752-massive-biz-event-to-view-recovery
 dependencies:
   - name: microservice-chart
     version: 8.0.2
