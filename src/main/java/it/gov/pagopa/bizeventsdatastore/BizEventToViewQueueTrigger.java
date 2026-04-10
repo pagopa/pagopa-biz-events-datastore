@@ -20,7 +20,6 @@ import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
 import java.util.List;
 
 /**
@@ -52,7 +51,7 @@ public class BizEventToViewQueueTrigger {
                     name = "QueueMassiveBizToViewRegen",
                     queueName = "%MASSIVE_VIEW_REGEN_QUEUE_TOPIC%",
                     connection = "AzureWebJobsStorage")
-            List<String> bizEventIds,
+            String bizEventId,
             @CosmosDBOutput(
                     name = "BizEventUserView",
                     databaseName = "db",
@@ -64,51 +63,33 @@ public class BizEventToViewQueueTrigger {
                     databaseName = "db",
                     containerName = "biz-events-view-general",
                     connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
+            OutputBinding<BizEventsViewGeneral> bizEventGeneralView,
             @CosmosDBOutput(
                     name = "BizEventCartView",
                     databaseName = "db",
                     containerName = "biz-events-view-cart",
                     connection = "COSMOS_CONN_STRING")
-            OutputBinding<List<BizEventsViewCart>> bizEventCartView,
+            OutputBinding<BizEventsViewCart> bizEventCartView,
             final ExecutionContext context
     ) {
-        logger.debug("Received a batch of {} biz event ids", bizEventIds.size());
+        logger.debug("Received message for biz event id {}", bizEventId);
+        try {
+            BizEvent bizEvent = this.bizEventCosmosService.getBizEvent(bizEventId);
+            BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(bizEvent);
 
-        List<BizEventsViewUser> userViews = new ArrayList<>();
-        List<BizEventsViewGeneral> generalViews = new ArrayList<>();
-        List<BizEventsViewCart> cartViews = new ArrayList<>();
-
-        for (String bizEventId : bizEventIds) {
-            logger.debug("Processing biz event id {}", bizEventId);
-            try {
-                BizEvent bizEvent = this.bizEventCosmosService.getBizEvent(bizEventId);
-                BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(bizEvent);
-
-                if (bizEventToViewResult == null) {
-                    throw new BizEventNotValidForViewGenerationException("Biz event not valid for view generation");
-                }
-
-                userViews.addAll(bizEventToViewResult.getUserViewList());
-                generalViews.add(bizEventToViewResult.getGeneralView());
-                cartViews.add(bizEventToViewResult.getCartView());
-            } catch (BizEventNotFoundException e) {
-                logger.error("Biz event with id {} not found", bizEventId, e);
-            } catch (BizEventNotValidForViewGenerationException e) {
-                logger.error("Unable to create the biz-event view for biz event with id {}: bot debtor and user section are invalid", bizEventId, e);
-            } catch (BizEventToViewConstraintViolationException e) {
-                logger.error("Generated biz event view for biz event with id {} is not valid", bizEventId, e);
+            if (bizEventToViewResult == null) {
+                throw new BizEventNotValidForViewGenerationException("Biz event not valid for view generation");
             }
-        }
 
-        if (!userViews.isEmpty()) {
-            bizEventUserView.setValue(userViews);
-        }
-        if (!generalViews.isEmpty()) {
-            bizEventGeneralView.setValue(generalViews);
-        }
-        if (!cartViews.isEmpty()) {
-            bizEventCartView.setValue(cartViews);
+            bizEventUserView.setValue(bizEventToViewResult.getUserViewList());
+            bizEventGeneralView.setValue(bizEventToViewResult.getGeneralView());
+            bizEventCartView.setValue(bizEventToViewResult.getCartView());
+        } catch (BizEventNotFoundException e) {
+            logger.error("Biz event with id {} not found", bizEventId, e);
+        } catch (BizEventNotValidForViewGenerationException e) {
+            logger.error("Unable to create the biz-event view for biz event with id {}: bot debtor and user section are invalid", bizEventId, e);
+        } catch (BizEventToViewConstraintViolationException e) {
+            logger.error("Generated biz event view for biz event with id {} is not valid", bizEventId, e);
         }
     }
 }

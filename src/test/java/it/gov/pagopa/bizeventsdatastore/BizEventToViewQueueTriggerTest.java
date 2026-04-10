@@ -36,7 +36,6 @@ import static org.mockito.Mockito.when;
 class BizEventToViewQueueTriggerTest {
 
     private static final String BIZ_EVENT_ID = "valid_biz_event_id";
-    private static final String BIZ_EVENT_ID_2 = "valid_biz_event_id_2";
     private static final String VIEW_USER_ID = "viewUserId";
     private static final String VIEW_GENERAL_ID = "viewGeneralId";
     private static final String VIEW_CART_ID = "viewCartId";
@@ -54,19 +53,19 @@ class BizEventToViewQueueTriggerTest {
     private OutputBinding<List<BizEventsViewUser>> viewUserOutputBinding;
 
     @Spy
-    private OutputBinding<List<BizEventsViewGeneral>> viewGeneralOutputBinding;
+    private OutputBinding<BizEventsViewGeneral> viewGeneralOutputBinding;
 
     @Spy
-    private OutputBinding<List<BizEventsViewCart>> viewCartOutputBinding;
+    private OutputBinding<BizEventsViewCart> viewCartOutputBinding;
 
     @Captor
     private ArgumentCaptor<List<BizEventsViewUser>> viewUserCaptor;
 
     @Captor
-    private ArgumentCaptor<List<BizEventsViewGeneral>> viewGeneralCaptor;
+    private ArgumentCaptor<BizEventsViewGeneral> viewGeneralCaptor;
 
     @Captor
-    private ArgumentCaptor<List<BizEventsViewCart>> viewCartCaptor;
+    private ArgumentCaptor<BizEventsViewCart> viewCartCaptor;
 
     @InjectMocks
     private BizEventToViewQueueTrigger sut;
@@ -75,46 +74,11 @@ class BizEventToViewQueueTriggerTest {
     @SneakyThrows
     void runOK() {
         BizEvent bizEvent = new BizEvent();
-        BizEvent bizEvent2 = new BizEvent();
         when(bizEventCosmosServiceMock.getBizEvent(BIZ_EVENT_ID)).thenReturn(bizEvent);
-        when(bizEventCosmosServiceMock.getBizEvent(BIZ_EVENT_ID_2)).thenReturn(bizEvent2);
         when(bizEventToViewService.mapBizEventToView(bizEvent)).thenReturn(buildBizEventToViewResult());
-        when(bizEventToViewService.mapBizEventToView(bizEvent2)).thenReturn(buildBizEventToViewResult());
 
         assertDoesNotThrow(() -> sut.run(
-                List.of(BIZ_EVENT_ID, BIZ_EVENT_ID_2),
-                viewUserOutputBinding,
-                viewGeneralOutputBinding,
-                viewCartOutputBinding,
-                executionContextMock)
-        );
-
-        verify(viewUserOutputBinding).setValue(viewUserCaptor.capture());
-        List<BizEventsViewUser> viewUsers = viewUserCaptor.getValue();
-        assertNotNull(viewUsers);
-        assertEquals(2, viewUsers.size());
-        verify(viewGeneralOutputBinding).setValue(viewGeneralCaptor.capture());
-        List<BizEventsViewGeneral> viewGenerals = viewGeneralCaptor.getValue();
-        assertNotNull(viewGenerals);
-        assertEquals(2, viewGenerals.size());
-        verify(viewCartOutputBinding).setValue(viewCartCaptor.capture());
-        List<BizEventsViewCart> viewCarts = viewCartCaptor.getValue();
-        assertNotNull(viewCarts);
-        assertEquals(2, viewCarts.size());
-    }
-
-    @Test
-    @SneakyThrows
-    void runPartialOK() {
-        BizEvent bizEvent = new BizEvent();
-        BizEvent bizEvent2 = new BizEvent();
-        when(bizEventCosmosServiceMock.getBizEvent(BIZ_EVENT_ID)).thenReturn(bizEvent);
-        when(bizEventCosmosServiceMock.getBizEvent(BIZ_EVENT_ID_2)).thenReturn(bizEvent2);
-        when(bizEventToViewService.mapBizEventToView(bizEvent)).thenReturn(buildBizEventToViewResult());
-        when(bizEventToViewService.mapBizEventToView(bizEvent2)).thenReturn(null);
-
-        assertDoesNotThrow(() -> sut.run(
-                List.of(BIZ_EVENT_ID, BIZ_EVENT_ID_2),
+                BIZ_EVENT_ID,
                 viewUserOutputBinding,
                 viewGeneralOutputBinding,
                 viewCartOutputBinding,
@@ -126,13 +90,9 @@ class BizEventToViewQueueTriggerTest {
         assertNotNull(viewUsers);
         assertEquals(1, viewUsers.size());
         verify(viewGeneralOutputBinding).setValue(viewGeneralCaptor.capture());
-        List<BizEventsViewGeneral> viewGenerals = viewGeneralCaptor.getValue();
-        assertNotNull(viewGenerals);
-        assertEquals(1, viewGenerals.size());
+        assertNotNull(viewGeneralCaptor.getValue());
         verify(viewCartOutputBinding).setValue(viewCartCaptor.capture());
-        List<BizEventsViewCart> viewCarts = viewCartCaptor.getValue();
-        assertNotNull(viewCarts);
-        assertEquals(1, viewCarts.size());
+        assertNotNull(viewCartCaptor.getValue());
     }
 
     @Test
@@ -141,7 +101,7 @@ class BizEventToViewQueueTriggerTest {
         when(bizEventCosmosServiceMock.getBizEvent(BIZ_EVENT_ID)).thenThrow(BizEventNotFoundException.class);
 
         assertDoesNotThrow(() -> sut.run(
-                List.of(BIZ_EVENT_ID),
+                BIZ_EVENT_ID,
                 viewUserOutputBinding,
                 viewGeneralOutputBinding,
                 viewCartOutputBinding,
@@ -162,7 +122,7 @@ class BizEventToViewQueueTriggerTest {
         when(bizEventToViewService.mapBizEventToView(bizEvent)).thenThrow(BizEventToViewConstraintViolationException.class);
 
         assertDoesNotThrow(() -> sut.run(
-                List.of(BIZ_EVENT_ID),
+                BIZ_EVENT_ID,
                 viewUserOutputBinding,
                 viewGeneralOutputBinding,
                 viewCartOutputBinding,
@@ -182,7 +142,7 @@ class BizEventToViewQueueTriggerTest {
         when(bizEventToViewService.mapBizEventToView(bizEvent)).thenReturn(null);
 
         assertDoesNotThrow(() -> sut.run(
-                List.of(BIZ_EVENT_ID),
+                BIZ_EVENT_ID,
                 viewUserOutputBinding,
                 viewGeneralOutputBinding,
                 viewCartOutputBinding,
