@@ -20,18 +20,17 @@
       "maxPollingInterval": "00:00:02",
       "visibilityTimeout": "00:00:10",
       "batchSize": 32,
-      "maxDequeueCount": 5
+      "maxDequeueCount": 5,
+      "messageEncoding": "none"
     }
   },
   "logging": {
     "fileLoggingMode": "debugOnly",
     "logLevel": {
-      "default": "None",
-      "Host.Results": "Error",
       "Function.BizEventEnrichmentProcessor": "Information",
       "Function.EventHubBizEventProcessor": "Information",
       "Function.BizEventToView": "Information",
-      "Host.Aggregator": "Error"
+      "Function.BizEventToViewQueueTrigger": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {
