@@ -1,7 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.service;
 
-import java.util.logging.Logger;
-
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
@@ -25,5 +23,5 @@ public interface BizEventToViewService {
      * @return a {@link BizEventToViewResult} that hold the biz-event views
      * @throws BizEventToViewConstraintViolationException when BizEventToView constraint validation fail
      */
-    BizEventToViewResult mapBizEventToView(Logger logger, BizEvent bizEvent) throws BizEventToViewConstraintViolationException;
+    BizEventToViewResult mapBizEventToView(BizEvent bizEvent) throws BizEventToViewConstraintViolationException;
 }
