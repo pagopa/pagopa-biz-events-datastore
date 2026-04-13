@@ -118,7 +118,6 @@ microservice-chart: &microservice-chart
     # AzureWebJobsStorage: 'bizevent-d-azurewebjobsstorage'
     REDIS_PWD: 'redis-password'
     REDIS_HOST: 'redis-hostname'
-    PDV_TOKENIZER_SUBSCRIPTION_KEY: "tokenizer-api-key"
   keyvault:
     name: "pagopa-d-bizevents-kv"
     tenantId: "7788edaf-0346-4068-9d79-c868aed15b3d"
