@@ -84,6 +84,8 @@ microservice-chart: &microservice-chart
           value: "80"
   fileConfig: {}
   envConfig: &envConfig
+    ENV: "uat"
+    LOG_LEVEL: "INFO"
     ASPNETCORE_URLS: "http://*:8080"
     FUNCTIONS_SECRETS_PATH: "/tmp/secrets"
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
@@ -143,6 +145,7 @@ pagopa-biz-events-datastore:
     !!merge <<: *resources
   envConfig:
     !!merge <<: *envConfig
+    SERVICE_NAME: "pagopa-biz-events-datastore"
     AzureWebJobs.EventHubBizEventProcessor.Disabled: "false"
     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "true"
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
@@ -162,6 +165,7 @@ pagopa-biz-events-view:
     !!merge <<: *resources
   envConfig:
     !!merge <<: *envConfig
+    SERVICE_NAME: "pagopa-biz-events-datastore-view"
     WEBSITE_SITE_NAME: 'pagopabizeventsdatastoreview'
     AzureWebJobs.EventHubBizEventProcessor.Disabled: "true"
     AzureWebJobs.BizEventEnrichmentProcessor.Disabled: "false"
