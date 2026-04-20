@@ -20,12 +20,13 @@
   "logging": {
     "fileLoggingMode": "debugOnly",
     "logLevel": {
-      "default": "None",
-      "Host.Results": "Error",
-      "Function.BizEventEnrichmentProcessor": "Information",
       "Function.EventHubBizEventProcessor": "Information",
+      "Function.BizEventEnrichmentProcessor": "Information",
+      "Function.BizEventTimerTriggerProcessor": "Information",
+      "Function.BizEventToViewDataStoreTimerTriggerProcessor": "Information",
+      "Function.BizEventViewDataStoreUpdateTimerTriggerProcessor": "Information",
       "Function.BizEventToView": "Information",
-      "Host.Aggregator": "Error"
+      "Function.Info": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {

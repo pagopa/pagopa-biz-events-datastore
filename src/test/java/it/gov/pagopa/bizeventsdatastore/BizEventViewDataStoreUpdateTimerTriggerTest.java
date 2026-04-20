@@ -4,12 +4,10 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,11 +41,6 @@ class BizEventViewDataStoreUpdateTimerTriggerTest {
 	@SuppressWarnings("unchecked")
 	@Test
 	void runOK() throws IOException {
-
-		// precondition
-		Logger logger = Logger.getLogger("BizEventViewDataStoreUpdateTimerTrigger-test-logger");
-		when(context.getLogger()).thenReturn(logger);
-
 		List<BizEventsViewGeneral> bizEvtViewGeneralMsgList = new ArrayList<>();
 		BizEventsViewGeneral bizEventsViewGeneralMsg = TestUtil.readModelFromFile("biz-events-view/bizEventViewGeneral.json", BizEventsViewGeneral.class);
 		bizEvtViewGeneralMsgList.add (bizEventsViewGeneralMsg);

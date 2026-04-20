@@ -19,7 +19,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -70,21 +69,16 @@ class BizEventEnrichmentTest {
 	@Mock
 	private BizEventToViewService bizEventToViewService;
 	
-	
-
 	@SystemStub
 	private EnvironmentVariables environment = new EnvironmentVariables("ENABLE_TRANSACTION_LIST_VIEW", "true");
 
 
 	@Test
 	void runOk() throws BizEventToViewConstraintViolationException, IOException  {
-		// test precondition
-		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
-		when(context.getLogger()).thenReturn(logger);
 		when(context.getRetryContext()).thenReturn(retryContext);
 		when(retryContext.getRetrycount()).thenReturn(5);
 		BizEventToViewResult viewResult = buildBizEventToViewResult();
-		when(bizEventToViewService.mapBizEventToView(any(Logger.class), any())).thenReturn(viewResult);
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
@@ -110,9 +104,6 @@ class BizEventEnrichmentTest {
 	
 	@Test
 	void runKo_differentSize() throws BizEventToViewConstraintViolationException, IOException  {
-		// test precondition
-		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
-		when(context.getLogger()).thenReturn(logger);
 		when(context.getInvocationId()).thenReturn("123");
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
@@ -136,9 +127,6 @@ class BizEventEnrichmentTest {
 
 	@Test
 	void handleLastRetryTest()  {
-		// test precondition
-		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
-		when(context.getLogger()).thenReturn(logger);
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add (BizEvent.builder().id("123").build());
 		
@@ -155,10 +143,6 @@ class BizEventEnrichmentTest {
 
 	@Test
 	void runKo_genericException()  {
-		// test precondition
-		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
-		when(context.getLogger()).thenReturn(logger);
-
 		// incomplete BizEvent obj --> NullPointerException getPaymentInfo() is null
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
@@ -177,8 +161,6 @@ class BizEventEnrichmentTest {
 	@Test
 	void runKo_genericExceptionLastRetry() {
 		// test precondition
-		Logger logger = Logger.getLogger("BizEventEnrichment-test-logger");
-		when(context.getLogger()).thenReturn(logger);
 		when(context.getRetryContext()).thenReturn(retryContext);
 		// set to max retry value
 		when(retryContext.getRetrycount()).thenReturn(10);

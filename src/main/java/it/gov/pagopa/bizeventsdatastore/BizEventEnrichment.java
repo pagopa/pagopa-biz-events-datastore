@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
-import java.util.logging.Logger;
 
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
@@ -30,16 +29,19 @@ import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BizEventEnrichment {
+
+	private final Logger logger = LoggerFactory.getLogger(BizEventEnrichment.class);
 
 	private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
 	private static final int EBR_MAX_RETRY_COUNT = 10;
+	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
 
 	private final TelemetryClient telemetryClient = new TelemetryClient();
-
-	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
 
 	private final BizEventToViewService bizEventToViewService;
 
@@ -50,7 +52,7 @@ public class BizEventEnrichment {
 		this.bizEventDeadLetterService = new BizEventDeadLetterServiceImpl();
 	}
 
-	BizEventEnrichment(BizEventToViewService bizEventToViewService, 
+	BizEventEnrichment(BizEventToViewService bizEventToViewService,
 			BizEventDeadLetterService bizEventDeadLetterService) {
 		this.bizEventToViewService = bizEventToViewService;
 		this.bizEventDeadLetterService = bizEventDeadLetterService;
@@ -93,16 +95,14 @@ public class BizEventEnrichment {
 		List<BizEventsViewUser> userViewToInsert = new ArrayList<>();
 		List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
 		List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
-		Logger logger = context.getLogger();
 
-		String msg = String.format("BizEventEnrichment stat %s function - num events triggered %d", context.getInvocationId(),  items.size());
-		logger.info(msg);
+		logger.info("BizEventEnrichment stat {} function - num events triggered {}", context.getInvocationId(),  items.size());
 
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
 		String id = String.valueOf(UUID.randomUUID());
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
-		// This retry check is needed because setValue in OutputBinding doesn’t throw exceptions, 
+		// This retry check is needed because setValue in OutputBinding doesn’t throw exceptions,
 		// requiring an additional check to send the message to the dead letter queue after multiple failed attempts (e.g., 429 Too Many Requests).
 		handleLastRetry(items, context, retryIndex, id, "last-retry-input", executionDateTime);
 
@@ -120,9 +120,9 @@ public class BizEventEnrichment {
 					eventDetails.add("noticeNumber: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
 					eventDetails.add("iuv: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
 
-					String message = String.format("BizEventEnrichment function with invocationId %s called at %s for event with id %s and status %s and numEnrichmentRetry %s , enriching biz-event %s",
+					logger.debug("BizEventEnrichment function with invocationId {} called at {} for event with id {}" +
+									" and status {} and numEnrichmentRetry {} , enriching biz-event {}",
 							context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
-					logger.fine(message);
 
 					// set the IUR also on Debtor Position
 					be.getDebtorPosition().setIur(be.getPaymentInfo().getIUR());
@@ -131,16 +131,15 @@ public class BizEventEnrichment {
 					// set the event associated properties
 					be.setProperties(properties[i]);
 
-					generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, logger, be);
+					generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
 				}
 			}
 			else {
-				handleSizeMismatch(items, properties, context, logger, id, executionDateTime);
+				handleSizeMismatch(items, properties, context, id, executionDateTime);
 			}
 		} catch (Exception e) {
-			String exceptionMsg = String.format("BizEventEnrichmentProcessor function with invocationId [%s] - %s on cosmos biz-events msg ingestion at %s" +
-					" [%s]: %s. Retry index: %s", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
-			logger.severe(exceptionMsg);
+			logger.error("BizEventEnrichmentProcessor function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
+					" [{}]: {}. Retry index: {}", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
 			// retry check and dead-letter upload
 			handleLastRetry(bizEvtMsgWithProperties, context, retryIndex, id, "exception-output", executionDateTime);
 			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
@@ -148,9 +147,8 @@ public class BizEventEnrichment {
 		}
 
 		// Insert in Biz-event views
-		msg = String.format("BizEventEnrichment stat %s function - number of events to update on the Biz-event views: user - %d, general - %d, cart - %d ",
+		logger.info("BizEventEnrichment stat {} function - number of events to update on the Biz-event views: user - {}, general - {}, cart - {}",
 				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
-		logger.info(msg);
 		if (!userViewToInsert.isEmpty()) {
 			bizEventUserView.setValue(userViewToInsert);
 		}
@@ -170,26 +168,39 @@ public class BizEventEnrichment {
 		}
 	}
 
-	private void handleSizeMismatch(List<BizEvent> items, Map<String, Object>[] properties,
-			final ExecutionContext context, Logger logger, String id, LocalDateTime executionDateTime) {
-		bizEventDeadLetterService.uploadToDeadLetter(id, executionDateTime, context.getInvocationId(), "different-size-error", items,CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME);
+	private void handleSizeMismatch(
+			List<BizEvent> items,
+			Map<String, Object>[] properties,
+			final ExecutionContext context,
+			String id,
+			LocalDateTime executionDateTime
+	) {
+		bizEventDeadLetterService.uploadToDeadLetter(
+				id, executionDateTime,
+				context.getInvocationId(),
+				"different-size-error",
+				items,
+				CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME
+		);
 		String event = String.format("BizEventEnrichmentProcessor function with invocationId [%s] - Error during processing - "
 				+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
 				context.getInvocationId(), items.size(), properties.length);
-		logger.severe(event);
+		logger.error(event);
 		telemetryClient.trackEvent(event);
 	}
 
-	private void generateBizEventViews(List<BizEventsViewUser> userViewToInsert,
-			List<BizEventsViewGeneral> generalViewToInsert, List<BizEventsViewCart> cartViewToInsert, Logger logger,
-			BizEvent be) throws BizEventToViewConstraintViolationException {
+	private void generateBizEventViews(
+			List<BizEventsViewUser> userViewToInsert,
+			List<BizEventsViewGeneral> generalViewToInsert,
+			List<BizEventsViewCart> cartViewToInsert,
+			BizEvent be
+	) throws BizEventToViewConstraintViolationException {
 		if (enableTransactionListView) {
-			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(logger, be);
+			BizEventToViewResult bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(be);
 			if (bizEventToViewResult != null) {
 				userViewToInsert.addAll(bizEventToViewResult.getUserViewList());
 				generalViewToInsert.add(bizEventToViewResult.getGeneralView());
 				cartViewToInsert.add(bizEventToViewResult.getCartView());
-
 			}
 		}
 	}
