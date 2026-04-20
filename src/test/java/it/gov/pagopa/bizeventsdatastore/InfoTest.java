@@ -1,89 +1,65 @@
 package it.gov.pagopa.bizeventsdatastore;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-
-import java.util.Optional;
-import java.util.logging.Logger;
-
+import com.microsoft.azure.functions.ExecutionContext;
+import com.microsoft.azure.functions.HttpRequestMessage;
+import com.microsoft.azure.functions.HttpResponseMessage;
+import com.microsoft.azure.functions.HttpStatus;
 import it.gov.pagopa.bizeventsdatastore.model.AppInfo;
-import lombok.SneakyThrows;
+import it.gov.pagopa.bizeventsdatastore.utils.HttpResponseMessageMock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.jupiter.SystemStub;
+import uk.org.webcompere.systemstubs.jupiter.SystemStubsExtension;
 
-import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.HttpRequestMessage;
-import com.microsoft.azure.functions.HttpResponseMessage;
-import com.microsoft.azure.functions.HttpStatus;
+import java.util.Optional;
 
-@ExtendWith(MockitoExtension.class)
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+
+@ExtendWith({MockitoExtension.class, SystemStubsExtension.class})
 class InfoTest {
 
-	@Mock
-    ExecutionContext context;
+    public static final String TEST_SERVICE_NAME = "test-service-name";
+
+    @Mock
+    ExecutionContext executionContextMock;
 
     @Spy
-    Info infoFunction;
+    Info sut;
+
+    @SystemStub
+    private EnvironmentVariables environment = new EnvironmentVariables("SERVICE_NAME", TEST_SERVICE_NAME);
 
     @Test
     void runOK() {
-        // test precondition
-        final HttpResponseMessage.Builder builder = mock(HttpResponseMessage.Builder.class);
         @SuppressWarnings("unchecked")
         HttpRequestMessage<Optional<String>> request = mock(HttpRequestMessage.class);
 
-        HttpResponseMessage responseMock = mock(HttpResponseMessage.class);
-        doReturn(HttpStatus.OK).when(responseMock).getStatus();
-        doReturn(builder).when(builder).body(any());
-        doReturn(responseMock).when(builder).build();
-        doReturn(builder).when(request).createResponseBuilder(any(HttpStatus.class));
-        doReturn(builder).when(builder).header(anyString(), anyString());
+        doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
+            HttpStatus status = (HttpStatus) invocation.getArguments()[0];
+            return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
+        }).when(request).createResponseBuilder(any(HttpStatus.class));
 
         // test execution
-        HttpResponseMessage response = infoFunction.run(request, context);
+        HttpResponseMessage response = sut.run(request, executionContextMock);
 
         // test assertion
+        assertNotNull(response);
         assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+        AppInfo responseBody = (AppInfo) response.getBody();
+        assertNotNull(responseBody.getName());
+        assertNotNull(responseBody.getVersion());
+        assertNotNull(responseBody.getEnvironment());
+        assertEquals(TEST_SERVICE_NAME, responseBody.getName());
+        assertEquals("azure-fn", responseBody.getEnvironment());
     }
-
-    @SneakyThrows
-    @Test
-    void getInfoOk() {
-
-        // Mocking service creation
-        Logger logger = Logger.getLogger("example-test-logger");
-        String path = "/META-INF/maven/it.gov.pagopa.bizeventsdatastore/biz-events-datastore-function/pom.properties";
-
-        // Execute function
-        AppInfo response = infoFunction.getInfo(logger, path);
-
-        // Checking assertions
-        assertNotNull(response.getName());
-        assertNotNull(response.getVersion());
-        assertNotNull(response.getEnvironment());
-    }
-
-    @SneakyThrows
-    @Test
-    void getInfoKo() {
-
-        // Mocking service creation
-        Logger logger = Logger.getLogger("example-test-logger");
-        String path = "/META-INF/maven/it.gov.pagopa.bizeventsdatastore/biz-events-datastore-function/fake";
-
-        // Execute function
-        AppInfo response = infoFunction.getInfo(logger, path);
-
-        // Checking assertions
-        assertNull(response.getName());
-        assertNull(response.getVersion());
-        assertNotNull(response.getEnvironment());
-    }
-
 }

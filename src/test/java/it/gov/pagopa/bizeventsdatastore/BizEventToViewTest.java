@@ -30,7 +30,6 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Logger;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,9 +52,6 @@ class BizEventToViewTest {
 
     @Mock
     private ExecutionContext executionContextMock;
-
-    @Mock
-    private Logger loggerMock;
 
     @Mock
     private BizEventCosmosService bizEventCosmosServiceMock;
@@ -91,7 +87,6 @@ class BizEventToViewTest {
     void bizEventToViewOK() throws IOException, BizEventNotFoundException, BizEventToViewConstraintViolationException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doReturn(buildBizEventToViewResult()).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -129,7 +124,6 @@ class BizEventToViewTest {
 
     @Test
     void bizEventToViewKO_InvalidParam() {
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
@@ -153,7 +147,6 @@ class BizEventToViewTest {
 
     @Test
     void bizEventToViewKO_BizEventNotFound() throws BizEventNotFoundException {
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doThrow(BizEventNotFoundException.class).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -178,7 +171,6 @@ class BizEventToViewTest {
 
     @Test
     void bizEventToViewKO_CosmosException() throws BizEventNotFoundException {
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doThrow(RuntimeException.class).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -205,7 +197,6 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewError() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doThrow(BizEventToViewConstraintViolationException.class).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -233,7 +224,6 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewGenericException() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doThrow(RuntimeException.class).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
@@ -261,7 +251,6 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewNull() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(loggerMock).when(executionContextMock).getLogger();
         doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doReturn(null).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {

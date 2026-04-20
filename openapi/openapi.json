@@ -4,7 +4,7 @@
     "title": "Biz-Events Datastore API",
     "description": "Biz-Events Datastore utils API.",
     "termsOfService": "https://www.pagopa.gov.it/",
-    "version": "0.12.4-5-PIDM-1752-massive-biz-event-to-view-recovery"
+    "version": "0.12.6"
   },
   "servers": [
     {
@@ -110,7 +110,7 @@
     "/biz-events/{biz-event-id}/create-view": {
       "post": {
         "tags": [
-          "Biz Events View"
+          "BizEvents"
         ],
         "summary": "Generates the views for the biz event with the given bizEvent id",
         "operationId": "GenerateBizEventViews",
@@ -206,86 +206,6 @@
                 "description": "This header identifies the call",
                 "schema": {
                   "type": "string"
-                }
-              }
-            }
-          }
-        },
-        "security": [
-          {
-            "ApiKey": []
-          }
-        ]
-      },
-      "parameters": [
-        {
-          "name": "X-Request-Id",
-          "in": "header",
-          "description": "This header identifies the call, if not passed it is self-generated. This ID is returned in the response.",
-          "schema": {
-            "type": "string"
-          }
-        }
-      ]
-    },
-    "/biz-events/massive-create-view": {
-      "post": {
-        "tags": [
-          "Biz Events View"
-        ],
-        "summary": "Ingest CSV file and enqueue BizEvent IDs",
-        "description": "Accepts a CSV file containing one Biz Event Id per line. Each Id will be sent to an Azure Storage Queue.",
-        "operationId": "ingestBizEventCsv",
-        "requestBody": {
-          "required": true,
-          "content": {
-            "text/csv": {
-              "schema": {
-                "type": "string",
-                "format": "binary"
-              },
-              "example": "12345\n67890\n98765"
-            }
-          }
-        },
-        "responses": {
-          "200": {
-            "description": "All IDs successfully processed",
-            "content": {
-              "text/plain": {
-                "schema": {
-                  "type": "string",
-                  "example": "Elaboration completed successfully. Processed: 1000, Skipped: 0, Failed: []"
-                }
-              }
-            }
-          },
-          "207": {
-            "description": "Partial processing result",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Invalid request (missing or malformed body)",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal error or all IDs failed",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProblemJson"
                 }
               }
             }

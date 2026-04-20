@@ -23,17 +23,19 @@ import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventCosmosServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 /**
  * Azure Functions with Azure Http trigger.
  */
 public class BizEventToView {
+
+    private final Logger logger = LoggerFactory.getLogger(BizEventToView.class);
 
     private final BizEventCosmosService bizEventCosmosService;
     private final BizEventToViewService bizEventToViewService;
@@ -79,10 +81,8 @@ public class BizEventToView {
             OutputBinding<BizEventsViewCart> bizEventCartView,
             final ExecutionContext context
     ) {
-        Logger logger = context.getLogger();
-        String message = String.format("[%s] - Called at %s with id %s.",
+        logger.info("[{}] - Called at {} with id {}.",
                 context.getFunctionName(), LocalDateTime.now(), bizEventId);
-        logger.info(message);
 
         if (bizEventId == null || bizEventId.isBlank()) {
             return request
@@ -100,7 +100,7 @@ public class BizEventToView {
             bizEvent = this.bizEventCosmosService.getBizEvent(bizEventId);
         } catch (BizEventNotFoundException e) {
             String msg = String.format("Unable to retrieve the biz-event with id %s", bizEventId);
-            logger.log(Level.SEVERE, msg, e);
+            logger.error(msg, e);
             return request
                     .createResponseBuilder(HttpStatus.NOT_FOUND)
                     .body(ProblemJson.builder()
@@ -111,7 +111,7 @@ public class BizEventToView {
                     .build();
         } catch (Exception e) {
             String msg = String.format("Unable to retrieve the biz-event with id %s: unexpected error", bizEventId);
-            logger.log(Level.SEVERE, msg, e);
+            logger.error(msg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -127,7 +127,7 @@ public class BizEventToView {
             bizEventToViewResult = this.bizEventToViewService.mapBizEventToView(bizEvent);
         } catch (BizEventToViewConstraintViolationException e) {
             String msg = String.format("Unable to map the biz-event with id %s to the views: %s", bizEventId, e.getErrorMessages());
-            logger.log(Level.SEVERE, msg, e);
+            logger.error(msg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -138,7 +138,7 @@ public class BizEventToView {
                     .build();
         } catch (Exception e) {
             String msg = String.format("Unable to map the biz-event with id %s to the views: unexpected error", bizEventId);
-            logger.log(Level.SEVERE, msg, e);
+            logger.error(msg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -152,7 +152,7 @@ public class BizEventToView {
         if (bizEventToViewResult == null) {
             String msg = String.format("Unable to create the biz-event view for biz-event with id %s: bot debtor and user section are invalid",
                     bizEventId);
-            logger.log(Level.SEVERE, msg);
+            logger.error(msg);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(ProblemJson.builder()
@@ -168,8 +168,7 @@ public class BizEventToView {
         bizEventCartView.setValue(bizEventToViewResult.getCartView());
 
         String responseMessage = String.format("View for Biz event with id %s successfully created", bizEventId);
-        message = String.format("[%s] %s", context.getFunctionName(), responseMessage);
-        logger.info(message);
+        logger.info("[{}] {}", context.getFunctionName(), responseMessage);
         return request.createResponseBuilder(HttpStatus.OK)
                 .body(responseMessage)
                 .build();

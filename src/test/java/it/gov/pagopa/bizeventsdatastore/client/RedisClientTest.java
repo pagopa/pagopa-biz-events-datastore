@@ -11,7 +11,6 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.io.IOException;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Assertions;
@@ -67,12 +66,10 @@ class RedisClientTest {
 	
 	@Test
 	void findByBizEventIdOK() {
-        
         try (MockedStatic<RedisClient> mockedRedisClient = Mockito.mockStatic(RedisClient.class)) {
             JedisPool jedisPool = mock(JedisPool.class);
             Jedis jedis = mock(Jedis.class);
-            Logger logger = mock(Logger.class);
-            
+
             when(jedisPool.getResource()).thenReturn(jedis);
             when(jedis.get("biz_test123")).thenReturn("test123");
 
@@ -81,7 +78,7 @@ class RedisClientTest {
             mockedRedisClient.when(RedisClient::getInstance).thenReturn(mockRedisClient);
 
             RedisCacheServiceImpl redisCacheService = new RedisCacheServiceImpl();
-            String result = redisCacheService.findByBizEventId("test123", "biz_", logger);
+            String result = redisCacheService.findByBizEventId("test123", "biz_");
 
             assertEquals("test123", result);
             verify(jedis).get("biz_test123");
@@ -91,12 +88,9 @@ class RedisClientTest {
 	
 	@Test
 	void findByBizEventIdKO() {
-		
-		Logger logger = Logger.getLogger("RedisClient-test-logger");
-		
 		// Connection error -> null return
 		RedisCacheServiceImpl redisCacheServiceImpl = new RedisCacheServiceImpl();
-		String result = redisCacheServiceImpl.findByBizEventId("id", "prefix", logger);
+		String result = redisCacheServiceImpl.findByBizEventId("id", "prefix");
 		
 		assertEquals(null, result);
 		
@@ -104,11 +98,9 @@ class RedisClientTest {
 	
 	@Test
 	void saveBizEventIdOK() {
-        
 		try (MockedStatic<RedisClient> mockedRedisClient = Mockito.mockStatic(RedisClient.class)) {
             JedisPool jedisPool = mock(JedisPool.class);
             Jedis jedis = mock(Jedis.class);
-            Logger logger = mock(Logger.class);
 
             when(jedisPool.getResource()).thenReturn(jedis);
             when(jedis.set(eq("biz_test123"), eq("test123"), any(SetParams.class))).thenReturn("OK");
@@ -118,7 +110,7 @@ class RedisClientTest {
             mockedRedisClient.when(RedisClient::getInstance).thenReturn(mockRedisClient);
 
             RedisCacheServiceImpl redisCacheService = new RedisCacheServiceImpl();
-            String result = redisCacheService.saveBizEventId("test123", "biz_", logger);
+            String result = redisCacheService.saveBizEventId("test123", "biz_");
 
             assertEquals("OK", result);
             verify(jedis).set(eq("biz_test123"), eq("test123"), any(SetParams.class));
@@ -127,12 +119,9 @@ class RedisClientTest {
 	
 	@Test
 	void saveBizEventIdKO() {
-		
-		Logger logger = Logger.getLogger("RedisClient-test-logger");
-		
 		// Connection error -> null return
 		RedisCacheServiceImpl redisCacheServiceImpl = new RedisCacheServiceImpl();
-		String result = redisCacheServiceImpl.saveBizEventId("id", "prefix", logger);
+		String result = redisCacheServiceImpl.saveBizEventId("id", "prefix");
 		
 		assertEquals(null, result);
 		

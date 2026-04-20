@@ -27,10 +27,14 @@
   "logging": {
     "fileLoggingMode": "debugOnly",
     "logLevel": {
-      "Function.BizEventEnrichmentProcessor": "Information",
       "Function.EventHubBizEventProcessor": "Information",
+      "Function.BizEventEnrichmentProcessor": "Information",
+      "Function.BizEventTimerTriggerProcessor": "Information",
+      "Function.BizEventToViewDataStoreTimerTriggerProcessor": "Information",
+      "Function.BizEventViewDataStoreUpdateTimerTriggerProcessor": "Information",
       "Function.BizEventToView": "Information",
-      "Function.BizEventToViewQueueTrigger": "Information"
+      "Function.BizEventToViewQueueTrigger": "Information",
+      "Function.Info": "Information"
     },
     "applicationInsights": {
       "samplingSettings": {

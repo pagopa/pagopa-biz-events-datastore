@@ -6,7 +6,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.doReturn;
@@ -21,7 +20,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.Test;
@@ -73,8 +71,6 @@ class BizEventToDataStoreTest {
     @Test
     void runOk()  {
         // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
         when(context.getRetryContext()).thenReturn(retryContext);
         when(retryContext.getRetrycount()).thenReturn(5);
         
@@ -97,8 +93,8 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
         
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(), anyString(), any(Logger.class));
-        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(), anyString(), any(Logger.class));
+        doReturn(null).when(redisCacheService).findByBizEventId(anyString(), anyString());
+        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(), anyString());
 
         assertEquals(StatusType.DONE, bizEvtMsg.get(0).getEventStatus());
         // test execution
@@ -114,10 +110,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runECommerceOk() throws IOException {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEventECommerce.json", BizEvent.class);
         bizEvtMsgList.add (bizEventMsg);
@@ -127,8 +119,8 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
-        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
+        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString());
+        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString());
 
         // test execution
         function.processBizEvent(bizEvtMsgList, properties, document, bizPdndEvtMsg, context);
@@ -139,10 +131,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runModelType1Ok() throws IOException {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEvtMsgList = new ArrayList<>();
         BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEventModelType1.json", BizEvent.class);
 
@@ -162,8 +150,8 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
         
 
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
-        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
+        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString());
+        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString());
 
         // test execution
         function.processBizEvent(bizEvtMsgList, properties, document, bizPdndEvtMsg, context);
@@ -174,10 +162,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runKo_differentSize()  {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEvtMsg = new ArrayList<>();
         bizEvtMsg.add (new BizEvent());
 
@@ -195,10 +179,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runBizEventAlreadyInCache()  {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEvtMsg = new ArrayList<>();
         bizEvtMsg.add (BizEvent.builder().id("123").build());
 
@@ -207,7 +187,7 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doReturn("123").when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
+        doReturn("123").when(redisCacheService).findByBizEventId(anyString(),anyString());
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
@@ -218,10 +198,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runBizEventRedisException()  {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         PaymentInfo pi = PaymentInfo.builder().IUR("iur").build();
         DebtorPosition dp = DebtorPosition.builder().iuv("iuv").build();
 
@@ -256,10 +232,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runKo_genericException()  {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
-
         List<BizEvent> bizEvtMsg = new ArrayList<>();
         bizEvtMsg.add(BizEvent.builder().id("123").build());
 
@@ -268,7 +240,7 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
+        doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString());
 
         // test execution
         assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
@@ -276,9 +248,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runKo_genericExceptionLastRetry() {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
         when(context.getRetryContext()).thenReturn(retryContext);
         when(retryContext.getRetrycount()).thenReturn(10);
 
@@ -290,7 +259,7 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
+        doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString());
 
         // test execution
         assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
@@ -298,9 +267,6 @@ class BizEventToDataStoreTest {
 
     @Test
     void runLastRetry() {
-        // test precondition
-        Logger logger = Logger.getLogger("BizEventToDataStore-test-logger");
-        when(context.getLogger()).thenReturn(logger);
         when(context.getRetryContext()).thenReturn(retryContext);
         when(retryContext.getRetrycount()).thenReturn(10);
 
@@ -323,8 +289,8 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString(), any(Logger.class));
-        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString(), any(Logger.class));
+        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString());
+        doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString());
 
         // test execution
         function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);

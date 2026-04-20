@@ -12,7 +12,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.logging.Logger;
 
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.UserType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;

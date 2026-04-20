@@ -5,14 +5,18 @@ import com.microsoft.azure.functions.ExecutionContext;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.util.BlobStorage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.time.LocalDateTime;
 import java.util.List;
-import java.util.logging.Level;
 
 /**
  * {@inheritDoc}
  */
 public class BizEventDeadLetterServiceImpl implements BizEventDeadLetterService {
+
+    private final Logger logger = LoggerFactory.getLogger(BizEventDeadLetterServiceImpl.class);
 
     /**
      * {@inheritDoc}
@@ -23,9 +27,8 @@ public class BizEventDeadLetterServiceImpl implements BizEventDeadLetterService 
         String deadLetterLog = deadLetterResult ?
                 "List<BizEvent> " + type + " message was correctly saved in the dead letter." :
                 "There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
-        String retryTrace = String.format("[LAST RETRY] [%s] function with invocationId [%s] performing the last retry for events ingestion. %s",
+        logger.error("[LAST RETRY] [{}] function with invocationId [{}] performing the last retry for events ingestion. {}",
                 context.getFunctionName(),context.getInvocationId(), deadLetterLog);
-        context.getLogger().log(Level.SEVERE, () -> retryTrace);
         telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
     }
 
@@ -40,5 +43,4 @@ public class BizEventDeadLetterServiceImpl implements BizEventDeadLetterService 
             return false;
         }
     }
-
 }

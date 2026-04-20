@@ -9,7 +9,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.logging.Logger;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -67,11 +66,6 @@ class BizEventToViewDataStoreTimerTriggerTest {
 
 	@Test
 	void runOK() throws IOException, BizEventToViewConstraintViolationException {
-
-		// precondition
-		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
-		when(context.getLogger()).thenReturn(logger);
-		
 		BizEventToViewResult viewResult = buildBizEventToViewResult();
         when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
@@ -88,11 +82,6 @@ class BizEventToViewDataStoreTimerTriggerTest {
 	
 	@Test
 	void runKO() throws IOException, BizEventToViewConstraintViolationException {
-
-		// precondition
-		Logger logger = Logger.getLogger("BizEventToViewDataStoreTimerTrigger-test-logger");
-		when(context.getLogger()).thenReturn(logger);
-		
         when(bizEventToViewService.mapBizEventToView(any())).thenThrow(BizEventToViewConstraintViolationException.class);
 
 		List<BizEvent> bizEvtMsgList = new ArrayList<>();
@@ -116,5 +105,4 @@ class BizEventToViewDataStoreTimerTriggerTest {
                 .cartView(new BizEventsViewCart())
                 .build();
     }
-
 }

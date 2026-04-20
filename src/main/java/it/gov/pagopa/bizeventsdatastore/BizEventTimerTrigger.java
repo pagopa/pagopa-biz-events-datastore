@@ -3,7 +3,6 @@ package it.gov.pagopa.bizeventsdatastore;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.logging.Logger;
 
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
@@ -14,8 +13,12 @@ import com.microsoft.azure.functions.annotation.TimerTrigger;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class BizEventTimerTrigger {
+
+	private final Logger logger = LoggerFactory.getLogger(BizEventTimerTrigger.class);
 
 	/**
 	 * This function will be invoked periodically according to the specified schedule.
@@ -45,22 +48,19 @@ public class BizEventTimerTrigger {
 			final ExecutionContext context) {
 		
 		List<BizEvent> itemsToUpdate = new ArrayList<>();
-		Logger logger = context.getLogger();
 
 		for (BizEvent be: items) {
-			String message = String.format("BizEventTimerTriggerProcessor function called at %s with %s biz-events extracted to process.  "
-					+ "In progress the event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
+			logger.debug("BizEventTimerTriggerProcessor function called at {} with {} biz-events extracted to process.  "
+					+ "In progress the event with id {} and status {} and numEnrichmentRetry {} and paymentDateTime {}",
 					LocalDateTime.now(), items.length, be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
-			logger.fine(message);
 
 			be.setEventStatus(StatusType.RETRY);
 			be.setEventRetryEnrichmentCount(0);	
 			be.setEventErrorMessage(System.getenv().getOrDefault("TRIGGER_CUSTOM_ERROR_MESSAGE", "-"));
 			be.setEventTriggeredBySchedule(Boolean.TRUE);
 			// Populates the list for the UPDATE of biz-event status
-			message = String.format("BizEventTimerTriggerProcessor function COSMOS UPDATE at %s for event with id %s and status %s and numEnrichmentRetry %s and paymentDateTime %s", 
+			logger.debug("BizEventTimerTriggerProcessor function COSMOS UPDATE at {} for event with id {} and status {} and numEnrichmentRetry {} and paymentDateTime {}",
 					LocalDateTime.now(), be.getId(), be.getEventStatus(), be.getEventRetryEnrichmentCount(), be.getPaymentInfo().getPaymentDateTime());
-			logger.fine(message);
 			itemsToUpdate.add(be);
 		}
 		
