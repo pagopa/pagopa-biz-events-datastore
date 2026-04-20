@@ -1,6 +1,5 @@
 package it.gov.pagopa.bizeventsdatastore.client.impl;
 
-
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
@@ -11,13 +10,10 @@ import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 
-
 /**
  * {@inheritDoc}
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
-
-    private static BizEventCosmosClientImpl instance;
 
     private final String databaseId = System.getenv("COSMOS_DB_NAME");
     private final String containerId = System.getenv("COSMOS_DB_CONTAINER_NAME");
@@ -39,10 +35,14 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     }
 
     public static BizEventCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new BizEventCosmosClientImpl();
-        }
-        return instance;
+        return SingletonHolder.INSTANCE;
+    }
+
+    /**
+     * Thread-safe lazy singleton holder
+     */
+    private static class SingletonHolder {
+        static final BizEventCosmosClientImpl INSTANCE = new BizEventCosmosClientImpl();
     }
 
     /**

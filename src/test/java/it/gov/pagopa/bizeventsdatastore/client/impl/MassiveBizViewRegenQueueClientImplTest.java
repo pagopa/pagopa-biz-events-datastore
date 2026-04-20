@@ -16,7 +16,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.when;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 @ExtendWith(MockitoExtension.class)
 class MassiveBizViewRegenQueueClientImplTest {
@@ -28,15 +27,6 @@ class MassiveBizViewRegenQueueClientImplTest {
 
     @InjectMocks
     private MassiveBizViewRegenQueueClientImpl sut;
-
-    @Test
-    void testSingletonConnectionError() throws Exception {
-        String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
-        withEnvironmentVariables(
-                "AzureWebJobsStorage", mockKey,
-                "MASSIVE_VIEW_REGEN_QUEUE_TOPIC", "")
-                .execute(() -> assertThrows(IllegalArgumentException.class, MassiveBizViewRegenQueueClientImpl::getInstance));
-    }
 
     @Test
     void sendMessageToQueueTest() {

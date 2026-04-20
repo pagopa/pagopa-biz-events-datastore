@@ -14,8 +14,6 @@ import java.time.temporal.ChronoUnit;
  */
 public class MassiveBizViewRegenQueueClientImpl implements MassiveBizViewRegenQueueClient {
 
-    private static MassiveBizViewRegenQueueClientImpl instance;
-
     private final int queueDelay = Integer.parseInt(System.getenv().getOrDefault("MASSIVE_VIEW_REGEN_QUEUE_DELAY", "1"));
 
     private final QueueClient queueClient;
@@ -35,12 +33,15 @@ public class MassiveBizViewRegenQueueClientImpl implements MassiveBizViewRegenQu
     }
 
     public static MassiveBizViewRegenQueueClientImpl getInstance() {
-        if (instance == null) {
-            instance = new MassiveBizViewRegenQueueClientImpl();
-        }
-        return instance;
+        return SingletonHolder.INSTANCE;
     }
 
+    /**
+     * Thread-safe lazy singleton holder
+     */
+    private static class SingletonHolder {
+        static final MassiveBizViewRegenQueueClientImpl INSTANCE = new MassiveBizViewRegenQueueClientImpl();
+    }
 
     /**
      * {@inheritDoc}

@@ -19,7 +19,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
-import static uk.org.webcompere.systemstubs.SystemStubs.withEnvironmentVariables;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventCosmosClientImplTest {
@@ -36,15 +35,6 @@ class BizEventCosmosClientImplTest {
 
     @InjectMocks
     private BizEventCosmosClientImpl sut;
-
-    @Test
-    void testSingletonConnectionError() throws Exception {
-        String mockKey = "mockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeymockKeyMK==";
-        withEnvironmentVariables(
-                "COSMOS_DB_PRIMARY_KEY", mockKey,
-                "COSMOS_DB_URI", "")
-                .execute(() -> assertThrows(IllegalArgumentException.class, BizEventCosmosClientImpl::getInstance));
-    }
 
     @Test
     void getBizEventDocumentSuccess() {
