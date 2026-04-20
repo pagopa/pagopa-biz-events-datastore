@@ -33,6 +33,7 @@
       "Function.BizEventToViewDataStoreTimerTriggerProcessor": "Information",
       "Function.BizEventViewDataStoreUpdateTimerTriggerProcessor": "Information",
       "Function.BizEventToView": "Information",
+      "Function.BizEventToViewMassive": "Information",
       "Function.BizEventToViewQueueTrigger": "Information",
       "Function.Info": "Information"
     },
