@@ -66,7 +66,7 @@ public class BizEventToViewMassive {
 
         int processed = 0;
         int skipped = 0;
-        List<String> failedIds = new ArrayList<>();
+        List<String> validIds = new ArrayList<>();
 
         try (CSVReader reader = new CSVReaderBuilder(new StringReader(body)).withSkipLines(1).build()) {
             String[] line;
@@ -77,15 +77,10 @@ public class BizEventToViewMassive {
                     skipped++;
                     continue;
                 }
-
-                String bizEventId = line[0].trim();
-                boolean queueResult = this.queueService.sendBizEventIdToQueue(bizEventId);
-                if (!queueResult) {
-                    failedIds.add(bizEventId);
-                }
+                validIds.add(line[0].trim());
             }
         } catch (IOException | CsvValidationException e) {
-            String errMsg = formatResponseDetail("Error processing CSV file", processed, skipped, failedIds);
+            String errMsg = formatResponseDetail(processed, skipped);
             logger.error(errMsg, e);
             return request
                     .createResponseBuilder(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -96,6 +91,9 @@ public class BizEventToViewMassive {
                             .build())
                     .build();
         }
+
+        // Send all valid IDs to queue in parallel
+        List<String> failedIds = this.queueService.sendBizEventIdsToQueueInBatch(validIds);
 
         int failed = failedIds.size();
         int success = processed - skipped - failed;
@@ -136,5 +134,12 @@ public class BizEventToViewMassive {
             List<String> failedIds
     ) {
         return String.format("%s. Processed: %s, Skipped: %s, Failed: %s", message, processed, skipped, failedIds);
+    }
+
+    private String formatResponseDetail(
+            int processed,
+            int skipped
+    ) {
+        return String.format("Error processing CSV file. Processed: %s, Skipped: %s", processed, skipped);
     }
 }
