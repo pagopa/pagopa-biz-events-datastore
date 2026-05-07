@@ -29,9 +29,9 @@ public class BizEventCosmosServiceImpl implements BizEventCosmosService {
     public BizEvent getBizEvent(String eventId) throws BizEventNotFoundException {
         BizEvent bizEvent = this.bizEventCosmosClient.getBizEventDocument(eventId);
 
-        if (!StatusType.DONE.equals(bizEvent.getEventStatus()) && !StatusType.INGESTED.equals(bizEvent.getEventStatus())) {
-            throw new BizEventNotFoundException("The biz event is not in the expected status");
+        if (StatusType.DONE.equals(bizEvent.getEventStatus()) || StatusType.INGESTED.equals(bizEvent.getEventStatus())) {
+            return bizEvent;
         }
-        return bizEvent;
+        throw new BizEventNotFoundException("The biz event is not in the expected status");
     }
 }
