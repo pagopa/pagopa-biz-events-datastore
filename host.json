@@ -15,6 +15,13 @@
     },
     "http": {
       "routePrefix": ""
+    },
+    "queues": {
+      "maxPollingInterval": "00:00:02",
+      "visibilityTimeout": "00:00:10",
+      "batchSize": 32,
+      "maxDequeueCount": 5,
+      "messageEncoding": "none"
     }
   },
   "logging": {
@@ -26,6 +33,8 @@
       "Function.BizEventToViewDataStoreTimerTriggerProcessor": "Information",
       "Function.BizEventViewDataStoreUpdateTimerTriggerProcessor": "Information",
       "Function.BizEventToView": "Information",
+      "Function.BizEventToViewMassive": "Information",
+      "Function.BizEventToViewQueueTrigger": "Information",
       "Function.Info": "Information"
     },
     "applicationInsights": {

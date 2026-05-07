@@ -1,23 +1,19 @@
 package it.gov.pagopa.bizeventsdatastore.client.impl;
 
-
 import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosClientBuilder;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
-import com.azure.cosmos.models.CosmosQueryRequestOptions;
-import com.azure.cosmos.util.CosmosPagedIterable;
+import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.models.PartitionKey;
 import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
-import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 
 /**
- * Client for the CosmosDB database
+ * {@inheritDoc}
  */
 public class BizEventCosmosClientImpl implements BizEventCosmosClient {
-
-    private static BizEventCosmosClientImpl instance;
 
     private final String databaseId = System.getenv("COSMOS_DB_NAME");
     private final String containerId = System.getenv("COSMOS_DB_CONTAINER_NAME");
@@ -39,10 +35,14 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
     }
 
     public static BizEventCosmosClientImpl getInstance() {
-        if (instance == null) {
-            instance = new BizEventCosmosClientImpl();
-        }
-        return instance;
+        return SingletonHolder.INSTANCE;
+    }
+
+    /**
+     * Thread-safe lazy singleton holder
+     */
+    private static class SingletonHolder {
+        static final BizEventCosmosClientImpl INSTANCE = new BizEventCosmosClientImpl();
     }
 
     /**
@@ -53,16 +53,10 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         CosmosDatabase cosmosDatabase = this.cosmosClient.getDatabase(databaseId);
         CosmosContainer cosmosContainer = cosmosDatabase.getContainer(containerId);
 
-        //Build query
-        String query = String.format("SELECT * FROM c WHERE c.eventStatus IN ('%s','%s') AND c.id = '%s'", StatusType.DONE, StatusType.INGESTED, eventId);
-
-        //Query the container
-        CosmosPagedIterable<BizEvent> queryResponse = cosmosContainer
-                .queryItems(query, new CosmosQueryRequestOptions(), BizEvent.class);
-
-        if (queryResponse.iterator().hasNext()) {
-            return queryResponse.iterator().next();
+        try {
+            return cosmosContainer.readItem(eventId, new PartitionKey(eventId), BizEvent.class).getItem();
+        } catch (CosmosException e) {
+            throw new BizEventNotFoundException("Document not found in the defined container", e);
         }
-        throw new BizEventNotFoundException("Document not found in the defined container");
     }
 }

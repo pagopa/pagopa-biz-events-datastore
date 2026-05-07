@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.12.6"
+    tag: "0.12.6-4-PIDM-1752-massive-biz-event-to-view-recovery"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -107,6 +107,8 @@ microservice-chart: &microservice-chart
     UPDATE_VIEW_ORIGIN_VALUE: "NDP003PROD" # https://pagopa.atlassian.net/wiki/spaces/PN5/pages/627179761/Identificativo+servizio+nodo
     UPDATE_VIEW_TRIGGER_SCHEDULE: "-" # "0 */3 * * * *" # https://learn.microsoft.com/en-us/azure/azure-functions/functions-bindings-timer?tabs=python-v2%2Cisolated-process%2Cnodejs-v4&pivots=programming-language-java#ncrontab-examples
     UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.origin = 'UNKNOWN'"
+    MASSIVE_VIEW_REGEN_QUEUE_TOPIC: "pagopa-p-weu-bizevents-queue-massive-biz-to-view-regen"
+    MASSIVE_VIEW_REGEN_THREAD_POOL_SIZE: "50"
   envFieldRef: &envFieldRef
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -160,7 +162,9 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToView.Disabled: "false"
+    AzureWebJobs.BizEventToView.Disabled: "true"
+    AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "true"
+    AzureWebJobs.BizEventToViewMassive.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-p-azurewebjobsstorage'
@@ -169,7 +173,7 @@ pagopa-biz-events-view:
   !!merge <<: *microservice-chart
   ingress:
     !!merge <<: *ingress
-    path: /notused-biz-view/(.*)
+    path: /pagopa-biz-events-datastore-view/(.*)
   resources:
     !!merge <<: *resources
   envConfig:
@@ -181,7 +185,9 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventToViewDataStoreTimerTriggerProcessor.Disabled: "true"
     AzureWebJobs.BizEventViewDataStoreUpdateTimerTriggerProcessor.Disabled: "true"
-    AzureWebJobs.BizEventToView.Disabled: "true"
+    AzureWebJobs.BizEventToView.Disabled: "false"
+    AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "false"
+    AzureWebJobs.BizEventToViewMassive.Disabled: "false"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-view-p-azurewebjobsstorage'
