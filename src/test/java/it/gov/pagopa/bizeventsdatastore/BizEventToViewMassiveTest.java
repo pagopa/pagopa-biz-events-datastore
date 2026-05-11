@@ -28,7 +28,6 @@ import static org.mockito.ArgumentMatchers.anyList;
 
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -67,7 +66,7 @@ class BizEventToViewMassiveTest {
         assertEquals(HttpStatus.OK, response.getStatus());
         assertNotNull(response.getBody());
 
-        verify(queueServiceMock, times(1)).sendBizEventIdsToQueueInBatch(anyList());
+        verify(queueServiceMock).sendBizEventIdsToQueueInBatch(anyList());
     }
 
     @Test
@@ -85,7 +84,7 @@ class BizEventToViewMassiveTest {
         assertEquals(HttpStatus.MULTI_STATUS.value(), body.getStatus());
         assertEquals(HttpStatus.MULTI_STATUS.name(), body.getTitle());
 
-        verify(queueServiceMock, times(1)).sendBizEventIdsToQueueInBatch(anyList());
+        verify(queueServiceMock).sendBizEventIdsToQueueInBatch(anyList());
     }
 
     @Test
@@ -136,9 +135,25 @@ class BizEventToViewMassiveTest {
         assertEquals(HttpStatus.MULTI_STATUS.value(), body.getStatus());
         assertEquals(HttpStatus.MULTI_STATUS.name(), body.getTitle());
 
-        verify(queueServiceMock, times(1)).sendBizEventIdsToQueueInBatch(anyList());
+        verify(queueServiceMock).sendBizEventIdsToQueueInBatch(anyList());
     }
 
+    @Test
+    @SneakyThrows
+    void runKO_AllSkipped() {
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids-all-invalid-line.csv"));
+
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatus());
+        ProblemJson body = (ProblemJson) response.getBody();
+        assertNotNull(body);
+        assertEquals(HttpStatus.BAD_REQUEST.value(), body.getStatus());
+        assertEquals(HttpStatus.BAD_REQUEST.name(), body.getTitle());
+
+        verify(queueServiceMock, never()).sendBizEventIdsToQueueInBatch(anyList());
+    }
     @Test
     @SneakyThrows
     void runKO_AllErrorOnQueue() {
@@ -158,7 +173,21 @@ class BizEventToViewMassiveTest {
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.value(), body.getStatus());
         assertEquals(HttpStatus.INTERNAL_SERVER_ERROR.name(), body.getTitle());
 
-        verify(queueServiceMock, times(1)).sendBizEventIdsToQueueInBatch(anyList());
+        verify(queueServiceMock).sendBizEventIdsToQueueInBatch(anyList());
+    }
+
+    @Test
+    @SneakyThrows
+    void runKO_FileWithOnlyTheHeader() {
+        when(request.getBody()).thenReturn(loadCsv("massive-create-view/biz-event-ids-only-header.csv"));
+
+        HttpResponseMessage response = assertDoesNotThrow(() -> sut.run(request, executionContextMock));
+
+        assertNotNull(response);
+        assertEquals(HttpStatus.OK, response.getStatus());
+        assertNotNull(response.getBody());
+
+        verify(queueServiceMock, never()).sendBizEventIdsToQueueInBatch(anyList());
     }
 
     private static String loadCsv(String fileName) throws IOException {

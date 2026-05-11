@@ -93,7 +93,10 @@ public class BizEventToViewMassive {
         }
 
         // Send all valid IDs to queue in parallel
-        List<String> failedIds = this.queueService.sendBizEventIdsToQueueInBatch(validIds);
+        List<String> failedIds = new ArrayList<>();
+        if (!validIds.isEmpty()) {
+            failedIds = this.queueService.sendBizEventIdsToQueueInBatch(validIds);
+        }
 
         int failed = failedIds.size();
         int success = processed - skipped - failed;
@@ -103,6 +106,17 @@ public class BizEventToViewMassive {
         if (success == processed) {
             return request.createResponseBuilder(HttpStatus.OK)
                     .body(formatResponseDetail("Elaboration completed successfully", processed, skipped, failedIds))
+                    .build();
+        }
+
+        if (processed == skipped) {
+            return request
+                    .createResponseBuilder(HttpStatus.BAD_REQUEST)
+                    .body(ProblemJson.builder()
+                            .title(HttpStatus.BAD_REQUEST.name())
+                            .detail(formatResponseDetail("All processed ids were skipped", processed, skipped, failedIds))
+                            .status(HttpStatus.BAD_REQUEST.value())
+                            .build())
                     .build();
         }
 
