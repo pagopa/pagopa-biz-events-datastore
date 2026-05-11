@@ -167,8 +167,6 @@ pagopa-biz-events-view:
     path: /pagopa-biz-events-datastore-view/(.*)
   resources:
     !!merge <<: *resources
-    limits:
-      cpu: "0.9"
   envConfig:
     !!merge <<: *envConfig
     SERVICE_NAME: "pagopa-biz-events-datastore-view"
