@@ -15,6 +15,7 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 /**
  * {@inheritDoc}
@@ -72,7 +73,21 @@ public class MassiveBizViewRegenQueueServiceImpl implements MassiveBizViewRegenQ
             CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
         } finally {
             executor.shutdown();
+            awaitTermination(executor);
         }
         return failedIds;
+    }
+
+    private void awaitTermination(ExecutorService executor) {
+        try {
+            if (!executor.awaitTermination(800, TimeUnit.MILLISECONDS)) {
+                logger.error("Await termination failed");
+                executor.shutdownNow();
+            }
+        } catch (InterruptedException e) {
+            logger.error("Await termination failed for exception ", e);
+            executor.shutdownNow();
+            Thread.currentThread().interrupt();
+        }
     }
 }
