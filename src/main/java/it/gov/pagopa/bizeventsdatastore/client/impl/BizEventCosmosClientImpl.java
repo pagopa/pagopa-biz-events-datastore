@@ -56,7 +56,10 @@ public class BizEventCosmosClientImpl implements BizEventCosmosClient {
         try {
             return cosmosContainer.readItem(eventId, new PartitionKey(eventId), BizEvent.class).getItem();
         } catch (CosmosException e) {
-            throw new BizEventNotFoundException("Document not found in the defined container", e);
+            if (e.getStatusCode() == 404) {
+                throw new BizEventNotFoundException("Document not found in the defined container", e);
+            }
+            throw e;
         }
     }
 }
