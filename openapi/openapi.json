@@ -234,7 +234,7 @@
           "Biz Events View"
         ],
         "summary": "Ingest CSV file and enqueue BizEvent IDs",
-        "description": "Accepts a CSV file containing one Biz Event Id per line. Each Id will be sent to an Azure Storage Queue.",
+        "description": "Accepts a CSV file containing one Biz Event Id per line with the header id. Each Id will be sent to an Azure Storage Queue.",
         "operationId": "ingestBizEventCsv",
         "requestBody": {
           "required": true,
