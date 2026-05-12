@@ -4,6 +4,7 @@ import com.azure.cosmos.CosmosClient;
 import com.azure.cosmos.CosmosContainer;
 import com.azure.cosmos.CosmosDatabase;
 import com.azure.cosmos.CosmosException;
+import com.azure.cosmos.implementation.NotFoundException;
 import com.azure.cosmos.models.CosmosItemResponse;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
@@ -47,11 +48,20 @@ class BizEventCosmosClientImplTest {
     }
 
     @Test
+    void getBizEventDocumentNotFoundError() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(new NotFoundException());
+
+        assertThrows(BizEventNotFoundException.class, () -> sut.getBizEventDocument("1"));
+    }
+
+    @Test
     void getBizEventDocumentError() {
         when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
         when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
         when(mockContainer.readItem(anyString(), any(), eq(BizEvent.class))).thenThrow(CosmosException.class);
 
-        assertThrows(BizEventNotFoundException.class, () -> sut.getBizEventDocument("1"));
+        assertThrows(CosmosException.class, () -> sut.getBizEventDocument("1"));
     }
 }
