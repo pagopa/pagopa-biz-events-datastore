@@ -5,7 +5,6 @@ import com.microsoft.azure.functions.HttpRequestMessage;
 import com.microsoft.azure.functions.HttpResponseMessage;
 import com.microsoft.azure.functions.HttpStatus;
 import com.microsoft.azure.functions.OutputBinding;
-import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
@@ -13,6 +12,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.util.TestUtil;
 import it.gov.pagopa.bizeventsdatastore.utils.HttpResponseMessageMock;
@@ -54,7 +54,7 @@ class BizEventToViewTest {
     private ExecutionContext executionContextMock;
 
     @Mock
-    private BizEventCosmosClient bizEventCosmosClientMock;
+    private BizEventCosmosService bizEventCosmosServiceMock;
 
     @Mock
     private BizEventToViewService bizEventToViewService;
@@ -87,7 +87,7 @@ class BizEventToViewTest {
     void bizEventToViewOK() throws IOException, BizEventNotFoundException, BizEventToViewConstraintViolationException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doReturn(buildBizEventToViewResult()).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -147,7 +147,7 @@ class BizEventToViewTest {
 
     @Test
     void bizEventToViewKO_BizEventNotFound() throws BizEventNotFoundException {
-        doThrow(BizEventNotFoundException.class).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doThrow(BizEventNotFoundException.class).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
@@ -171,7 +171,7 @@ class BizEventToViewTest {
 
     @Test
     void bizEventToViewKO_CosmosException() throws BizEventNotFoundException {
-        doThrow(RuntimeException.class).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doThrow(RuntimeException.class).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
             return new HttpResponseMessageMock.HttpResponseMessageBuilderMock().status(status);
@@ -197,7 +197,7 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewError() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doThrow(BizEventToViewConstraintViolationException.class).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -224,7 +224,7 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewGenericException() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doThrow(RuntimeException.class).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];
@@ -251,7 +251,7 @@ class BizEventToViewTest {
     void bizEventToViewKO_MapToViewNull() throws BizEventNotFoundException, BizEventToViewConstraintViolationException, IOException {
         BizEvent bizEvent = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 
-        doReturn(bizEvent).when(bizEventCosmosClientMock).getBizEventDocument(BIZ_EVENT_ID);
+        doReturn(bizEvent).when(bizEventCosmosServiceMock).getBizEvent(BIZ_EVENT_ID);
         doReturn(null).when(bizEventToViewService).mapBizEventToView(bizEvent);
         doAnswer((Answer<HttpResponseMessage.Builder>) invocation -> {
             HttpStatus status = (HttpStatus) invocation.getArguments()[0];

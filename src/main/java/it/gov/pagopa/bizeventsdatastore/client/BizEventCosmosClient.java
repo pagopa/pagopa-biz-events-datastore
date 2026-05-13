@@ -4,6 +4,9 @@ package it.gov.pagopa.bizeventsdatastore.client;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 
+/**
+ * Client for the CosmosDB database
+ */
 public interface BizEventCosmosClient {
 
     /**
@@ -14,5 +17,4 @@ public interface BizEventCosmosClient {
      * @throws BizEventNotFoundException in case no biz-event has been found with the given idEvent
      */
     BizEvent getBizEventDocument(String eventId) throws BizEventNotFoundException;
-
 }
