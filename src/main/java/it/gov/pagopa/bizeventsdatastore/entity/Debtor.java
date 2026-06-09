@@ -17,7 +17,7 @@ public class Debtor {
 	private String fullName;
 	private String entityUniqueIdentifierType;
 	private String entityUniqueIdentifierValue;
-  private int entityUniqueIdentifierValidity;
+  private String entityUniqueIdentifierValidity;
 	private String streetName;
 	private String civicNumber;
 	private String postalCode;

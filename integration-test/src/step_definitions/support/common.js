@@ -77,7 +77,7 @@ function createEvent(id, client_id = "IO", user_type = "G") {
             "fullName": "Debtor name integration test biz",
             "entityUniqueIdentifierType": "G",
             "entityUniqueIdentifierValue": "JHNDOE00A01B157N",
-            "entityUniqueIdentifierValidity": 1
+            "entityUniqueIdentifierValidity": "1"
         },
         "payer": {
             "fullName": "Payer name integration test biz",
