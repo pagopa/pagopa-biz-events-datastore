@@ -80,6 +80,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("10.00").build())
@@ -128,6 +129,66 @@ class BizEventToViewServiceImplTest {
         assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
         assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
     }
+
+    @Test
+    void mapBizEventToViewNoDebtorValiditySuccess() throws BizEventToViewConstraintViolationException {
+      Map<String, Object> properties = new HashMap<>();
+      properties.put("serviceIdentifier", ServiceIdentifierType.NDP001PROD.name());
+
+      BizEvent bizEvent = BizEvent.builder()
+          .id("biz-id")
+          .psp(Psp.builder().psp("psp value").build())
+          .debtor(Debtor.builder()
+              .fullName("debtor")
+              .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+              .build())
+          .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
+          .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("10.00").build())
+          .transactionDetails(TransactionDetails.builder()
+              .user(User.builder()
+                  .name("user-name")
+                  .surname("user-surname")
+                  .fiscalCode(VALID_USER_CF)
+                  .build())
+              .info(InfoECommerce.builder().clientId("IO").type("PPAL").maskedEmail("xxx@xxx.it").build())
+              .transaction(Transaction.builder().rrn("rrn").creationDate("21-03-2024").amount(1000).build())
+              .build())
+          .properties(properties)
+          .build();
+
+      BizEventToViewResult result = sut.mapBizEventToView(bizEvent);
+
+      this.checkGeneratedViewResult(result);
+
+      if (result.getUserViewList().get(0).isPayer()) {
+        assertEquals(VALID_USER_CF, result.getUserViewList().get(0).getTaxCode());
+        assertTrue(result.getUserViewList().get(0).isPayer());
+        assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(1).getTaxCode());
+        assertFalse(result.getUserViewList().get(1).isPayer());
+      } else {
+        assertEquals(VALID_USER_CF, result.getUserViewList().get(1).getTaxCode());
+        assertTrue(result.getUserViewList().get(1).isPayer());
+        assertEquals(VALID_DEBTOR_CF, result.getUserViewList().get(0).getTaxCode());
+        assertFalse(result.getUserViewList().get(0).isPayer());
+      }
+      assertEquals(bizEvent.getId(), result.getUserViewList().get(0).getTransactionId());
+      assertEquals(bizEvent.getId(), result.getUserViewList().get(1).getTransactionId());
+      assertEquals(false, result.getUserViewList().get(0).isHidden());
+      assertEquals(false, result.getUserViewList().get(1).isHidden());
+
+      User user = bizEvent.getTransactionDetails().getUser();
+      String payerFullName = String.format("%s %s", user.getName(), user.getSurname());
+      assertEquals(bizEvent.getId(), result.getGeneralView().getTransactionId());
+      assertEquals(payerFullName, result.getGeneralView().getPayer().getName());
+      assertEquals(VALID_USER_CF, result.getGeneralView().getPayer().getTaxCode());
+      assertEquals(1, result.getGeneralView().getTotalNotice());
+      assertEquals(ServiceIdentifierType.NDP001PROD, result.getGeneralView().getOrigin());
+
+      assertEquals(bizEvent.getId(), result.getCartView().getTransactionId());
+      assertEquals(bizEvent.getId(), result.getCartView().getEventId());
+      assertEquals(bizEvent.getDebtor().getFullName(), result.getCartView().getDebtor().getName());
+      assertEquals(VALID_DEBTOR_CF, result.getCartView().getDebtor().getTaxCode());
+    }
     
     @Test
     void NDP004PROD_mapBizEventToViewSuccess() throws BizEventToViewConstraintViolationException {
@@ -140,6 +201,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("10.00").build())
@@ -201,6 +263,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().amount("10.00").build())
@@ -270,6 +333,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("user-name user-surname")
                         .entityUniqueIdentifierValue(VALID_USER_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("10.00").build())
@@ -316,6 +380,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
@@ -402,6 +467,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("100.50").build())
@@ -462,6 +528,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("26.4").build())
@@ -549,6 +616,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").totalNotice("1").amount("10.0").build())
@@ -603,6 +671,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").totalNotice("1").amount("10.0").build())
@@ -677,6 +746,7 @@ class BizEventToViewServiceImplTest {
                 .debtor(Debtor.builder()
                         .fullName("debtor")
                         .entityUniqueIdentifierValue(VALID_DEBTOR_CF)
+                        .entityUniqueIdentifierValidity(1)
                         .build())
                 .debtorPosition(DebtorPosition.builder().modelType("2").noticeNumber("1234567890").build())
                 .paymentInfo(PaymentInfo.builder().remittanceInformation("remittance information").amount("1000").build())
