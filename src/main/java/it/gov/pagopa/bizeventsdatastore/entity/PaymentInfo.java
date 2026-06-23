@@ -29,6 +29,7 @@ public class PaymentInfo {
 	private String totalNotice;
 	private String paymentMethod;
 	private String touchpoint;
+  private String paymentChannel;
 	private String remittanceInformation;
 	private String description;
 	private List<MapEntry> metadata;

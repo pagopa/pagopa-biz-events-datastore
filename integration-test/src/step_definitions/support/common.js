@@ -95,6 +95,7 @@ function createEvent(id, client_id = "IO", user_type = "G") {
             "totalNotice": "1",
             "paymentMethod": "creditCard",
             "touchpoint": "app",
+            "paymentChannel": "66666666666_66",
             "remittanceInformation": "test",
             "IUR": "iur1234567890"
         },
