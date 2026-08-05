@@ -53,7 +53,7 @@ public class BizEventViewDataStoreUpdateTimerTrigger {
     ) {
 
         if (enableUpdate) {
-            logger.info("BizEventViewDataStoreUpdateTimerTrigger function pp-0-start - called at {} with {} biz-events-view-general extracted to process.",
+            logger.debug("BizEventViewDataStoreUpdateTimerTrigger function pp-0-start - called at {} with {} biz-events-view-general extracted to process.",
                     LocalDateTime.now(), items.length);
 
             List<BizEventsViewGeneral> itemsToUpdate = Collections.synchronizedList(new ArrayList<>());

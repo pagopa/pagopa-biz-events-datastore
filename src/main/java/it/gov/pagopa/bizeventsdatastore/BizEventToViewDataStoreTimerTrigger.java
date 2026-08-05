@@ -89,7 +89,7 @@ public class BizEventToViewDataStoreTimerTrigger {
 			final ExecutionContext context) {
 
 		if (enableTransactionListView) {
-			logger.info("BizEventToViewDataStoreTimerTriggerProcessor function pp-0-start - called at {} with {} biz-events extracted to process.",
+			logger.debug("BizEventToViewDataStoreTimerTriggerProcessor function pp-0-start - called at {} with {} biz-events extracted to process.",
 					LocalDateTime.now(), items.length);
 
 			List<BizEvent> itemsToUpdate = Collections.synchronizedList(new ArrayList<>());

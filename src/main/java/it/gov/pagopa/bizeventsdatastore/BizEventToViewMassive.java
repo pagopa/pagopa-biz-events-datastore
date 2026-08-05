@@ -67,15 +67,24 @@ public class BizEventToViewMassive {
         int processed = 0;
         int skipped = 0;
         List<String> validIds = new ArrayList<>();
+        boolean invalidRowWarningLogged = false;
 
         try (CSVReader reader = new CSVReaderBuilder(new StringReader(body)).withSkipLines(1).build()) {
             String[] line;
             while ((line = reader.readNext()) != null) {
                 processed++;
                 if (line.length > 1 || line[0] == null || line[0].trim().isBlank()) {
-                    logger.warn("Invalid CSV format at line {}", processed);
-                    skipped++;
-                    continue;
+                	// Keep the first invalid row at WARN to preserve operational alerting and prevent a log storm,
+                	// while additional occurrences remain available at DEBUG and are counted in the final INFO summary.
+                	if (!invalidRowWarningLogged) {
+                		logger.warn("Invalid CSV format at line {}", processed);
+                		invalidRowWarningLogged = true;
+                	} else {
+                		logger.debug("Invalid CSV format at line {}", processed);
+                	}
+
+                	skipped++;
+                	continue;
                 }
                 validIds.add(line[0].trim());
             }

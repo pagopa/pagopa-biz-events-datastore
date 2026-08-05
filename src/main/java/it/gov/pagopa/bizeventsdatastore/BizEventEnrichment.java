@@ -96,7 +96,9 @@ public class BizEventEnrichment {
 		List<BizEventsViewGeneral> generalViewToInsert = new ArrayList<>();
 		List<BizEventsViewCart> cartViewToInsert = new ArrayList<>();
 
-		logger.info("BizEventEnrichment stat {} function - num events triggered {}", context.getInvocationId(),  items.size());
+		// Debug level log because function start/completion is already available from Azure Functions runtime logs
+		// through the Function.BizEventEnrichmentProcessor category (Executing/Executed).
+		logger.debug("BizEventEnrichment stat {} function - num events triggered {}", context.getInvocationId(),  items.size());
 
 		int retryIndex = context.getRetryContext() == null ? 0 : context.getRetryContext().getRetrycount();
 		String id = String.valueOf(UUID.randomUUID());

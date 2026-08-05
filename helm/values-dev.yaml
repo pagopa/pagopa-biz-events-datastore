@@ -85,7 +85,8 @@ microservice-chart: &microservice-chart
   fileConfig: {}
   envConfig: &envConfig
     ENV: "dev"
-    LOG_LEVEL: "INFO"
+    LOG_LEVEL: "WARN"
+    APP_LOG_LEVEL: "INFO"
     ASPNETCORE_URLS: "http://*:8080"
     FUNCTIONS_SECRETS_PATH: "/tmp/secrets"
     WEBSITE_SITE_NAME: "pagopabizeventsdatastore" # required to show cloud role name in application insights
