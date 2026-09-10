@@ -21,7 +21,11 @@
         </then>
     </if>
 
-    <root level="${LOG_LEVEL:-INFO}">
+    <logger
+        name="it.gov.pagopa.bizeventsdatastore"
+        level="${APP_LOG_LEVEL:-INFO}" />
+
+    <root level="${LOG_LEVEL:-WARN}">
         <appender-ref ref="STDOUT" />
     </root>
 
