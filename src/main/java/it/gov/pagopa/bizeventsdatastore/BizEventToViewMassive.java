@@ -81,7 +81,7 @@ public class BizEventToViewMassive {
                         invalidRowWarningLogged = true;
                     } else {
                         logger.debug("Invalid CSV format at line {}", processed);
-                	}
+                    }
 
                     skipped++;
                     continue;
