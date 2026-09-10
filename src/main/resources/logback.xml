@@ -1,32 +1,32 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <configuration>
 
-	<property resource="application.properties" />
+    <property resource="application.properties" />
 
-	<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-		<encoder>
-			<pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
-		</encoder>
-	</appender>
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
+    </appender>
 
-	<if condition='!"APP_ENVIRONMENT_IS_UNDEFINED".equalsIgnoreCase("${ENV}")'>
-		<then>
-			<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-				<encoder class="co.elastic.logging.logback.EcsEncoder">
-					<serviceName>${SERVICE_NAME}</serviceName>
-					<serviceVersion>${version}</serviceVersion>
-					<serviceEnvironment>${ENV}</serviceEnvironment>
-				</encoder>
-			</appender>
-		</then>
-	</if>
+    <if condition='!"APP_ENVIRONMENT_IS_UNDEFINED".equalsIgnoreCase("${ENV}")'>
+        <then>
+            <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+                <encoder class="co.elastic.logging.logback.EcsEncoder">
+                    <serviceName>${SERVICE_NAME}</serviceName>
+                    <serviceVersion>${version}</serviceVersion>
+                    <serviceEnvironment>${ENV}</serviceEnvironment>
+                </encoder>
+            </appender>
+        </then>
+    </if>
 
-	<logger
-		name="it.gov.pagopa.bizeventsdatastore"
-		level="${APP_LOG_LEVEL:-INFO}" />
+    <logger
+        name="it.gov.pagopa.bizeventsdatastore"
+        level="${APP_LOG_LEVEL:-INFO}" />
 
-	<root level="${LOG_LEVEL:-WARN}">
-		<appender-ref ref="STDOUT" />
-	</root>
+    <root level="${LOG_LEVEL:-WARN}">
+        <appender-ref ref="STDOUT" />
+    </root>
 
 </configuration>
