@@ -81,7 +81,9 @@ public class BizEventToView {
             OutputBinding<BizEventsViewCart> bizEventCartView,
             final ExecutionContext context
     ) {
-        logger.info("[{}] - Called at {} with id {}.",
+        // Debug level log because function execution is already available from Azure Functions runtime logs;
+        // the bizEventId is retained in the application success/error logs.
+        logger.debug("[{}] - Called at {} with id {}.",
                 context.getFunctionName(), LocalDateTime.now(), bizEventId);
 
         if (bizEventId == null || bizEventId.isBlank()) {
