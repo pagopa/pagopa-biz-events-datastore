@@ -16,9 +16,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -84,7 +84,6 @@ class BizEventEnrichmentTest {
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 		bizEvtMsgList.add (bizEventMsg);
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
 		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
@@ -92,7 +91,7 @@ class BizEventEnrichmentTest {
 
 		assertEquals(StatusType.DONE, bizEvtMsgList.get(0).getEventStatus());
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
@@ -101,28 +100,36 @@ class BizEventEnrichmentTest {
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
 	}
 
-	
+
 	@Test
-	void runKo_differentSize() throws BizEventToViewConstraintViolationException, IOException  {
-		when(context.getInvocationId()).thenReturn("123");
+	void runOk_bizEventFromChangeFeedIsNotModified() throws BizEventToViewConstraintViolationException, IOException  {
+		BizEventToViewResult viewResult = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
-		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
-		bizEvtMsgList.add (bizEventMsg);
+		Long timestamp = 1700000000000L;
+		Map<String, Object> properties = Map.of("serviceIdentifier", "NDP003PROD");
+		String iur = bizEventMsg.getDebtorPosition().getIur();
+		bizEventMsg.setTimestamp(timestamp);
+		bizEventMsg.setProperties(properties);
+		List<BizEvent> bizEvtMsgList = List.of(bizEventMsg);
 
-		Map<String, Object>[] properties = new HashMap[0];
 		@SuppressWarnings("unchecked")
 		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
 
-		// test assertion -> this line means the call was successful
-		assertTrue(true);
-		verify(bizEventDeadLetterService).uploadToDeadLetter(anyString(), any(LocalDateTime.class), eq("123"), eq("different-size-error"), 
-				eq(bizEvtMsgList), eq("biz-events-views-dead-letter"));
+		// test assertion -> the views are generated from the persisted biz-event without re-enriching it
+		verify(bizEventToViewService).mapBizEventToView(argThat(be ->
+				timestamp.equals(be.getTimestamp())
+				&& properties.equals(be.getProperties())
+				&& Objects.equals(iur, be.getDebtorPosition().getIur())));
+		verify(bizEventUserView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
 	}
 
 	@Test
@@ -142,12 +149,11 @@ class BizEventEnrichmentTest {
 	}
 
 	@Test
-	void runKo_genericException()  {
-		// incomplete BizEvent obj --> NullPointerException getPaymentInfo() is null
+	void runKo_genericException() throws BizEventToViewConstraintViolationException  {
+		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
 		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
@@ -155,21 +161,20 @@ class BizEventEnrichmentTest {
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
 	}
 	
 	@Test
-	void runKo_genericExceptionLastRetry() {
+	void runKo_genericExceptionLastRetry() throws BizEventToViewConstraintViolationException {
 		// test precondition
 		when(context.getRetryContext()).thenReturn(retryContext);
 		// set to max retry value
 		when(retryContext.getRetrycount()).thenReturn(10);
+		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
 
-		// incomplete BizEvent obj --> NullPointerException getPaymentInfo() is null
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
 		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
@@ -177,7 +182,7 @@ class BizEventEnrichmentTest {
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
 		// check the borderline case of two handle retries
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"), eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));

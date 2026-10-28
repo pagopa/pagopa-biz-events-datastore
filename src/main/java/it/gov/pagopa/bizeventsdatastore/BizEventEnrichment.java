@@ -1,10 +1,8 @@
 package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
-import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.StringJoiner;
 import java.util.UUID;
@@ -12,10 +10,8 @@ import java.util.UUID;
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
 import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.BindingName;
-import com.microsoft.azure.functions.annotation.Cardinality;
 import com.microsoft.azure.functions.annotation.CosmosDBOutput;
-import com.microsoft.azure.functions.annotation.EventHubTrigger;
+import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 
@@ -39,6 +35,7 @@ public class BizEventEnrichment {
 	private final boolean enableTransactionListView = Boolean.parseBoolean(System.getenv().getOrDefault("ENABLE_TRANSACTION_LIST_VIEW", "false"));
 
 	private static final int EBR_MAX_RETRY_COUNT = 10;
+	private static final int MAX_ITEMS_PER_INVOCATION = 64;
 	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
 
 	private final TelemetryClient telemetryClient = new TelemetryClient();
@@ -61,13 +58,17 @@ public class BizEventEnrichment {
 	@FunctionName("BizEventEnrichmentProcessor")
 	@ExponentialBackoffRetry(maxRetryCount = EBR_MAX_RETRY_COUNT, maximumInterval = "00:30:00", minimumInterval = "00:00:30")
 	public void processBizEventEnrichment(
-			@EventHubTrigger(
-					name = "BizEvent",
-					eventHubName = "", // blank because the value is included in the connection string
-					connection = "VIEWS_EVENTHUB_CONN_STRING",
-					cardinality = Cardinality.MANY)
+			@CosmosDBTrigger(
+					name = "BizEventDatastore",
+					databaseName = "db",
+					containerName = "biz-events",
+					leaseDatabaseName = "db",
+					leaseContainerName = "biz-events-leases",
+					createLeaseContainerIfNotExists = false,
+					startFromBeginning = false,
+					maxItemsPerInvocation = MAX_ITEMS_PER_INVOCATION,
+					connection = "COSMOS_CONN_STRING")
 			List<BizEvent> items,
-			@BindingName(value = "PropertiesArray") Map<String, Object>[] properties,
 			@CosmosDBOutput(
 					name = "BizEventUserView",
 					databaseName = "db",
@@ -112,32 +113,19 @@ public class BizEventEnrichment {
 		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
 
 		try {
-			if (items.size() == properties.length) {
-				for (int i=0; i<items.size(); i++) {
+			for (BizEvent be : items) {
+				eventDetails.add("id: " + be.getId());
+				eventDetails.add("idPA: " + Optional.ofNullable(be.getCreditor()).map(o -> o.getIdPA()).orElse("N/A"));
+				eventDetails.add("modelType: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getModelType()).orElse("N/A"));
+				eventDetails.add("noticeNumber: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
+				eventDetails.add("iuv: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
 
-					BizEvent be = items.get(i);
-					eventDetails.add("id: " + be.getId());
-					eventDetails.add("idPA: " + Optional.ofNullable(be.getCreditor()).map(o -> o.getIdPA()).orElse("N/A"));
-					eventDetails.add("modelType: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getModelType()).orElse("N/A"));
-					eventDetails.add("noticeNumber: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getNoticeNumber()).orElse("N/A"));
-					eventDetails.add("iuv: " + Optional.ofNullable(be.getDebtorPosition()).map(o -> o.getIuv()).orElse("N/A"));
+				logger.debug("BizEventEnrichment function with invocationId {} called at {} for event with id {}" +
+								" and status {} and numEnrichmentRetry {} , enriching biz-event {}",
+						context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
 
-					logger.debug("BizEventEnrichment function with invocationId {} called at {} for event with id {}" +
-									" and status {} and numEnrichmentRetry {} , enriching biz-event {}",
-							context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
 
-					// set the IUR also on Debtor Position
-					be.getDebtorPosition().setIur(be.getPaymentInfo().getIUR());
-					// set the event creation date
-					be.setTimestamp(ZonedDateTime.now().toInstant().toEpochMilli());
-					// set the event associated properties
-					be.setProperties(properties[i]);
-
-					generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
-				}
-			}
-			else {
-				handleSizeMismatch(items, properties, context, id, executionDateTime);
+				generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
 			}
 		} catch (Exception e) {
 			logger.error("BizEventEnrichmentProcessor function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
@@ -168,27 +156,6 @@ public class BizEventEnrichment {
 			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, type, items,
 					CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, telemetryClient);
 		}
-	}
-
-	private void handleSizeMismatch(
-			List<BizEvent> items,
-			Map<String, Object>[] properties,
-			final ExecutionContext context,
-			String id,
-			LocalDateTime executionDateTime
-	) {
-		bizEventDeadLetterService.uploadToDeadLetter(
-				id, executionDateTime,
-				context.getInvocationId(),
-				"different-size-error",
-				items,
-				CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME
-		);
-		String event = String.format("BizEventEnrichmentProcessor function with invocationId [%s] - Error during processing - "
-				+ "The size of the events to be processed and their associated properties does not match [bizEvtMsg.size=%s; properties.length=%s]",
-				context.getInvocationId(), items.size(), properties.length);
-		logger.error(event);
-		telemetryClient.trackEvent(event);
 	}
 
 	private void generateBizEventViews(
