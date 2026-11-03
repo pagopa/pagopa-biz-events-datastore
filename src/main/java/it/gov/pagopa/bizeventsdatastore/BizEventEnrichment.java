@@ -21,8 +21,10 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
+import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventCosmosServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventToViewServiceImpl;
 import org.slf4j.Logger;
@@ -44,15 +46,20 @@ public class BizEventEnrichment {
 
 	private final BizEventDeadLetterService bizEventDeadLetterService;
 
+	private final BizEventCosmosService bizEventCosmosService;
+
 	public BizEventEnrichment() {
 		this.bizEventToViewService = new BizEventToViewServiceImpl();
 		this.bizEventDeadLetterService = new BizEventDeadLetterServiceImpl();
+		this.bizEventCosmosService = new BizEventCosmosServiceImpl();
 	}
 
 	BizEventEnrichment(BizEventToViewService bizEventToViewService,
-			BizEventDeadLetterService bizEventDeadLetterService) {
+			BizEventDeadLetterService bizEventDeadLetterService,
+			BizEventCosmosService bizEventCosmosService) {
 		this.bizEventToViewService = bizEventToViewService;
 		this.bizEventDeadLetterService = bizEventDeadLetterService;
+		this.bizEventCosmosService = bizEventCosmosService;
 	}
 
 	@FunctionName("BizEventEnrichmentProcessor")
@@ -69,13 +76,6 @@ public class BizEventEnrichment {
 					maxItemsPerInvocation = MAX_ITEMS_PER_INVOCATION,
 					connection = "COSMOS_CONN_STRING")
 			List<BizEvent> items,
-			@CosmosDBOutput(
-					name = "BizEventUserView",
-					databaseName = "db",
-					containerName = "biz-events-view-user",
-					createIfNotExists = false,
-					connection = "COSMOS_CONN_STRING")
-			OutputBinding<List<BizEventsViewUser>> bizEventUserView,
 			@CosmosDBOutput(
 					name = "BizEventGeneralView",
 					databaseName = "db",
@@ -127,6 +127,10 @@ public class BizEventEnrichment {
 
 				generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
 			}
+
+			if (!userViewToInsert.isEmpty()) {
+				bizEventCosmosService.saveBizEventViewUsersPreservingVisibility(userViewToInsert);
+			}
 		} catch (Exception e) {
 			logger.error("BizEventEnrichmentProcessor function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
 					" [{}]: {}. Retry index: {}", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
@@ -139,9 +143,6 @@ public class BizEventEnrichment {
 		// Insert in Biz-event views
 		logger.info("BizEventEnrichment stat {} function - number of events to update on the Biz-event views: user - {}, general - {}, cart - {}",
 				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
-		if (!userViewToInsert.isEmpty()) {
-			bizEventUserView.setValue(userViewToInsert);
-		}
 		if (!generalViewToInsert.isEmpty()) {
 			bizEventGeneralView.setValue(generalViewToInsert);
 		}

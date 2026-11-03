@@ -8,7 +8,9 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -39,6 +41,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
@@ -68,6 +71,9 @@ class BizEventEnrichmentTest {
 
 	@Mock
 	private BizEventToViewService bizEventToViewService;
+
+	@Mock
+	private BizEventCosmosService bizEventCosmosService;
 	
 	@SystemStub
 	private EnvironmentVariables environment = new EnvironmentVariables("ENABLE_TRANSACTION_LIST_VIEW", "true");
@@ -85,17 +91,16 @@ class BizEventEnrichmentTest {
 		bizEvtMsgList.add (bizEventMsg);
 
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 		assertEquals(StatusType.DONE, bizEvtMsgList.get(0).getEventStatus());
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
-		verify(bizEventUserView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 1));
 		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
 	}
@@ -115,21 +120,39 @@ class BizEventEnrichmentTest {
 		List<BizEvent> bizEvtMsgList = List.of(bizEventMsg);
 
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
 
 		// test assertion -> the views are generated from the persisted biz-event without re-enriching it
 		verify(bizEventToViewService).mapBizEventToView(argThat(be ->
 				timestamp.equals(be.getTimestamp())
 				&& properties.equals(be.getProperties())
 				&& Objects.equals(iur, be.getDebtorPosition().getIur())));
-		verify(bizEventUserView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 1));
 		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
+	}
+
+	@Test
+	void runKo_saveViewUserException() throws BizEventToViewConstraintViolationException, IOException {
+		BizEventToViewResult viewResult = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
+		doThrow(new RuntimeException("cosmos error")).when(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(anyList());
+
+		List<BizEvent> bizEvtMsgList = List.of(TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class));
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		// test execution -> the error is rethrown to trigger the retry policy
+		assertThrows(RuntimeException.class, () -> function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context));
+
+		verify(bizEventGeneralView, never()).setValue(any());
+		verify(bizEventCartView, never()).setValue(any());
 	}
 
 	@Test
@@ -155,13 +178,12 @@ class BizEventEnrichmentTest {
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventGeneralView, bizEventCartView, context));
 	}
 	
 	@Test
@@ -176,13 +198,12 @@ class BizEventEnrichmentTest {
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventGeneralView, bizEventCartView, context));
 		// check the borderline case of two handle retries
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"), eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
