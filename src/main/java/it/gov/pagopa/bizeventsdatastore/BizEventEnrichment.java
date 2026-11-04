@@ -70,7 +70,7 @@ public class BizEventEnrichment {
 					databaseName = "db",
 					containerName = "biz-events",
 					leaseDatabaseName = "db",
-					leaseContainerName = "biz-events-leases",
+					leaseContainerName = "biz-events-views-leases",
 					createLeaseContainerIfNotExists = false,
 					startFromBeginning = false,
 					maxItemsPerInvocation = MAX_ITEMS_PER_INVOCATION,
