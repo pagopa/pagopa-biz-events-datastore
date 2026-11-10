@@ -1,5 +1,6 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -7,6 +8,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -168,7 +170,7 @@ class BizEventEnrichmentTest {
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
-		verify(telemetryClient).trackEvent(anyString());
+		verify(telemetryClient).trackEvent(contains("[LAST RETRY]"));
 	}
 
 	@Test
@@ -204,9 +206,44 @@ class BizEventEnrichmentTest {
 
 		// test execution
 		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventGeneralView, bizEventCartView, context));
-		// check the borderline case of two handle retries
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"), eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
-		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
+		verify(bizEventDeadLetterService, never()).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
+	}
+
+	@Test
+	void runOk_invalidEventDoesNotBlockTheBatch() throws BizEventToViewConstraintViolationException {
+		BizEvent invalid = BizEvent.builder().id("invalid").build();
+		BizEvent valid = BizEvent.builder().id("valid").build();
+		BizEventToViewResult views = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(invalid)).thenThrow(new BizEventToViewConstraintViolationException("invalid", List.of()));
+		when(bizEventToViewService.mapBizEventToView(valid)).thenReturn(views);
+		when(bizEventDeadLetterService.uploadToDeadLetter(anyString(), any(LocalDateTime.class), any(), eq("validation-error"), eq(List.of(invalid)), anyString()))
+				.thenReturn(true);
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		assertDoesNotThrow(() -> function.processBizEventEnrichment(List.of(invalid, valid), bizEventGeneralView, bizEventCartView, context));
+
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
+		verify(bizEventGeneralView).setValue(List.of(views.getGeneralView()));
+		verify(bizEventCartView).setValue(List.of(views.getCartView()));
+	}
+
+	@Test
+	void runKo_invalidEventNotSavedInDeadLetterIsRetried() throws BizEventToViewConstraintViolationException {
+		BizEvent invalid = BizEvent.builder().id("invalid").build();
+		when(bizEventToViewService.mapBizEventToView(invalid)).thenThrow(new BizEventToViewConstraintViolationException("invalid", List.of()));
+		when(bizEventDeadLetterService.uploadToDeadLetter(anyString(), any(LocalDateTime.class), any(), eq("validation-error"), eq(List.of(invalid)), anyString()))
+				.thenReturn(false);
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		assertThrows(BizEventToViewConstraintViolationException.class,
+				() -> function.processBizEventEnrichment(List.of(invalid), bizEventGeneralView, bizEventCartView, context));
 	}
 	
 	private BizEventToViewResult buildBizEventToViewResult() {

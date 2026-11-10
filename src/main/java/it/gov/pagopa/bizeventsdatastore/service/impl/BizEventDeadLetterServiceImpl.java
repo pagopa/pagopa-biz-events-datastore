@@ -10,6 +10,7 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * {@inheritDoc}
@@ -29,6 +30,12 @@ public class BizEventDeadLetterServiceImpl implements BizEventDeadLetterService 
                 "There was an error when saving List<BizEvent> " + type + " message in the dead letter.";
         logger.error("[LAST RETRY] [{}] function with invocationId [{}] performing the last retry for events ingestion. {}",
                 context.getFunctionName(),context.getInvocationId(), deadLetterLog);
+        if (!deadLetterResult) {
+            String eventIds = bizEvtMsg.stream().map(BizEvent::getId).collect(Collectors.joining(","));
+            logger.error("[DEAD LETTER FAILED] [{}] function with invocationId [{}] was not able to save the events [{}]",
+                    context.getFunctionName(), context.getInvocationId(), eventIds);
+            telemetryClient.trackEvent(String.format("[DEAD LETTER FAILED] invocationId [%s]", context.getInvocationId()));
+        }
         telemetryClient.trackEvent(String.format("[LAST RETRY] invocationId [%s]", context.getInvocationId()));
     }
 
@@ -40,6 +47,7 @@ public class BizEventDeadLetterServiceImpl implements BizEventDeadLetterService 
         try {
             return BlobStorage.getInstance().uploadToDeadLetter(id, now, invocationId, type, bizEvtMsg,deadLetterContainerName);
         } catch (Exception e) {
+            logger.error("Unable to upload to the dead letter container [{}] with invocationId [{}]", deadLetterContainerName, invocationId, e);
             return false;
         }
     }

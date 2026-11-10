@@ -39,6 +39,7 @@ public class BizEventEnrichment {
 	private static final int EBR_MAX_RETRY_COUNT = 10;
 	private static final int MAX_ITEMS_PER_INVOCATION = 64;
 	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
+	private static final String VALIDATION_ERROR_TYPE = "validation-error";
 
 	private final TelemetryClient telemetryClient = new TelemetryClient();
 
@@ -110,7 +111,6 @@ public class BizEventEnrichment {
 		handleLastRetry(items, context, retryIndex, id, "last-retry-input", executionDateTime);
 
 		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
-		List<BizEvent> bizEvtMsgWithProperties = new ArrayList<>();
 
 		try {
 			for (BizEvent be : items) {
@@ -125,7 +125,7 @@ public class BizEventEnrichment {
 						context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
 
 
-				generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
+				generateBizEventViewsOrSendToDeadLetter(userViewToInsert, generalViewToInsert, cartViewToInsert, be, context, executionDateTime);
 			}
 
 			if (!userViewToInsert.isEmpty()) {
@@ -134,8 +134,6 @@ public class BizEventEnrichment {
 		} catch (Exception e) {
 			logger.error("BizEventEnrichmentProcessor function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
 					" [{}]: {}. Retry index: {}", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
-			// retry check and dead-letter upload
-			handleLastRetry(bizEvtMsgWithProperties, context, retryIndex, id, "exception-output", executionDateTime);
 			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 			throw e;
 		}
@@ -156,6 +154,28 @@ public class BizEventEnrichment {
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
 			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, type, items,
 					CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, telemetryClient);
+		}
+	}
+
+	private void generateBizEventViewsOrSendToDeadLetter(
+			List<BizEventsViewUser> userViewToInsert,
+			List<BizEventsViewGeneral> generalViewToInsert,
+			List<BizEventsViewCart> cartViewToInsert,
+			BizEvent be,
+			final ExecutionContext context,
+			LocalDateTime executionDateTime
+	) throws BizEventToViewConstraintViolationException {
+		try {
+			generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
+		} catch (BizEventToViewConstraintViolationException e) {
+			// A validation error would be the same at every retry: it must not block the other events of the batch.
+			logger.error("BizEventEnrichment function with invocationId [{}] - invalid views for biz-event [{}]: it is sent to the dead letter",
+					context.getInvocationId(), be.getId(), e);
+			boolean uploaded = bizEventDeadLetterService.uploadToDeadLetter(String.valueOf(UUID.randomUUID()), executionDateTime,
+					context.getInvocationId(), VALIDATION_ERROR_TYPE, List.of(be), CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME);
+			if (!uploaded) {
+				throw e;
+			}
 		}
 	}
 

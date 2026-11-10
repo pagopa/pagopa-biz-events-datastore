@@ -83,7 +83,7 @@ public class BizEventToDataStore {
 		// This retry check is needed because setValue in OutputBinding doesn’t throw exceptions,
 		// requiring an additional check to send the message to the dead letter queue after multiple failed attempts (e.g., 429 Too Many Requests).
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, "last-retry-input", bizEvtMsg, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, telemetryClient);
+			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, "last-retry-input", withProperties(bizEvtMsg, properties), CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, telemetryClient);
 		}
 
 		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
@@ -101,8 +101,9 @@ public class BizEventToDataStore {
 					logger.debug("BizEventToDataStore function with invocationId [{}] working the biz-event [{}]",
 							context.getInvocationId(), eventDetails);
 
-					// READ FROM THE CACHE: The cache is queried to find out if the event has already been queued --> if yes it is skipped
-					String value = redisCacheService.findByBizEventId(bizEvtMsg.get(i).getId(), REDIS_ID_PREFIX);
+					// READ FROM THE CACHE: The cache is queried to find out if the event has already been queued --> if yes it is skipped.
+					// On a retry the key was written by the previous attempt, whose persistence failed: the event must not be discarded.
+					String value = retryIndex > 0 ? null : redisCacheService.findByBizEventId(bizEvtMsg.get(i).getId(), REDIS_ID_PREFIX);
 
 					if (Strings.isNullOrEmpty(value)) {
 						BizEvent bz = bizEvtMsg.get(i);
@@ -146,13 +147,18 @@ public class BizEventToDataStore {
 		} catch (Exception e) {
 			logger.error("BizEventToDataStore function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
 					" [{}]: {}. Retry index: {}", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
-			// retry check and dead-letter upload
-			if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-				bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, "exception-output", bizEvtMsgWithProperties, CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, telemetryClient);
-			}
 			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 			throw e;
 		}
+	}
+
+	private List<BizEvent> withProperties(List<BizEvent> events, Map<String, Object>[] properties) {
+		if (events.size() == properties.length) {
+			for (int i = 0; i < events.size(); i++) {
+				events.get(i).setProperties(properties[i]);
+			}
+		}
+		return events;
 	}
 
 }

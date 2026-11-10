@@ -12,9 +12,15 @@ import com.azure.cosmos.implementation.patch.PatchOperationCore;
 import com.azure.cosmos.models.CosmosItemRequestOptions;
 import com.azure.cosmos.models.CosmosItemResponse;
 import com.azure.cosmos.models.CosmosPatchOperations;
+import com.azure.cosmos.models.CosmosQueryRequestOptions;
 import com.azure.cosmos.models.PartitionKey;
+import com.azure.cosmos.models.SqlQuerySpec;
+import com.azure.cosmos.util.CosmosPagedIterable;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.google.gson.Gson;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import org.junit.jupiter.api.Test;
@@ -28,13 +34,16 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -156,6 +165,76 @@ class BizEventCosmosClientImplTest {
         assertEquals(Set.of("id", "taxCode", "transactionId", "transactionDate", "hidden", "isPayer", "isDebtor"), fieldNames);
         assertFalse(json.has("payer"));
         assertFalse(json.has("debtor"));
+    }
+
+    @Test
+    void createBizEventIfAbsentCreated() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        assertTrue(sut.createBizEventIfAbsent(BizEvent.builder().id("1").build()));
+
+        verify(mockContainer).createItem(any(JsonNode.class), eq(new PartitionKey("1")), any(CosmosItemRequestOptions.class));
+    }
+
+    @Test
+    void createBizEventIfAbsentAlreadyExists() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        CosmosException conflict = buildCosmosException(409);
+        when(mockContainer.createItem(any(JsonNode.class), any(PartitionKey.class), any(CosmosItemRequestOptions.class))).thenThrow(conflict);
+
+        assertFalse(sut.createBizEventIfAbsent(BizEvent.builder().id("1").build()));
+    }
+
+    @Test
+    void createBizEventIfAbsentError() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        CosmosException error = buildCosmosException(429);
+        when(mockContainer.createItem(any(JsonNode.class), any(PartitionKey.class), any(CosmosItemRequestOptions.class))).thenThrow(error);
+
+        BizEvent bizEvent = BizEvent.builder().id("1").build();
+        assertThrows(CosmosException.class, () -> sut.createBizEventIfAbsent(bizEvent));
+    }
+
+    @Test
+    void createBizEventUsesTheFieldNamesOfTheOutputBinding() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        BizEvent bizEvent = new Gson().fromJson("{\"id\":\"1\",\"transferList\":[{\"IBAN\":\"IT00\"}]}", BizEvent.class);
+
+        sut.createBizEventIfAbsent(bizEvent);
+
+        ArgumentCaptor<JsonNode> captor = ArgumentCaptor.forClass(JsonNode.class);
+        verify(mockContainer).createItem(captor.capture(), any(PartitionKey.class), any(CosmosItemRequestOptions.class));
+        assertEquals("IT00", captor.getValue().get("transferList").get(0).get("IBAN").asText());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void findOtherBizEventIdsOfPaymentSuccess() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+        CosmosPagedIterable<String> pagedIterable = mock(CosmosPagedIterable.class);
+        when(pagedIterable.stream()).thenReturn(Stream.of("2"));
+        when(mockContainer.queryItems(any(SqlQuerySpec.class), any(CosmosQueryRequestOptions.class), eq(String.class))).thenReturn(pagedIterable);
+
+        assertEquals(List.of("2"), sut.findOtherBizEventIdsOfPayment("pa", "iuv", "1"));
+    }
+
+    @Test
+    void upsertBizEventViewsSuccess() {
+        when(cosmosClientMock.getDatabase(any())).thenReturn(mockDatabase);
+        when(mockDatabase.getContainer(any())).thenReturn(mockContainer);
+
+        sut.upsertBizEventViewGeneral(BizEventsViewGeneral.builder().transactionId("general").build());
+        sut.upsertBizEventViewCart(BizEventsViewCart.builder().transactionId("cart").build());
+
+        verify(mockDatabase).getContainer("biz-events-view-general");
+        verify(mockDatabase).getContainer("biz-events-view-cart");
+        verify(mockContainer).upsertItem(any(JsonNode.class), eq(new PartitionKey("general")), any(CosmosItemRequestOptions.class));
+        verify(mockContainer).upsertItem(any(JsonNode.class), eq(new PartitionKey("cart")), any(CosmosItemRequestOptions.class));
     }
 
     private Map<String, Object> capturePatchedFields(BizEventsViewUser viewUser) {
