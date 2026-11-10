@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.13.3-3-PIDM-2510-dead-letter-recovery</version>
+	<version>0.13.3-4-PIDM-2510-dead-letter-recovery</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
