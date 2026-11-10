@@ -5,6 +5,7 @@ import com.azure.core.util.BinaryData;
 import com.azure.storage.blob.BlobClient;
 import com.azure.storage.blob.BlobContainerClient;
 import com.azure.storage.blob.BlobServiceClient;
+import com.azure.storage.blob.BlobServiceClientBuilder;
 import com.azure.storage.blob.models.BlobItem;
 import com.azure.storage.blob.models.BlobItemProperties;
 import com.azure.storage.blob.models.ListBlobsOptions;
@@ -25,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -58,6 +60,14 @@ class BlobStorageTest {
         lenient().when(blobServiceClient.getBlobContainerClient(CONTAINER)).thenReturn(blobContainerClient);
         lenient().when(blobContainerClient.getBlobClient(BLOB)).thenReturn(blobClient);
         sut = new BlobStorage(blobServiceClient);
+    }
+
+    @Test
+    void realBlobClientCanBeBuiltWithTheResolvedDependencies() {
+        String connectionString = "DefaultEndpointsProtocol=https;AccountName=test;AccountKey=YWJjZGVmZ2g=;EndpointSuffix=core.windows.net";
+
+        assertDoesNotThrow(() -> new BlobServiceClientBuilder().connectionString(connectionString).buildClient()
+                .getBlobContainerClient(CONTAINER).getBlobClient(BLOB).getBlockBlobClient());
     }
 
     @Test

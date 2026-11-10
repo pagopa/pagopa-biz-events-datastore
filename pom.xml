@@ -73,6 +73,11 @@
 			<artifactId>azure-storage-queue</artifactId>
 			<version>12.17.1</version>
 		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-common</artifactId>
+			<version>12.28.0</version>
+		</dependency>
 
 		<!-- Azure Storage Blob SDK -->
 		<dependency>
