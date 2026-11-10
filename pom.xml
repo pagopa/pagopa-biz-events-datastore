@@ -6,7 +6,7 @@
 
 	<groupId>it.gov.pagopa.bizeventsdatastore</groupId>
 	<artifactId>biz-events-datastore-function</artifactId>
-	<version>0.13.3</version>
+	<version>0.13.3-4-PIDM-2510-dead-letter-recovery</version>
 	<packaging>jar</packaging>
 
 	<name>Biz Events Datastore Fn</name>
@@ -72,6 +72,11 @@
 			<groupId>com.azure</groupId>
 			<artifactId>azure-storage-queue</artifactId>
 			<version>12.17.1</version>
+		</dependency>
+		<dependency>
+			<groupId>com.azure</groupId>
+			<artifactId>azure-storage-common</artifactId>
+			<version>12.28.0</version>
 		</dependency>
 
 		<!-- Azure Storage Blob SDK -->

@@ -6,11 +6,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -93,7 +97,6 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
         
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(), anyString());
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(), anyString());
 
         assertEquals(StatusType.DONE, bizEvtMsg.get(0).getEventStatus());
@@ -259,8 +262,6 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doThrow(new ArithmeticException()).when(redisCacheService).findByBizEventId(anyString(),anyString());
-
         // test execution
         assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
     }
@@ -289,7 +290,6 @@ class BizEventToDataStoreTest {
         OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
         OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
 
-        doReturn(null).when(redisCacheService).findByBizEventId(anyString(),anyString());
         doReturn("OK").when(redisCacheService).saveBizEventId(anyString(),anyString());
 
         // test execution
@@ -297,5 +297,67 @@ class BizEventToDataStoreTest {
 
         // test assertion -> this line means the call was successful
         assertTrue(true);
+    }
+
+    @Test
+    void runRetry_bizEventAlreadyInCacheIsNotDiscarded() {
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(1);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").paymentInfo(PaymentInfo.builder().IUR("iur").build())
+                .debtorPosition(DebtorPosition.builder().iuv("iuv").build()).build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
+
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
+
+        verify(redisCacheService, never()).findByBizEventId(anyString(), anyString());
+        verify(document).setValue(argThat(events -> events.size() == 1 && events.get(0).getId().equals("123")));
+    }
+
+    @Test
+    void runLastRetry_propertiesAreSavedInDeadLetter() {
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(10);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").paymentInfo(PaymentInfo.builder().IUR("iur").build())
+                .debtorPosition(DebtorPosition.builder().iuv("iuv").build()).build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        properties[0] = new HashMap<>(Map.of("serviceIdentifier", "NDP003PROD"));
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
+
+        function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context);
+
+        verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"),
+                argThat(events -> events.get(0).getProperties().equals(properties[0])), anyString(), any(TelemetryClient.class));
+    }
+
+    @Test
+    void runKo_genericExceptionLastRetry_exceptionOutputIsNotSaved() {
+        when(context.getRetryContext()).thenReturn(retryContext);
+        when(retryContext.getRetrycount()).thenReturn(10);
+
+        List<BizEvent> bizEvtMsg = new ArrayList<>();
+        bizEvtMsg.add(BizEvent.builder().id("123").build());
+
+        Map<String, Object>[] properties = new HashMap[1];
+        @SuppressWarnings("unchecked")
+        OutputBinding<List<BizEvent>> document = (OutputBinding<List<BizEvent>>)mock(OutputBinding.class);
+        OutputBinding<List<BizEvent>> bizPdndEvtMsg = mock(OutputBinding.class);
+
+        assertThrows(Exception.class, () -> function.processBizEvent(bizEvtMsg, properties, document, bizPdndEvtMsg, context));
+
+        verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"),
+                eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
+        verify(bizEventDeadLetterService, never()).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"),
+                anyList(), anyString(), any(TelemetryClient.class));
     }
 }

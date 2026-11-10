@@ -1,5 +1,6 @@
 package it.gov.pagopa.bizeventsdatastore;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -7,8 +8,11 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -16,9 +20,9 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -39,6 +43,7 @@ import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
+import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventDeadLetterService;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventToViewService;
 import it.gov.pagopa.bizeventsdatastore.service.impl.BizEventDeadLetterServiceImpl;
@@ -68,6 +73,9 @@ class BizEventEnrichmentTest {
 
 	@Mock
 	private BizEventToViewService bizEventToViewService;
+
+	@Mock
+	private BizEventCosmosService bizEventCosmosService;
 	
 	@SystemStub
 	private EnvironmentVariables environment = new EnvironmentVariables("ENABLE_TRANSACTION_LIST_VIEW", "true");
@@ -84,45 +92,69 @@ class BizEventEnrichmentTest {
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
 		bizEvtMsgList.add (bizEventMsg);
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 		assertEquals(StatusType.DONE, bizEvtMsgList.get(0).getEventStatus());
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
-		verify(bizEventUserView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 1));
 		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
 	}
 
-	
+
 	@Test
-	void runKo_differentSize() throws BizEventToViewConstraintViolationException, IOException  {
-		when(context.getInvocationId()).thenReturn("123");
+	void runOk_bizEventFromChangeFeedIsNotModified() throws BizEventToViewConstraintViolationException, IOException  {
+		BizEventToViewResult viewResult = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
 
-		List<BizEvent> bizEvtMsgList = new ArrayList<>();
 		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
-		bizEvtMsgList.add (bizEventMsg);
+		Long timestamp = 1700000000000L;
+		Map<String, Object> properties = Map.of("serviceIdentifier", "NDP003PROD");
+		String iur = bizEventMsg.getDebtorPosition().getIur();
+		bizEventMsg.setTimestamp(timestamp);
+		bizEventMsg.setProperties(properties);
+		List<BizEvent> bizEvtMsgList = List.of(bizEventMsg);
 
-		Map<String, Object>[] properties = new HashMap[0];
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 		// test execution
-		function.processBizEventEnrichment(bizEvtMsgList, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context);
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
 
-		// test assertion -> this line means the call was successful
-		assertTrue(true);
-		verify(bizEventDeadLetterService).uploadToDeadLetter(anyString(), any(LocalDateTime.class), eq("123"), eq("different-size-error"), 
-				eq(bizEvtMsgList), eq("biz-events-views-dead-letter"));
+		// test assertion -> the views are generated from the persisted biz-event without re-enriching it
+		verify(bizEventToViewService).mapBizEventToView(argThat(be ->
+				timestamp.equals(be.getTimestamp())
+				&& properties.equals(be.getProperties())
+				&& Objects.equals(iur, be.getDebtorPosition().getIur())));
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 1));
+		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
+		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
+	}
+
+	@Test
+	void runKo_saveViewUserException() throws BizEventToViewConstraintViolationException, IOException {
+		BizEventToViewResult viewResult = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
+		doThrow(new RuntimeException("cosmos error")).when(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(anyList());
+
+		List<BizEvent> bizEvtMsgList = List.of(TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class));
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		// test execution -> the error is rethrown to trigger the retry policy
+		assertThrows(RuntimeException.class, () -> function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context));
+
+		verify(bizEventGeneralView, never()).setValue(any());
+		verify(bizEventCartView, never()).setValue(any());
 	}
 
 	@Test
@@ -138,49 +170,80 @@ class BizEventEnrichmentTest {
 
 		// test assertion -> this line means the call was successful
 		assertTrue(true);
-		verify(telemetryClient).trackEvent(anyString());
+		verify(telemetryClient).trackEvent(contains("[LAST RETRY]"));
 	}
 
 	@Test
-	void runKo_genericException()  {
-		// incomplete BizEvent obj --> NullPointerException getPaymentInfo() is null
+	void runKo_genericException() throws BizEventToViewConstraintViolationException  {
+		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventGeneralView, bizEventCartView, context));
 	}
 	
 	@Test
-	void runKo_genericExceptionLastRetry() {
+	void runKo_genericExceptionLastRetry() throws BizEventToViewConstraintViolationException {
 		// test precondition
 		when(context.getRetryContext()).thenReturn(retryContext);
 		// set to max retry value
 		when(retryContext.getRetrycount()).thenReturn(10);
+		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
 
-		// incomplete BizEvent obj --> NullPointerException getPaymentInfo() is null
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
 		bizEvtMsg.add(BizEvent.builder().id("123").build());
 
-		Map<String, Object>[] properties = new HashMap[1];
 		@SuppressWarnings("unchecked")
-		OutputBinding<List<BizEventsViewUser>> bizEventUserView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
 		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
 
 
 		// test execution
-		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, properties, bizEventUserView, bizEventGeneralView, bizEventCartView, context));
-		// check the borderline case of two handle retries
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, bizEventGeneralView, bizEventCartView, context));
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"), eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
-		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
+		verify(bizEventDeadLetterService, never()).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
+	}
+
+	@Test
+	void runOk_invalidEventDoesNotBlockTheBatch() throws BizEventToViewConstraintViolationException {
+		BizEvent invalid = BizEvent.builder().id("invalid").build();
+		BizEvent valid = BizEvent.builder().id("valid").build();
+		BizEventToViewResult views = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(invalid)).thenThrow(new BizEventToViewConstraintViolationException("invalid", List.of()));
+		when(bizEventToViewService.mapBizEventToView(valid)).thenReturn(views);
+		when(bizEventDeadLetterService.uploadToDeadLetter(anyString(), any(LocalDateTime.class), any(), eq("validation-error"), eq(List.of(invalid)), anyString()))
+				.thenReturn(true);
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		assertDoesNotThrow(() -> function.processBizEventEnrichment(List.of(invalid, valid), bizEventGeneralView, bizEventCartView, context));
+
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
+		verify(bizEventGeneralView).setValue(List.of(views.getGeneralView()));
+		verify(bizEventCartView).setValue(List.of(views.getCartView()));
+	}
+
+	@Test
+	void runKo_invalidEventNotSavedInDeadLetterIsRetried() throws BizEventToViewConstraintViolationException {
+		BizEvent invalid = BizEvent.builder().id("invalid").build();
+		when(bizEventToViewService.mapBizEventToView(invalid)).thenThrow(new BizEventToViewConstraintViolationException("invalid", List.of()));
+		when(bizEventDeadLetterService.uploadToDeadLetter(anyString(), any(LocalDateTime.class), any(), eq("validation-error"), eq(List.of(invalid)), anyString()))
+				.thenReturn(false);
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		assertThrows(BizEventToViewConstraintViolationException.class,
+				() -> function.processBizEventEnrichment(List.of(invalid), bizEventGeneralView, bizEventCartView, context));
 	}
 	
 	private BizEventToViewResult buildBizEventToViewResult() {

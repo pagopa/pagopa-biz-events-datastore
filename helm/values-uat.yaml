@@ -4,7 +4,7 @@ microservice-chart: &microservice-chart
   fullnameOverride: ""
   image:
     repository: ghcr.io/pagopa/pagopa-biz-events-datastore
-    tag: "0.13.3"
+    tag: "0.13.3-4-PIDM-2510-dead-letter-recovery"
     pullPolicy: Always
   # https://github.com/Azure/azure-functions-host/blob/dev/src/WebJobs.Script.WebHost/Controllers/HostController.cs
   livenessProbe:
@@ -73,14 +73,14 @@ microservice-chart: &microservice-chart
     cooldownPeriod: 50 # seconds
     triggers:
       - type: cpu
+        metricType: Utilization # Allowed types are 'Utilization' or 'AverageValue'
         metadata:
           # Required
-          type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "80"
       - type: memory
+        metricType: Utilization # Allowed types are 'Utilization' or 'AverageValue'
         metadata:
           # Required
-          type: Utilization # Allowed types are 'Utilization' or 'AverageValue'
           value: "80"
   fileConfig: {}
   envConfig: &envConfig
@@ -110,6 +110,11 @@ microservice-chart: &microservice-chart
     UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 1000 * FROM c WHERE c.origin = 'UNKNOWN'"
     MASSIVE_VIEW_REGEN_QUEUE_TOPIC: "pagopa-u-weu-bizevents-queue-massive-biz-to-view-regen"
     MASSIVE_VIEW_REGEN_THREAD_POOL_SIZE: "100"
+    BIZ_EVENT_DL_RECOVERY_SCHEDULE: "0 */15 * * * *"
+    BIZ_EVENT_VIEW_DL_RECOVERY_SCHEDULE: "0 */15 * * * *"
+    DL_RECOVERY_START_DATE: "2026-11-06" # blobs created before this date are not recovered
+    DL_RECOVERY_MAX_ATTEMPTS: "3"
+    DL_RECOVERY_MAX_BLOBS_PER_RUN: "50"
   envFieldRef: &envFieldRef
     APP_NAME: "metadata.labels['app.kubernetes.io/instance']"
     APP_VERSION: "metadata.labels['app.kubernetes.io/version']"
@@ -157,6 +162,8 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventToView.Disabled: "true"
     AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "true"
     AzureWebJobs.BizEventToViewMassive.Disabled: "true"
+    AzureWebJobs.BizEventDeadLetterRecoveryTimerTrigger.Disabled: "true"
+    AzureWebJobs.BizEventViewDeadLetterRecoveryTimerTrigger.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-u-azurewebjobsstorage'
@@ -180,6 +187,8 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventToView.Disabled: "false"
     AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "false"
     AzureWebJobs.BizEventToViewMassive.Disabled: "false"
+    AzureWebJobs.BizEventDeadLetterRecoveryTimerTrigger.Disabled: "true"
+    AzureWebJobs.BizEventViewDeadLetterRecoveryTimerTrigger.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
     AzureWebJobsStorage: 'bizevent-view-u-azurewebjobsstorage'
