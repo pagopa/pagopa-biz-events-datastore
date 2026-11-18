@@ -1,7 +1,10 @@
 package it.gov.pagopa.bizeventsdatastore.service;
 
+import java.util.List;
+
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 
 /**
@@ -18,4 +21,12 @@ public interface BizEventCosmosService {
      *                                   it is not in the expected status {@link StatusType#DONE} or {@link StatusType#INGESTED}
      */
     BizEvent getBizEvent(String eventId) throws BizEventNotFoundException;
+
+    /**
+     * Save the biz-event user views preserving the visibility chosen by the user: a view already hidden
+     * is never made visible again
+     *
+     * @param viewUserList the biz-event user views to save
+     */
+    void saveBizEventViewUsersPreservingVisibility(List<BizEventsViewUser> viewUserList);
 }
