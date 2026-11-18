@@ -2,8 +2,10 @@ package it.gov.pagopa.bizeventsdatastore;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.UUID;
 
@@ -16,6 +18,7 @@ import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
 
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
+import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
 import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
@@ -39,6 +42,7 @@ public class BizEventEnrichment {
 	private static final int EBR_MAX_RETRY_COUNT = 10;
 	private static final int MAX_ITEMS_PER_INVOCATION = 64;
 	private static final String CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME = "biz-events-views-dead-letter";
+	private static final Set<StatusType> VIEW_ELIGIBLE_STATUSES = EnumSet.of(StatusType.DONE, StatusType.INGESTED);
 
 	private final TelemetryClient telemetryClient = new TelemetryClient();
 
@@ -124,6 +128,12 @@ public class BizEventEnrichment {
 								" and status {} and numEnrichmentRetry {} , enriching biz-event {}",
 						context.getInvocationId(), LocalDateTime.now(), be.getId(), be.getEventStatus(), retryIndex, eventDetails);
 
+				if (!VIEW_ELIGIBLE_STATUSES.contains(be.getEventStatus())) {
+					logger.debug("BizEventEnrichment function with invocationId {} - skipping biz-event with id {} and status {}:" +
+									" views are generated only for status {}",
+							context.getInvocationId(), be.getId(), be.getEventStatus(), VIEW_ELIGIBLE_STATUSES);
+					continue;
+				}
 
 				generateBizEventViews(userViewToInsert, generalViewToInsert, cartViewToInsert, be);
 			}

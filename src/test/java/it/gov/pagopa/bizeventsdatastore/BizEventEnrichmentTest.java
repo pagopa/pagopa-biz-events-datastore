@@ -11,6 +11,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,9 +22,12 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
@@ -134,6 +138,58 @@ class BizEventEnrichmentTest {
 		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 1));
 		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 1));
 		verify(bizEventCartView).setValue(argThat(view -> view.size() == 1));
+	}
+
+	@Test
+	void runOk_onlyDoneAndIngestedBizEventsGenerateViews() throws BizEventToViewConstraintViolationException, IOException {
+		BizEventToViewResult viewResult = buildBizEventToViewResult();
+		when(bizEventToViewService.mapBizEventToView(any())).thenReturn(viewResult);
+
+		List<BizEvent> bizEvtMsgList = new ArrayList<>();
+		for (StatusType status : StatusType.values()) {
+			BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+			bizEventMsg.setId("id-" + status);
+			bizEventMsg.setEventStatus(status);
+			bizEvtMsgList.add(bizEventMsg);
+		}
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		// test execution
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
+
+		// test assertion -> NA, RETRY and FAILED biz-events are skipped
+		ArgumentCaptor<BizEvent> mappedCaptor = ArgumentCaptor.forClass(BizEvent.class);
+		verify(bizEventToViewService, times(2)).mapBizEventToView(mappedCaptor.capture());
+		Set<StatusType> mappedStatuses = mappedCaptor.getAllValues().stream()
+				.map(BizEvent::getEventStatus)
+				.collect(Collectors.toSet());
+		assertEquals(Set.of(StatusType.DONE, StatusType.INGESTED), mappedStatuses);
+		verify(bizEventCosmosService).saveBizEventViewUsersPreservingVisibility(argThat(view -> view.size() == 2));
+		verify(bizEventGeneralView).setValue(argThat(view -> view.size() == 2));
+		verify(bizEventCartView).setValue(argThat(view -> view.size() == 2));
+	}
+
+	@Test
+	void runOk_noEligibleBizEventsDoesNotWriteViews() throws BizEventToViewConstraintViolationException, IOException {
+		BizEvent bizEventMsg = TestUtil.readModelFromFile("payment-manager/bizEvent.json", BizEvent.class);
+		bizEventMsg.setEventStatus(StatusType.RETRY);
+		List<BizEvent> bizEvtMsgList = List.of(bizEventMsg);
+
+		@SuppressWarnings("unchecked")
+		OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView = mock(OutputBinding.class);
+		OutputBinding<List<BizEventsViewCart>> bizEventCartView = mock(OutputBinding.class);
+
+		// test execution
+		function.processBizEventEnrichment(bizEvtMsgList, bizEventGeneralView, bizEventCartView, context);
+
+		// test assertion -> nothing is mapped nor written
+		verify(bizEventToViewService, never()).mapBizEventToView(any());
+		verify(bizEventCosmosService, never()).saveBizEventViewUsersPreservingVisibility(anyList());
+		verify(bizEventGeneralView, never()).setValue(any());
+		verify(bizEventCartView, never()).setValue(any());
 	}
 
 	@Test
