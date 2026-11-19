@@ -157,6 +157,42 @@ class BizEventDeadLetterRecoveryServiceImplTest {
     }
 
     @Test
+    void recoverBizEventTemporaryFailureComesBeforeThePermanentOne() {
+        BizEvent coso = buildBizEvent("1", "iuv1");
+        BizEvent error = buildBizEvent("2", "iuv2");
+        mockBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, Map.of(), coso, error);
+        when(cosmosService.findOtherBizEventIdsOfPayment("pa", "iuv1", "1")).thenReturn(List.of("coso-id"));
+        when(cosmosService.findOtherBizEventIdsOfPayment("pa", "iuv2", "2")).thenReturn(List.of());
+        when(cosmosService.createBizEventIfAbsent(error)).thenThrow(mock(CosmosException.class));
+
+        sut.recoverBizEvents(INVOCATION);
+
+        verify(blobStorage, never()).deleteDeadLetterBlob(anyString(), anyString());
+        Map<String, String> metadata = captureMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
+        assertNull(metadata.get(METADATA_RECOVERY_STATUS));
+        assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
+        assertEquals("event-recovery-error,same-payment-of-other-biz-event", metadata.get(METADATA_RECOVERY_REASON));
+        verifyNoInteractions(telemetryClient);
+    }
+
+    @Test
+    void recoverBizEventLastAttemptKeepsBothReasons() {
+        BizEvent coso = buildBizEvent("1", "iuv1");
+        BizEvent error = buildBizEvent("2", "iuv2");
+        mockBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, Map.of(METADATA_RECOVERY_ATTEMPTS, "2"), coso, error);
+        when(cosmosService.findOtherBizEventIdsOfPayment("pa", "iuv1", "1")).thenReturn(List.of("coso-id"));
+        when(cosmosService.findOtherBizEventIdsOfPayment("pa", "iuv2", "2")).thenReturn(List.of());
+        when(cosmosService.createBizEventIfAbsent(error)).thenThrow(mock(CosmosException.class));
+
+        sut.recoverBizEvents(INVOCATION);
+
+        Map<String, String> metadata = captureMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
+        assertEquals(RECOVERY_STATUS_FAILED, metadata.get(METADATA_RECOVERY_STATUS));
+        assertEquals("event-recovery-error,same-payment-of-other-biz-event", metadata.get(METADATA_RECOVERY_REASON));
+        verify(telemetryClient).trackEvent(anyString());
+    }
+
+    @Test
     void unreadableBlobCountsTheAttempt() {
         DeadLetterBlob blob = new DeadLetterBlob(BLOB, Map.of(METADATA_RECOVERY_ATTEMPTS, "not-a-number"));
         when(blobStorage.listDeadLetterBlobs(eq(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME), eq(FROM), any(), eq(50))).thenReturn(List.of(blob));
@@ -258,10 +294,14 @@ class BizEventDeadLetterRecoveryServiceImplTest {
     }
 
     private BizEvent buildBizEvent() {
+        return buildBizEvent("1", "iuv");
+    }
+
+    private BizEvent buildBizEvent(String id, String iuv) {
         return BizEvent.builder()
-                .id("1")
+                .id(id)
                 .creditor(Creditor.builder().idPA("pa").build())
-                .debtorPosition(DebtorPosition.builder().iuv("iuv").build())
+                .debtorPosition(DebtorPosition.builder().iuv(iuv).build())
                 .paymentInfo(PaymentInfo.builder().IUR("iur").build())
                 .build();
     }

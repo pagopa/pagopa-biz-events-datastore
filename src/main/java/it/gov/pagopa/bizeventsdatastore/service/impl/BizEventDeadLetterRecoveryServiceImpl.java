@@ -20,8 +20,10 @@ import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * {@inheritDoc}
@@ -34,9 +36,11 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
     static final String METADATA_RECOVERY_STATUS = "recoveryStatus";
     static final String METADATA_RECOVERY_REASON = "recoveryReason";
     static final String RECOVERY_STATUS_FAILED = "failed";
+    static final String EVENT_RECOVERY_ERROR = "event-recovery-error";
 
     private static final int DEFAULT_MAX_ATTEMPTS = 3;
     private static final int DEFAULT_MAX_BLOBS_PER_RUN = 50;
+    private static final String REASONS_SEPARATOR = ",";
 
     private final Logger logger = LoggerFactory.getLogger(BizEventDeadLetterRecoveryServiceImpl.class);
 
@@ -98,25 +102,28 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
     }
 
     private void recoverBlob(String containerName, DeadLetterBlob blob, String invocationId, EventRecovery eventRecovery) {
-        String permanentFailure = null;
-        String temporaryFailure = null;
+        Set<String> permanentFailures = new LinkedHashSet<>();
+        Set<String> temporaryFailures = new LinkedHashSet<>();
 
         try {
             for (BizEvent bizEvent : this.blobStorage.readDeadLetterBlob(containerName, blob.getName())) {
                 try {
                     String failure = eventRecovery.recover(bizEvent);
-                    permanentFailure = failure != null ? failure : permanentFailure;
+                    if (failure != null) {
+                        permanentFailures.add(failure);
+                    }
                 } catch (Exception e) {
                     logger.error("Dead letter recovery with invocationId [{}] - error recovering biz-event [{}] of blob [{}]",
                             invocationId, bizEvent.getId(), blob.getName(), e);
-                    temporaryFailure = "event-recovery-error";
+                    temporaryFailures.add(EVENT_RECOVERY_ERROR);
                 }
             }
 
-            if (permanentFailure != null) {
-                markAsFailed(containerName, blob, permanentFailure);
-            } else if (temporaryFailure != null) {
-                registerFailedAttempt(containerName, blob, temporaryFailure);
+            String reason = joinReasons(temporaryFailures, permanentFailures);
+            if (!temporaryFailures.isEmpty()) {
+                registerFailedAttempt(containerName, blob, reason);
+            } else if (!permanentFailures.isEmpty()) {
+                markAsFailed(containerName, blob, reason);
             } else {
                 this.blobStorage.deleteDeadLetterBlob(containerName, blob.getName());
                 logger.info("Dead letter recovery with invocationId [{}] - blob [{}] recovered", invocationId, blob.getName());
@@ -209,6 +216,12 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         } catch (NumberFormatException e) {
             return 0;
         }
+    }
+
+    private static String joinReasons(Set<String> temporaryFailures, Set<String> permanentFailures) {
+        List<String> reasons = new ArrayList<>(temporaryFailures);
+        reasons.addAll(permanentFailures);
+        return String.join(REASONS_SEPARATOR, reasons);
     }
 
     private static OffsetDateTime parseStartDate(String startDate) {
