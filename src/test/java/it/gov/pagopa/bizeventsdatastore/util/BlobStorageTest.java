@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -34,6 +35,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -88,10 +90,59 @@ class BlobStorageTest {
                 blobItem("valid", FROM.plusDays(2), Map.of("invocationId", "1")),
                 blobItem("over-limit", FROM.plusDays(3), Map.of())));
 
-        List<DeadLetterBlob> result = sut.listDeadLetterBlobs(CONTAINER, FROM, blob -> !blob.getMetadata().containsKey("skip"), 2);
+        List<DeadLetterBlob> result = sut.listDeadLetterBlobs(CONTAINER, FROM, FROM.plusDays(10),
+                blob -> !blob.getMetadata().containsKey("skip"), 2);
 
         assertEquals(List.of("no-metadata", "valid"), result.stream().map(DeadLetterBlob::getName).toList());
         assertEquals("1", result.get(1).getMetadata().get("invocationId"));
+    }
+
+    @Test
+    void listDeadLetterBlobsListsOnlyTheMonthlyFoldersFromTheStartDate() {
+        when(blobContainerClient.exists()).thenReturn(true);
+        Map<String, List<BlobItem>> folders = Map.of(
+                "2026/11/", List.of(blobItem("2026/11/30/23/a.json", FROM.plusDays(24), Map.of())),
+                "2026/12/", List.of(blobItem("2026/12/01/00/b.json", FROM.plusDays(25), Map.of())));
+        List<String> listedPrefixes = new ArrayList<>();
+        when(blobContainerClient.listBlobs(any(ListBlobsOptions.class), isNull())).thenAnswer(invocation -> {
+            String prefix = invocation.getArgument(0, ListBlobsOptions.class).getPrefix();
+            listedPrefixes.add(prefix);
+            PagedIterable<BlobItem> page = mock(PagedIterable.class);
+            when(page.stream()).thenReturn(folders.getOrDefault(prefix, List.of()).stream());
+            return page;
+        });
+
+        List<DeadLetterBlob> result = sut.listDeadLetterBlobs(CONTAINER, FROM, FROM.plusDays(26), blob -> true, 10);
+
+        assertEquals(List.of("2026/11/", "2026/12/"), listedPrefixes);
+        assertEquals(List.of("2026/11/30/23/a.json", "2026/12/01/00/b.json"), result.stream().map(DeadLetterBlob::getName).toList());
+    }
+
+    @Test
+    void listDeadLetterBlobsStopsListingWhenTheLimitIsReached() {
+        when(blobContainerClient.exists()).thenReturn(true);
+        List<String> listedPrefixes = new ArrayList<>();
+        when(blobContainerClient.listBlobs(any(ListBlobsOptions.class), isNull())).thenAnswer(invocation -> {
+            listedPrefixes.add(invocation.getArgument(0, ListBlobsOptions.class).getPrefix());
+            PagedIterable<BlobItem> page = mock(PagedIterable.class);
+            when(page.stream()).thenReturn(Stream.of(blobItem("blob", FROM, Map.of())));
+            return page;
+        });
+
+        assertEquals(1, sut.listDeadLetterBlobs(CONTAINER, FROM, FROM.plusMonths(3), blob -> true, 1).size());
+        assertEquals(List.of("2026/11/"), listedPrefixes);
+    }
+
+    @Test
+    void monthlyPrefixesHaveOneDayOfMarginForTheTimeZone() {
+        assertEquals(List.of("2026/10/", "2026/11/", "2026/12/"),
+                BlobStorage.monthlyPrefixes(OffsetDateTime.of(2026, 11, 1, 0, 0, 0, 0, ZoneOffset.UTC),
+                        OffsetDateTime.of(2026, 11, 30, 23, 0, 0, 0, ZoneOffset.UTC)));
+        assertEquals(List.of("2026/11/"),
+                BlobStorage.monthlyPrefixes(FROM, FROM.plusDays(1)));
+        assertEquals(List.of("2026/12/", "2027/01/", "2027/02/"),
+                BlobStorage.monthlyPrefixes(OffsetDateTime.of(2026, 12, 15, 0, 0, 0, 0, ZoneOffset.UTC),
+                        OffsetDateTime.of(2027, 2, 10, 0, 0, 0, 0, ZoneOffset.UTC)));
     }
 
     @Test

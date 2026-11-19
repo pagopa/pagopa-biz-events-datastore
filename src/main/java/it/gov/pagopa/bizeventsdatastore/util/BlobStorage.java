@@ -17,8 +17,10 @@ import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
+import java.time.YearMonth;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -26,6 +28,8 @@ import java.util.function.Predicate;
 
 
 public class BlobStorage {
+
+    private static final DateTimeFormatter MONTHLY_PREFIX_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/");
 
     private final Logger logger = LoggerFactory.getLogger(BlobStorage.class);
 
@@ -84,6 +88,8 @@ public class BlobStorage {
 
     /**
      * Lists the blobs of a dead letter container that were created from the given date and match the given filter.
+     * Only the monthly folders (yyyy/MM/) of the dead letter path from the given date are listed, so that the older blobs
+     * are never enumerated: a blob saved outside these folders is not listed.
      *
      * @param deadLetterContainerName the name of the dead letter container
      * @param createdFrom             the blobs created before this date are ignored
@@ -93,17 +99,39 @@ public class BlobStorage {
      */
     public List<DeadLetterBlob> listDeadLetterBlobs(String deadLetterContainerName, OffsetDateTime createdFrom,
                                                     Predicate<DeadLetterBlob> filter, int maxResults) {
+        return listDeadLetterBlobs(deadLetterContainerName, createdFrom, OffsetDateTime.now(ZoneOffset.UTC), filter, maxResults);
+    }
+
+    List<DeadLetterBlob> listDeadLetterBlobs(String deadLetterContainerName, OffsetDateTime createdFrom, OffsetDateTime now,
+                                             Predicate<DeadLetterBlob> filter, int maxResults) {
         BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(deadLetterContainerName);
         if (!blobContainerClient.exists()) {
             return List.of();
         }
-        ListBlobsOptions options = new ListBlobsOptions().setDetails(new BlobListDetails().setRetrieveMetadata(true));
-        return blobContainerClient.listBlobs(options, null).stream()
+        return monthlyPrefixes(createdFrom, now).stream()
+                .flatMap(prefix -> blobContainerClient.listBlobs(new ListBlobsOptions()
+                        .setPrefix(prefix)
+                        .setDetails(new BlobListDetails().setRetrieveMetadata(true)), null).stream())
                 .filter(blobItem -> !blobItem.getProperties().getCreationTime().isBefore(createdFrom))
                 .map(this::toDeadLetterBlob)
                 .filter(filter)
                 .limit(maxResults)
                 .toList();
+    }
+
+    /**
+     * The folders of the dead letter path use the local date of the function (see uploadToDeadLetter):
+     * a day of margin is added on both sides to be independent of the time zone.
+     */
+    static List<String> monthlyPrefixes(OffsetDateTime from, OffsetDateTime to) {
+        YearMonth month = YearMonth.from(from.withOffsetSameInstant(ZoneOffset.UTC).minusDays(1));
+        YearMonth lastMonth = YearMonth.from(to.withOffsetSameInstant(ZoneOffset.UTC).plusDays(1));
+        List<String> prefixes = new ArrayList<>();
+        while (!month.isAfter(lastMonth)) {
+            prefixes.add(month.format(MONTHLY_PREFIX_FORMAT));
+            month = month.plusMonths(1);
+        }
+        return prefixes;
     }
 
     /**
