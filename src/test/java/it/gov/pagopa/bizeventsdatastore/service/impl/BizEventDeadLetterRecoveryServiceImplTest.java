@@ -144,7 +144,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
         assertEquals("1", metadata.get(METADATA_PDND_PENDING_IDS));
         assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
-        assertEquals("pdnd-publication-error", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("PDND_PUBLICATION_ERROR", metadata.get(METADATA_RECOVERY_REASON));
         assertNull(metadata.get(METADATA_RECOVERY_STATUS));
     }
 
@@ -163,7 +163,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
         verify(pdndClient).send(List.of(created));
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
         assertEquals("2", metadata.get(METADATA_PDND_PENDING_IDS));
-        assertEquals("event-recovery-error", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("COSMOS_ERROR", metadata.get(METADATA_RECOVERY_REASON));
     }
 
     @Test
@@ -180,7 +180,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
         assertNull(metadata.get(METADATA_RECOVERY_STATUS));
         assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
-        assertEquals("event-recovery-error,same-payment-of-other-biz-event", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("COSMOS_ERROR,SAME_PAYMENT_OF_OTHER_BIZ_EVENT", metadata.get(METADATA_RECOVERY_REASON));
         verifyNoInteractions(telemetryClient);
     }
 
@@ -197,7 +197,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
         assertEquals(RECOVERY_STATUS_FAILED, metadata.get(METADATA_RECOVERY_STATUS));
-        assertEquals("event-recovery-error,same-payment-of-other-biz-event", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("COSMOS_ERROR,SAME_PAYMENT_OF_OTHER_BIZ_EVENT", metadata.get(METADATA_RECOVERY_REASON));
         verify(telemetryClient).trackEvent(anyString());
     }
 
@@ -214,7 +214,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
         verify(blobStorage, never()).deleteDeadLetterBlob(anyString(), anyString());
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
         assertEquals(RECOVERY_STATUS_FAILED, metadata.get(METADATA_RECOVERY_STATUS));
-        assertEquals("same-payment-of-other-biz-event", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("SAME_PAYMENT_OF_OTHER_BIZ_EVENT", metadata.get(METADATA_RECOVERY_REASON));
         assertEquals("inv", metadata.get("invocationId"));
         assertFalse(metadata.containsKey(METADATA_PDND_PENDING_IDS));
         verify(telemetryClient).trackEvent(anyString());
@@ -227,7 +227,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
         sut.recoverBizEvents(INVOCATION);
 
         verifyNoInteractions(cosmosService, pdndClient);
-        assertEquals("missing-payment-key", captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME).get(METADATA_RECOVERY_REASON));
+        assertEquals("MISSING_PAYMENT_KEY", captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME).get(METADATA_RECOVERY_REASON));
     }
 
     @Test
@@ -261,6 +261,20 @@ class BizEventDeadLetterRecoveryServiceImplTest {
     }
 
     @Test
+    void recoverBizEventUnexpectedErrorCountsTheAttempt() {
+        BizEvent bizEvent = buildBizEvent("1", "iuv");
+        mockBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, Map.of(), bizEvent);
+        mockNoOtherPayment("1", "iuv");
+        when(cosmosService.createBizEventIfAbsent(bizEvent)).thenThrow(new IllegalStateException("unexpected"));
+
+        sut.recoverBizEvents(INVOCATION);
+
+        Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
+        assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
+        assertEquals("UNEXPECTED_ERROR", metadata.get(METADATA_RECOVERY_REASON));
+    }
+
+    @Test
     void pendingIdsWriteErrorDoesNotSaveThePendingIdsWithTheAttempt() {
         BizEvent bizEvent = buildBizEvent("1", "iuv");
         mockBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, Map.of(), bizEvent);
@@ -271,7 +285,24 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         verifyNoInteractions(cosmosService, pdndClient);
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
-        assertEquals("blob-error", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("BLOB_UPDATE_ERROR", metadata.get(METADATA_RECOVERY_REASON));
+        assertFalse(metadata.containsKey(METADATA_PDND_PENDING_IDS));
+    }
+
+    @Test
+    void blobDeleteErrorCountsTheAttempt() {
+        BizEvent bizEvent = buildBizEvent("1", "iuv");
+        mockBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, Map.of(), bizEvent);
+        mockNoOtherPayment("1", "iuv");
+        when(cosmosService.createBizEventIfAbsent(bizEvent)).thenReturn(true);
+        doThrow(new IllegalStateException("storage error")).when(blobStorage).deleteDeadLetterBlob(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME, BLOB);
+
+        sut.recoverBizEvents(INVOCATION);
+
+        verify(pdndClient).send(List.of(bizEvent));
+        Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
+        assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
+        assertEquals("BLOB_DELETE_ERROR", metadata.get(METADATA_RECOVERY_REASON));
         assertFalse(metadata.containsKey(METADATA_PDND_PENDING_IDS));
     }
 
@@ -283,7 +314,9 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         sut.recoverBizEvents(INVOCATION);
 
-        assertEquals("1", captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME).get(METADATA_RECOVERY_ATTEMPTS));
+        Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_DEAD_LETTER_NAME);
+        assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
+        assertEquals("BLOB_READ_ERROR", metadata.get(METADATA_RECOVERY_REASON));
     }
 
     @Test
@@ -349,7 +382,9 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         verifyNoInteractions(viewService);
         verify(blobStorage, never()).deleteDeadLetterBlob(anyString(), anyString());
-        assertEquals("1", captureLastMetadata(CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME).get(METADATA_RECOVERY_ATTEMPTS));
+        Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME);
+        assertEquals("1", metadata.get(METADATA_RECOVERY_ATTEMPTS));
+        assertEquals("BIZ_EVENT_NOT_FOUND", metadata.get(METADATA_RECOVERY_REASON));
     }
 
     @Test
@@ -363,7 +398,7 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         Map<String, String> metadata = captureLastMetadata(CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME);
         assertEquals(RECOVERY_STATUS_FAILED, metadata.get(METADATA_RECOVERY_STATUS));
-        assertEquals("invalid-views", metadata.get(METADATA_RECOVERY_REASON));
+        assertEquals("INVALID_VIEWS", metadata.get(METADATA_RECOVERY_REASON));
     }
 
     private void mockBlob(String container, Map<String, String> metadata, BizEvent... events) {

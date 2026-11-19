@@ -12,8 +12,6 @@ import com.azure.storage.blob.models.ListBlobsOptions;
 import com.azure.storage.blob.specialized.BlockBlobClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.model.DeadLetterBlob;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -30,8 +28,6 @@ import java.util.function.Predicate;
 public class BlobStorage {
 
     private static final DateTimeFormatter MONTHLY_PREFIX_FORMAT = DateTimeFormatter.ofPattern("yyyy/MM/");
-
-    private final Logger logger = LoggerFactory.getLogger(BlobStorage.class);
 
     private final BlobServiceClient blobServiceClient;
 
@@ -59,8 +55,8 @@ public class BlobStorage {
         this.blobServiceClient = blobServiceClient;
     }
 
-    public boolean uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg,
-                                      String deadLetterContainerName) {
+    public void uploadToDeadLetter(String id, LocalDateTime now, String invocationId, String type, List<BizEvent> bizEvtMsg,
+                                   String deadLetterContainerName) {
         // Create a directory structure (year/month/day/hour/session/<>)
         String year = now.format(DateTimeFormatter.ofPattern("yyyy"));
         String month = now.format(DateTimeFormatter.ofPattern("MM"));
@@ -71,19 +67,11 @@ public class BlobStorage {
         String session = String.format("%s-%s-%s", dateTime, unixTime, id.substring(0,8));
         String blobPath = String.format("%s/%s/%s/%s/%s/%s-%s.json", year, month, day,
                 hour, session, session, type);
-        try {
-            blobServiceClient.createBlobContainerIfNotExists(deadLetterContainerName);
-            BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(deadLetterContainerName);
-            BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
-            blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
-            blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
-
-            return true;
-        } catch (Exception e) {
-            logger.error("Unable to upload the blob [{}] to the dead letter container [{}] with invocationId [{}]",
-                    blobPath, deadLetterContainerName, invocationId, e);
-            return false;
-        }
+        blobServiceClient.createBlobContainerIfNotExists(deadLetterContainerName);
+        BlobContainerClient blobContainerClient = blobServiceClient.getBlobContainerClient(deadLetterContainerName);
+        BlockBlobClient blockBlobClient = blobContainerClient.getBlobClient(blobPath).getBlockBlobClient();
+        blockBlobClient.upload(BinaryData.fromObject(bizEvtMsg), true);
+        blockBlobClient.setMetadata(Map.of("invocationId", invocationId));
     }
 
     /**

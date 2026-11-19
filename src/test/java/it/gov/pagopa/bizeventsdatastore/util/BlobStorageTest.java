@@ -29,7 +29,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -167,10 +167,13 @@ class BlobStorageTest {
     }
 
     @Test
-    void uploadToDeadLetterErrorReturnsFalse() {
+    void uploadToDeadLetterErrorIsThrown() {
         when(blobServiceClient.createBlobContainerIfNotExists(anyString())).thenThrow(new IllegalStateException("error"));
 
-        assertFalse(sut.uploadToDeadLetter("12345678-id", LocalDateTime.now(), "invocation", "type", List.of(), CONTAINER));
+        LocalDateTime now = LocalDateTime.now();
+        List<BizEvent> events = List.of();
+        assertThrows(IllegalStateException.class,
+                () -> sut.uploadToDeadLetter("12345678-id", now, "invocation", "type", events, CONTAINER));
     }
 
     private BlobItem blobItem(String name, OffsetDateTime creationTime, Map<String, String> metadata) {

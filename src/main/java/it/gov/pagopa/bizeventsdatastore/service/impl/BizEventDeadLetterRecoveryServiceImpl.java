@@ -1,5 +1,6 @@
 package it.gov.pagopa.bizeventsdatastore.service.impl;
 
+import com.azure.cosmos.CosmosException;
 import com.google.common.base.Strings;
 import com.microsoft.applicationinsights.TelemetryClient;
 import it.gov.pagopa.bizeventsdatastore.client.PdndEventHubClient;
@@ -7,6 +8,7 @@ import it.gov.pagopa.bizeventsdatastore.client.impl.PdndEventHubClientImpl;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventToViewConstraintViolationException;
+import it.gov.pagopa.bizeventsdatastore.exception.DeadLetterRecoveryError;
 import it.gov.pagopa.bizeventsdatastore.model.BizEventToViewResult;
 import it.gov.pagopa.bizeventsdatastore.model.DeadLetterBlob;
 import it.gov.pagopa.bizeventsdatastore.service.BizEventCosmosService;
@@ -41,12 +43,8 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
     static final String METADATA_RECOVERY_STATUS = "recoveryStatus";
     static final String METADATA_RECOVERY_REASON = "recoveryReason";
     static final String METADATA_PDND_PENDING_IDS = "pdndPendingIds";
-    static final String RECOVERY_STATUS_FAILED = "failed";
-    static final String EVENT_RECOVERY_ERROR = "event-recovery-error";
-    static final String PDND_PUBLICATION_ERROR = "pdnd-publication-error";
+    static final String RECOVERY_STATUS_FAILED = "FAILED";
 
-    private static final int DEFAULT_MAX_ATTEMPTS = 3;
-    private static final int DEFAULT_MAX_BLOBS_PER_RUN = 50;
     private static final String REASONS_SEPARATOR = ",";
     private static final String IDS_SEPARATOR = ",";
 
@@ -65,8 +63,8 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         this(BlobStorage.getInstance(), new BizEventCosmosServiceImpl(), new BizEventToViewServiceImpl(),
                 PdndEventHubClientImpl.getInstance(), new TelemetryClient(),
                 parseStartDate(System.getenv("DL_RECOVERY_START_DATE")),
-                Integer.parseInt(System.getenv().getOrDefault("DL_RECOVERY_MAX_ATTEMPTS", String.valueOf(DEFAULT_MAX_ATTEMPTS))),
-                Integer.parseInt(System.getenv().getOrDefault("DL_RECOVERY_MAX_BLOBS_PER_RUN", String.valueOf(DEFAULT_MAX_BLOBS_PER_RUN))));
+                Integer.parseInt(System.getenv().getOrDefault("DL_RECOVERY_MAX_ATTEMPTS", "3")),
+                Integer.parseInt(System.getenv().getOrDefault("DL_RECOVERY_MAX_BLOBS_PER_RUN", "50")));
     }
 
     BizEventDeadLetterRecoveryServiceImpl(BlobStorage blobStorage, BizEventCosmosService bizEventCosmosService,
@@ -111,26 +109,29 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
     }
 
     private void recoverBlob(String containerName, DeadLetterBlob blob, String invocationId, BlobRecoveryFactory blobRecoveryFactory) {
-        Set<String> permanentFailures = new LinkedHashSet<>();
-        Set<String> temporaryFailures = new LinkedHashSet<>();
+        Set<DeadLetterRecoveryError> permanentFailures = new LinkedHashSet<>();
+        Set<DeadLetterRecoveryError> temporaryFailures = new LinkedHashSet<>();
+        // the blob operation in progress, saved as reason if it fails
+        DeadLetterRecoveryError blobFailure = DeadLetterRecoveryError.BLOB_READ_ERROR;
 
         try {
             List<BizEvent> bizEvents = this.blobStorage.readDeadLetterBlob(containerName, blob.getName());
+            blobFailure = DeadLetterRecoveryError.BLOB_UPDATE_ERROR;
             BlobRecovery blobRecovery = blobRecoveryFactory.start(containerName, blob, bizEvents);
 
             for (BizEvent bizEvent : bizEvents) {
                 try {
-                    String failure = blobRecovery.recover(bizEvent);
+                    DeadLetterRecoveryError failure = blobRecovery.recover(bizEvent);
                     if (failure != null) {
                         permanentFailures.add(failure);
                     }
                 } catch (Exception e) {
                     logger.error("Dead letter recovery with invocationId [{}] - error recovering biz-event [{}] of blob [{}]",
                             invocationId, bizEvent.getId(), blob.getName(), e);
-                    temporaryFailures.add(EVENT_RECOVERY_ERROR);
+                    temporaryFailures.add(toRecoveryError(e));
                 }
             }
-            String completionFailure = blobRecovery.complete(invocationId);
+            DeadLetterRecoveryError completionFailure = blobRecovery.complete(invocationId);
             if (completionFailure != null) {
                 temporaryFailures.add(completionFailure);
             }
@@ -142,12 +143,14 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
             } else if (!permanentFailures.isEmpty()) {
                 markAsFailed(containerName, blob, reason);
             } else {
+                blobFailure = DeadLetterRecoveryError.BLOB_DELETE_ERROR;
                 this.blobStorage.deleteDeadLetterBlob(containerName, blob.getName());
                 logger.info("Dead letter recovery with invocationId [{}] - blob [{}] recovered", invocationId, blob.getName());
             }
         } catch (Exception e) {
-            logger.error("Dead letter recovery with invocationId [{}] - error managing blob [{}]", invocationId, blob.getName(), e);
-            registerFailedAttemptSafely(containerName, blob, invocationId);
+            logger.error("Dead letter recovery with invocationId [{}] - {} on blob [{}]: {}",
+                    invocationId, blobFailure, blob.getName(), blobFailure.getDetails(), e);
+            registerFailedAttemptSafely(containerName, blob, invocationId, blobFailure);
         }
     }
 
@@ -174,18 +177,18 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
     /**
      * @return null if the biz-event can be created, otherwise the reason why it can never be recovered automatically
      */
-    private String checkBizEvent(BizEvent bizEvent) {
+    private DeadLetterRecoveryError checkBizEvent(BizEvent bizEvent) {
         String idPA = bizEvent.getCreditor() != null ? bizEvent.getCreditor().getIdPA() : null;
         String iuv = bizEvent.getDebtorPosition() != null ? bizEvent.getDebtorPosition().getIuv() : null;
         if (Strings.isNullOrEmpty(idPA) || Strings.isNullOrEmpty(iuv)) {
-            return "missing-payment-key";
+            return DeadLetterRecoveryError.MISSING_PAYMENT_KEY;
         }
 
         // The same payment could have been restored with a different id: creating this event would duplicate it
         List<String> otherBizEventIds = this.bizEventCosmosService.findOtherBizEventIdsOfPayment(idPA, iuv, bizEvent.getId());
         if (!otherBizEventIds.isEmpty()) {
             logger.warn("Dead letter recovery - biz-event [{}] not created: same payment of the biz-events {}", bizEvent.getId(), otherBizEventIds);
-            return "same-payment-of-other-biz-event";
+            return DeadLetterRecoveryError.SAME_PAYMENT_OF_OTHER_BIZ_EVENT;
         }
         return null;
     }
@@ -199,7 +202,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         }
     }
 
-    private String recoverBizEventView(BizEvent deadLetterBizEvent) throws BizEventNotFoundException {
+    private DeadLetterRecoveryError recoverBizEventView(BizEvent deadLetterBizEvent) throws BizEventNotFoundException {
         BizEvent bizEvent = this.bizEventCosmosService.getBizEvent(deadLetterBizEvent.getId());
         try {
             BizEventToViewResult views = this.bizEventToViewService.mapBizEventToView(bizEvent);
@@ -211,15 +214,30 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
             return null;
         } catch (BizEventToViewConstraintViolationException e) {
             logger.warn("Dead letter recovery - invalid views for biz-event [{}]", bizEvent.getId(), e);
-            return "invalid-views";
+            return DeadLetterRecoveryError.INVALID_VIEWS;
         }
     }
 
-    private void registerFailedAttemptSafely(String containerName, DeadLetterBlob blob, String invocationId) {
+    /**
+     * @return the reason saved on the blob for an error that does not prevent the next attempts
+     */
+    private static DeadLetterRecoveryError toRecoveryError(Exception e) {
+        if (e instanceof BizEventNotFoundException) {
+            return DeadLetterRecoveryError.BIZ_EVENT_NOT_FOUND;
+        }
+        if (e instanceof CosmosException) {
+            return DeadLetterRecoveryError.COSMOS_ERROR;
+        }
+        return DeadLetterRecoveryError.UNEXPECTED_ERROR;
+    }
+
+    private void registerFailedAttemptSafely(String containerName, DeadLetterBlob blob, String invocationId,
+                                             DeadLetterRecoveryError blobFailure) {
         try {
-            registerFailedAttempt(containerName, blob, "blob-error");
+            registerFailedAttempt(containerName, blob, blobFailure.name());
         } catch (Exception e) {
-            logger.error("Dead letter recovery with invocationId [{}] - unable to update blob [{}]", invocationId, blob.getName(), e);
+            logger.error("Dead letter recovery with invocationId [{}] - unable to save the failed attempt with reason {} on blob [{}]",
+                    invocationId, blobFailure, blob.getName(), e);
         }
     }
 
@@ -253,10 +271,10 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         }
     }
 
-    private static String joinReasons(Set<String> temporaryFailures, Set<String> permanentFailures) {
-        List<String> reasons = new ArrayList<>(temporaryFailures);
+    private static String joinReasons(Set<DeadLetterRecoveryError> temporaryFailures, Set<DeadLetterRecoveryError> permanentFailures) {
+        List<DeadLetterRecoveryError> reasons = new ArrayList<>(temporaryFailures);
         reasons.addAll(permanentFailures);
-        return String.join(REASONS_SEPARATOR, reasons);
+        return reasons.stream().map(Enum::name).collect(Collectors.joining(REASONS_SEPARATOR));
     }
 
     private static Set<String> parseIds(String ids) {
@@ -288,8 +306,8 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         }
 
         @Override
-        public String recover(BizEvent bizEvent) {
-            String failure = checkBizEvent(bizEvent);
+        public DeadLetterRecoveryError recover(BizEvent bizEvent) {
+            DeadLetterRecoveryError failure = checkBizEvent(bizEvent);
             if (failure != null) {
                 this.pendingIds.remove(bizEvent.getId());
                 return failure;
@@ -307,7 +325,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         }
 
         @Override
-        public String complete(String invocationId) {
+        public DeadLetterRecoveryError complete(String invocationId) {
             if (this.toPublish.isEmpty()) {
                 savePendingIdsInMetadata();
                 return null;
@@ -322,7 +340,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
             } catch (Exception e) {
                 logger.error("Dead letter recovery with invocationId [{}] - unable to send the biz-events {} of blob [{}] to PDND",
                         invocationId, ids, this.blob.getName(), e);
-                return PDND_PUBLICATION_ERROR;
+                return DeadLetterRecoveryError.PDND_PUBLICATION_ERROR;
             } finally {
                 savePendingIdsInMetadata();
             }
@@ -348,7 +366,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
          * @return null if the event is recovered, otherwise the reason why it can never be recovered automatically
          * @throws Exception if the recovery can be attempted again
          */
-        String recover(BizEvent bizEvent) throws Exception;
+        DeadLetterRecoveryError recover(BizEvent bizEvent) throws Exception;
 
         /**
          * Completes the recovery after all the events of the blob have been processed
@@ -356,7 +374,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
          * @param invocationId the invocation id of the current execution context
          * @return null if completed, otherwise the reason why the recovery must be attempted again
          */
-        default String complete(String invocationId) {
+        default DeadLetterRecoveryError complete(String invocationId) {
             return null;
         }
     }
