@@ -207,9 +207,9 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
         try {
             BizEventToViewResult views = this.bizEventToViewService.mapBizEventToView(bizEvent);
             if (views != null) {
-                this.bizEventCosmosService.saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
                 this.bizEventCosmosService.upsertBizEventViewGeneral(views.getGeneralView());
                 this.bizEventCosmosService.upsertBizEventViewCart(views.getCartView());
+                this.bizEventCosmosService.saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
             }
             return null;
         } catch (BizEventToViewConstraintViolationException e) {

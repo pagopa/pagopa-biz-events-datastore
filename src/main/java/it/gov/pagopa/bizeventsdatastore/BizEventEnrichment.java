@@ -11,8 +11,6 @@ import java.util.UUID;
 
 import com.microsoft.applicationinsights.TelemetryClient;
 import com.microsoft.azure.functions.ExecutionContext;
-import com.microsoft.azure.functions.OutputBinding;
-import com.microsoft.azure.functions.annotation.CosmosDBOutput;
 import com.microsoft.azure.functions.annotation.CosmosDBTrigger;
 import com.microsoft.azure.functions.annotation.ExponentialBackoffRetry;
 import com.microsoft.azure.functions.annotation.FunctionName;
@@ -81,20 +79,6 @@ public class BizEventEnrichment {
 					maxItemsPerInvocation = MAX_ITEMS_PER_INVOCATION,
 					connection = "COSMOS_CONN_STRING")
 			List<BizEvent> items,
-			@CosmosDBOutput(
-					name = "BizEventGeneralView",
-					databaseName = "db",
-					containerName = "biz-events-view-general",
-					createIfNotExists = false,
-					connection = "COSMOS_CONN_STRING")
-			OutputBinding<List<BizEventsViewGeneral>> bizEventGeneralView,
-			@CosmosDBOutput(
-					name = "BizEventCartView",
-					databaseName = "db",
-					containerName = "biz-events-view-cart",
-					createIfNotExists = false,
-					connection = "COSMOS_CONN_STRING")
-			OutputBinding<List<BizEventsViewCart>> bizEventCartView,
 			final ExecutionContext context
 			) throws BizEventToViewConstraintViolationException {
 
@@ -110,8 +94,8 @@ public class BizEventEnrichment {
 		String id = String.valueOf(UUID.randomUUID());
 		LocalDateTime executionDateTime = LocalDateTime.now();
 
-		// This retry check is needed because setValue in OutputBinding doesn’t throw exceptions,
-		// requiring an additional check to send the message to the dead letter queue after multiple failed attempts (e.g., 429 Too Many Requests).
+		// On the last retry the events are saved in the dead letter before processing them: if this attempt fails too
+		// (e.g., 429 Too Many Requests), the retry policy is exhausted and the change feed moves on, so they would be lost.
 		handleLastRetry(items, context, retryIndex, id, "last-retry-input", executionDateTime);
 
 		StringJoiner eventDetails = new StringJoiner(", ", "{", "}");
@@ -138,24 +122,28 @@ public class BizEventEnrichment {
 				generateBizEventViewsOrSendToDeadLetter(userViewToInsert, generalViewToInsert, cartViewToInsert, be, context, executionDateTime);
 			}
 
-			if (!userViewToInsert.isEmpty()) {
-				bizEventCosmosService.saveBizEventViewUsersPreservingVisibility(userViewToInsert);
-			}
+			saveViews(userViewToInsert, generalViewToInsert, cartViewToInsert, context);
 		} catch (Exception e) {
 			logger.error("BizEventEnrichmentProcessor function with invocationId [{}] - {} on cosmos biz-events msg ingestion at {}" +
 					" [{}]: {}. Retry index: {}", context.getInvocationId(), e.getClass(), LocalDateTime.now(), eventDetails, e.getMessage(), retryIndex);
 			// it is important to trigger the retry mechanism (rethrow any errors that you want to result in a retry)
 			throw e;
 		}
+	}
 
-		// Insert in Biz-event views
+	/**
+	 * The user views are saved last: they make the receipt visible to the user, so they must not exist
+	 * if the general or cart views, needed to show the receipt details, have not been saved.
+	 * Any error is rethrown to trigger the retry policy.
+	 */
+	private void saveViews(List<BizEventsViewUser> userViewToInsert, List<BizEventsViewGeneral> generalViewToInsert,
+			List<BizEventsViewCart> cartViewToInsert, final ExecutionContext context) {
 		logger.info("BizEventEnrichment stat {} function - number of events to update on the Biz-event views: user - {}, general - {}, cart - {}",
 				context.getInvocationId(), userViewToInsert.size(), generalViewToInsert.size(), cartViewToInsert.size());
-		if (!generalViewToInsert.isEmpty()) {
-			bizEventGeneralView.setValue(generalViewToInsert);
-		}
-		if (!cartViewToInsert.isEmpty()) {
-			bizEventCartView.setValue(cartViewToInsert);
+		generalViewToInsert.forEach(bizEventCosmosService::upsertBizEventViewGeneral);
+		cartViewToInsert.forEach(bizEventCosmosService::upsertBizEventViewCart);
+		if (!userViewToInsert.isEmpty()) {
+			bizEventCosmosService.saveBizEventViewUsersPreservingVisibility(userViewToInsert);
 		}
 	}
 

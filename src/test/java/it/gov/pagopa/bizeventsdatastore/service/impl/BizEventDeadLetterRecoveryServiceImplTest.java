@@ -351,10 +351,12 @@ class BizEventDeadLetterRecoveryServiceImplTest {
 
         sut.recoverBizEventViews(INVOCATION);
 
-        verify(cosmosService).saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
-        verify(cosmosService).upsertBizEventViewGeneral(views.getGeneralView());
-        verify(cosmosService).upsertBizEventViewCart(views.getCartView());
-        verify(blobStorage).deleteDeadLetterBlob(CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, BLOB);
+        // the user views are saved last, after the views with the receipt details
+        InOrder inOrder = inOrder(cosmosService, blobStorage);
+        inOrder.verify(cosmosService).upsertBizEventViewGeneral(views.getGeneralView());
+        inOrder.verify(cosmosService).upsertBizEventViewCart(views.getCartView());
+        inOrder.verify(cosmosService).saveBizEventViewUsersPreservingVisibility(views.getUserViewList());
+        inOrder.verify(blobStorage).deleteDeadLetterBlob(CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, BLOB);
         
         verifyNoInteractions(pdndClient);
         verify(blobStorage, never()).updateDeadLetterBlobMetadata(anyString(), anyString(), any());
