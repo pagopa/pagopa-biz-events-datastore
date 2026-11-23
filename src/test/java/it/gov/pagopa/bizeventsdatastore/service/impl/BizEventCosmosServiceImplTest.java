@@ -16,7 +16,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
@@ -74,15 +73,10 @@ class BizEventCosmosServiceImplTest {
     }
 
     @Test
-    void recoveryMethodsDelegateToClient() {
-        BizEvent bizEvent = BizEvent.builder().id(EVENT_ID).build();
+    void upsertViewsDelegateToClient() {
         BizEventsViewGeneral viewGeneral = new BizEventsViewGeneral();
         BizEventsViewCart viewCart = new BizEventsViewCart();
-        when(bizEventCosmosClientMock.createBizEventIfAbsent(bizEvent)).thenReturn(true);
-        when(bizEventCosmosClientMock.findOtherBizEventIdsOfPayment("pa", "iuv", EVENT_ID)).thenReturn(List.of("2"));
 
-        assertEquals(true, sut.createBizEventIfAbsent(bizEvent));
-        assertEquals(List.of("2"), sut.findOtherBizEventIdsOfPayment("pa", "iuv", EVENT_ID));
         sut.upsertBizEventViewGeneral(viewGeneral);
         sut.upsertBizEventViewCart(viewCart);
 

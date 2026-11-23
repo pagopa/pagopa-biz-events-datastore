@@ -33,24 +33,6 @@ public interface BizEventCosmosService {
     void saveBizEventViewUsersPreservingVisibility(List<BizEventsViewUser> viewUserList);
 
     /**
-     * Create the biz-event document if no document with the same id exists
-     *
-     * @param bizEvent the biz-event to create
-     * @return true if the document has been created, false if it already exists
-     */
-    boolean createBizEventIfAbsent(BizEvent bizEvent);
-
-    /**
-     * Retrieve the ids of the biz-events with the given creditor and IUV, excluding the given biz-event id
-     *
-     * @param idPA       the creditor identifier
-     * @param iuv        the IUV of the debtor position
-     * @param bizEventId the biz-event id to exclude
-     * @return the ids of the other biz-events of the same payment
-     */
-    List<String> findOtherBizEventIdsOfPayment(String idPA, String iuv, String bizEventId);
-
-    /**
      * Create or replace the biz-event general view
      *
      * @param viewGeneral the biz-event general view

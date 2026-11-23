@@ -111,7 +111,6 @@ microservice-chart: &microservice-chart
     UPDATE_VIEW_TRIGGER_SQL_QUERY: "select TOP 10000 * FROM c WHERE c.origin = 'UNKNOWN'"
     MASSIVE_VIEW_REGEN_QUEUE_TOPIC: "pagopa-p-weu-bizevents-queue-massive-biz-to-view-regen"
     MASSIVE_VIEW_REGEN_THREAD_POOL_SIZE: "100"
-    BIZ_EVENT_DL_RECOVERY_SCHEDULE: "0 */15 * * * *"
     BIZ_EVENT_VIEW_DL_RECOVERY_SCHEDULE: "0 */15 * * * *"
     DL_RECOVERY_START_DATE: "2026-11-06" # TODO set the PROD release date of the dead letter recovery: blobs created before this date are not recovered
     DL_RECOVERY_MAX_ATTEMPTS: "3"
@@ -172,7 +171,6 @@ pagopa-biz-events-datastore:
     AzureWebJobs.BizEventToView.Disabled: "true"
     AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "true"
     AzureWebJobs.BizEventToViewMassive.Disabled: "true"
-    AzureWebJobs.BizEventDeadLetterRecoveryTimerTrigger.Disabled: "false"
     AzureWebJobs.BizEventViewDeadLetterRecoveryTimerTrigger.Disabled: "true"
   envSecret:
     !!merge <<: *envSecret
@@ -197,7 +195,6 @@ pagopa-biz-events-view:
     AzureWebJobs.BizEventToView.Disabled: "false"
     AzureWebJobs.BizEventToViewQueueTrigger.Disabled: "false"
     AzureWebJobs.BizEventToViewMassive.Disabled: "false"
-    AzureWebJobs.BizEventDeadLetterRecoveryTimerTrigger.Disabled: "true"
     AzureWebJobs.BizEventViewDeadLetterRecoveryTimerTrigger.Disabled: "false"
   envSecret:
     !!merge <<: *envSecret

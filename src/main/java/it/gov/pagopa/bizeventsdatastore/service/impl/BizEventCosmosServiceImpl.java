@@ -52,22 +52,6 @@ public class BizEventCosmosServiceImpl implements BizEventCosmosService {
      * {@inheritDoc}
      */
     @Override
-    public boolean createBizEventIfAbsent(BizEvent bizEvent) {
-        return this.bizEventCosmosClient.createBizEventIfAbsent(bizEvent);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
-    public List<String> findOtherBizEventIdsOfPayment(String idPA, String iuv, String bizEventId) {
-        return this.bizEventCosmosClient.findOtherBizEventIdsOfPayment(idPA, iuv, bizEventId);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    @Override
     public void upsertBizEventViewGeneral(BizEventsViewGeneral viewGeneral) {
         this.bizEventCosmosClient.upsertBizEventViewGeneral(viewGeneral);
     }
