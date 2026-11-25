@@ -3,6 +3,9 @@ package it.gov.pagopa.bizeventsdatastore.service.impl;
 import it.gov.pagopa.bizeventsdatastore.client.BizEventCosmosClient;
 import it.gov.pagopa.bizeventsdatastore.entity.BizEvent;
 import it.gov.pagopa.bizeventsdatastore.entity.enumeration.StatusType;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewCart;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewGeneral;
+import it.gov.pagopa.bizeventsdatastore.entity.view.BizEventsViewUser;
 import it.gov.pagopa.bizeventsdatastore.exception.BizEventNotFoundException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -15,7 +18,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+
+import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class BizEventCosmosServiceImplTest {
@@ -53,5 +59,28 @@ class BizEventCosmosServiceImplTest {
                 .thenReturn(BizEvent.builder().eventStatus(status).build());
 
         assertThrows(BizEventNotFoundException.class, () -> sut.getBizEvent(EVENT_ID));
+    }
+
+    @Test
+    void saveBizEventViewUsersPreservingVisibilitySuccess() {
+        BizEventsViewUser payerView = BizEventsViewUser.builder().id(EVENT_ID + "-p").build();
+        BizEventsViewUser debtorView = BizEventsViewUser.builder().id(EVENT_ID + "-d").build();
+
+        assertDoesNotThrow(() -> sut.saveBizEventViewUsersPreservingVisibility(List.of(payerView, debtorView)));
+
+        verify(bizEventCosmosClientMock).saveBizEventViewUserPreservingVisibility(payerView);
+        verify(bizEventCosmosClientMock).saveBizEventViewUserPreservingVisibility(debtorView);
+    }
+
+    @Test
+    void upsertViewsDelegateToClient() {
+        BizEventsViewGeneral viewGeneral = new BizEventsViewGeneral();
+        BizEventsViewCart viewCart = new BizEventsViewCart();
+
+        sut.upsertBizEventViewGeneral(viewGeneral);
+        sut.upsertBizEventViewCart(viewCart);
+
+        verify(bizEventCosmosClientMock).upsertBizEventViewGeneral(viewGeneral);
+        verify(bizEventCosmosClientMock).upsertBizEventViewCart(viewCart);
     }
 }
