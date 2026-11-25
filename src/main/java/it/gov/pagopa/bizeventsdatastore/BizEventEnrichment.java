@@ -150,8 +150,13 @@ public class BizEventEnrichment {
 	private void handleLastRetry(List<BizEvent> items, final ExecutionContext context, int retryIndex, String id, String type,
 			LocalDateTime executionDateTime) {
 		if (retryIndex >= EBR_MAX_RETRY_COUNT) {
-			bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, type, items,
-					CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, telemetryClient);
+			List<BizEvent> eligibleItems = items.stream()
+					.filter(be -> VIEW_ELIGIBLE_STATUSES.contains(be.getEventStatus()))
+					.toList();
+			if (!eligibleItems.isEmpty()) {
+				bizEventDeadLetterService.handleLastRetry(context, id, executionDateTime, type, eligibleItems,
+						CONTAINER_BIZ_EVENTS_VIEWS_DEAD_LETTER_NAME, telemetryClient);
+			}
 		}
 	}
 

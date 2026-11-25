@@ -253,13 +253,44 @@ class BizEventEnrichmentTest {
 		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
 
 		List<BizEvent> bizEvtMsg = new ArrayList<>();
-		bizEvtMsg.add(BizEvent.builder().id("123").build());
+		bizEvtMsg.add(BizEvent.builder().id("123").eventStatus(StatusType.DONE).build());
 
 
 		// test execution
 		assertThrows(Exception.class, () -> function.processBizEventEnrichment(bizEvtMsg, context));
 		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"), eq(bizEvtMsg), anyString(), any(TelemetryClient.class));
 		verify(bizEventDeadLetterService, never()).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("exception-output"), anyList(), anyString(), any(TelemetryClient.class));
+	}
+
+	@Test
+	void runKo_lastRetrySavesOnlyTheEventsThatGenerateViews() throws BizEventToViewConstraintViolationException {
+		when(context.getRetryContext()).thenReturn(retryContext);
+		when(retryContext.getRetrycount()).thenReturn(10);
+		when(bizEventToViewService.mapBizEventToView(any())).thenThrow(new NullPointerException());
+
+		BizEvent done = BizEvent.builder().id("done").eventStatus(StatusType.DONE).build();
+		BizEvent ingested = BizEvent.builder().id("ingested").eventStatus(StatusType.INGESTED).build();
+		BizEvent na = BizEvent.builder().id("na").eventStatus(StatusType.NA).build();
+		BizEvent retry = BizEvent.builder().id("retry").eventStatus(StatusType.RETRY).build();
+		BizEvent failed = BizEvent.builder().id("failed").eventStatus(StatusType.FAILED).build();
+
+		assertThrows(Exception.class, () -> function.processBizEventEnrichment(List.of(done, na, ingested, retry, failed), context));
+
+		verify(bizEventDeadLetterService).handleLastRetry(eq(context), anyString(), any(LocalDateTime.class), eq("last-retry-input"),
+				eq(List.of(done, ingested)), anyString(), any(TelemetryClient.class));
+	}
+
+	@Test
+	void runOk_lastRetryWithoutEventsThatGenerateViewsDoesNotWriteTheDeadLetter() {
+		when(context.getRetryContext()).thenReturn(retryContext);
+		when(retryContext.getRetrycount()).thenReturn(10);
+
+		BizEvent na = BizEvent.builder().id("na").eventStatus(StatusType.NA).build();
+
+		assertDoesNotThrow(() -> function.processBizEventEnrichment(List.of(na), context));
+
+		verify(bizEventDeadLetterService, never()).handleLastRetry(any(), anyString(), any(LocalDateTime.class), anyString(), anyList(),
+				anyString(), any(TelemetryClient.class));
 	}
 
 	@Test
