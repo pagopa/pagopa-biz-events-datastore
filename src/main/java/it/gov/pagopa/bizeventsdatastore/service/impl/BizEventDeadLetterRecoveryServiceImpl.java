@@ -97,16 +97,7 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
             blobFailure = DeadLetterRecoveryError.BLOB_UPDATE_ERROR;
 
             for (BizEvent bizEvent : bizEvents) {
-                try {
-                    DeadLetterRecoveryError failure = recoverBizEventView(bizEvent);
-                    if (failure != null) {
-                        permanentFailures.add(failure);
-                    }
-                } catch (Exception e) {
-                    logger.error("Dead letter recovery with invocationId [{}] - error recovering biz-event [{}] of blob [{}]",
-                            invocationId, bizEvent.getId(), blob.getName(), e);
-                    temporaryFailures.add(toRecoveryError(e));
-                }
+                tryRecoverBizEventView(bizEvent, blob, invocationId, permanentFailures, temporaryFailures);
             }
 
             // The temporary failures come first: the blob is marked as failed only when no event can be recovered at the next attempts
@@ -124,6 +115,24 @@ public class BizEventDeadLetterRecoveryServiceImpl implements BizEventDeadLetter
             logger.error("Dead letter recovery with invocationId [{}] - {} on blob [{}]: {}",
                     invocationId, blobFailure, blob.getName(), blobFailure.getDetails(), e);
             registerFailedAttemptSafely(containerName, blob, invocationId, blobFailure);
+        }
+    }
+
+    /**
+     * Recovers the views of a biz-event of the blob: if it fails, the reason is added to the permanent or temporary failures,
+     * so that the other biz-events of the blob are recovered anyway.
+     */
+    private void tryRecoverBizEventView(BizEvent bizEvent, DeadLetterBlob blob, String invocationId,
+                                        Set<DeadLetterRecoveryError> permanentFailures, Set<DeadLetterRecoveryError> temporaryFailures) {
+        try {
+            DeadLetterRecoveryError failure = recoverBizEventView(bizEvent);
+            if (failure != null) {
+                permanentFailures.add(failure);
+            }
+        } catch (Exception e) {
+            logger.error("Dead letter recovery with invocationId [{}] - error recovering biz-event [{}] of blob [{}]",
+                    invocationId, bizEvent.getId(), blob.getName(), e);
+            temporaryFailures.add(toRecoveryError(e));
         }
     }
 
